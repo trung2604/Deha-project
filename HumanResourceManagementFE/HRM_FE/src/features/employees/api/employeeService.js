@@ -1,44 +1,49 @@
-import axios from '@/utils/axios';
+import axios from "@/utils/axios";
+
+const normalizeResponse = (response) => {
+  if (!response || typeof response !== "object") return response;
+  if (response.data !== undefined) return response.data;
+  return response;
+};
 
 const employeeService = {
   getEmployees: async (params = {}) => {
-    const response = await axios.get('/employees', { params });
-    return response.data;
+    const res = await axios.get("/employees", { params });
+    return normalizeResponse(res);
   },
 
   getEmployee: async (id) => {
-    const response = await axios.get(`/employees/${id}`);
-    return response.data;
+    const res = await axios.get(`/employees/${id}`);
+    return normalizeResponse(res);
   },
 
   createEmployee: async (employeeData) => {
-    const response = await axios.post('/employees', employeeData);
-    return response.data;
+    const res = await axios.post("/employees", employeeData);
+    return normalizeResponse(res);
   },
 
   updateEmployee: async (id, employeeData) => {
-    const response = await axios.put(`/employees/${id}`, employeeData);
-    return response.data;
+    const res = await axios.put(`/employees/${id}`, employeeData);
+    return normalizeResponse(res);
   },
 
   deleteEmployee: async (id) => {
-    const response = await axios.delete(`/employees/${id}`);
-    return response.data;
+    const res = await axios.delete(`/employees/${id}`);
+    return normalizeResponse(res);
   },
 
   searchEmployees: async (searchTerm) => {
-    const response = await axios.get('/employees/search', {
+    const res = await axios.get("/employees/search", {
       params: { q: searchTerm },
     });
-    return response.data;
+    return normalizeResponse(res);
   },
 
-  exportEmployees: async (format = 'csv') => {
-    const response = await axios.get('/employees/export', {
+  exportEmployees: async (format = "csv") => {
+    return await axios.get("/employees/export", {
       params: { format },
-      responseType: 'blob',
+      responseType: "blob",
     });
-    return response.data;
   },
 };
 

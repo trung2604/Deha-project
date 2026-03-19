@@ -6,17 +6,19 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
 import java.util.UUID;
 
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor  
 public class EmployeeResponse {
     private UUID id;
     private String firstName;
     private String lastName;
     private String email;
     private Role role;
+    private Date createdAt;
 
     public static EmployeeResponse fromEntity(Employee employee) {
         return new EmployeeResponse(
@@ -24,7 +26,8 @@ public class EmployeeResponse {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
-                employee.getRole()
+                employee.getRole(),
+                employee.getCreatedAt()
         );
     }
 }
