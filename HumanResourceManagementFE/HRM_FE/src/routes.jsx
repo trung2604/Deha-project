@@ -2,7 +2,8 @@ import { createBrowserRouter } from "react-router-dom";
 import { Layout } from "./components/Layout";
 // import { Dashboard } from "./pages/Dashboard";
 import { EmployeesPage } from "@/features/employees/pages/EmployeesPage";
-// import { Departments } from "./pages/Departments";
+import { DepartmentsPage } from "@/features/departments/pages/DepartmentsPage";
+import { DepartmentDetailPage } from "@/features/departments/pages/DepartmentDetailPage";
 // import { Attendance } from "./pages/Attendance";
 // import { LeaveRequests } from "./pages/LeaveRequests";
 // import { Salary } from "./pages/Salary";
@@ -28,8 +29,9 @@ export const router = createBrowserRouter([
     Component: Layout,
     children: [
     //   { index: true, Component: Dashboard },
-      { path: "employees", Component: EmployeesPage }
-    //   { path: "departments", Component: Departments },
+      { path: "employees", Component: EmployeesPage },
+      { path: "departments", Component: DepartmentsPage },
+      { path: "departments/:departmentId", Component: DepartmentDetailPage },
     //   { path: "attendance", Component: Attendance },
     //   { path: "leave-requests", Component: LeaveRequests },
     //   { path: "salary", Component: Salary },
