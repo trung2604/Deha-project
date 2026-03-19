@@ -39,7 +39,8 @@ public class EmployeeService {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
-                employee.getRole()
+                employee.getRole(),
+                employee.getCreatedAt()
         );
     }
 
@@ -56,7 +57,8 @@ public class EmployeeService {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
-                employee.getRole()
+                employee.getRole(),
+                employee.getCreatedAt()
         );
     }
 
