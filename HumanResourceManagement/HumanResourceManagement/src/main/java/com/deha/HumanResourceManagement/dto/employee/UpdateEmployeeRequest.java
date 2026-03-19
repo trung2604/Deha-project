@@ -26,10 +26,10 @@ public class UpdateEmployeeRequest {
     @Email(message = "Email is not correct format")
     private String email;
 
-    @NotBlank(message = "Department cannot be blank")
+    @NotNull(message = "Department is required")
     private Department department;
 
-    @NotBlank(message = "Position cannot be blank")
+    @NotNull(message = "Position is required")
     private Position position;
 
     @NotNull(message = "Role cannot be blank")

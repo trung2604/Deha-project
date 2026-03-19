@@ -1,10 +1,7 @@
 package com.deha.HumanResourceManagement.dto.position;
 
-import com.deha.HumanResourceManagement.entity.Department;
-import jakarta.persistence.Column;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,10 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PositionRequest {
-    @Column(name = "name", nullable = false, length = 100)
+    @NotBlank(message = "Position name is required")
+    @Size(max = 100, message = "Position name must be at most 100 characters")
     private String name;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id", nullable = false)
-    private Department department;
 }

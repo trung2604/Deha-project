@@ -42,12 +42,25 @@ export function EmployeesPage() {
     };
   }, []);
 
+  const reloadEmployees = async () => {
+    setLoading(true);
+    try {
+      const data = await employeeService.getEmployees();
+      const list = Array.isArray(data) ? data : (data?.items ?? data?.data ?? []);
+      setEmployees(Array.isArray(list) ? list : []);
+    } catch {
+      toast.error("Failed to load employees");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const departments = useMemo(
-    () => [...new Set(employees.map((e) => e.department).filter(Boolean))],
+    () => [...new Set(employees.map((e) => e.departmentName).filter(Boolean))],
     [employees],
   );
   const positions = useMemo(
-    () => [...new Set(employees.map((e) => e.position).filter(Boolean))],
+    () => [...new Set(employees.map((e) => e.positionName).filter(Boolean))],
     [employees],
   );
 
@@ -63,9 +76,9 @@ export function EmployeesPage() {
         lastName.includes(query) ||
         email.includes(query);
       const matchesDepartment =
-        !departmentFilter || emp.department === departmentFilter;
+        !departmentFilter || emp.departmentName === departmentFilter;
       const matchesPosition =
-        !positionFilter || emp.position === positionFilter;
+        !positionFilter || emp.positionName === positionFilter;
       const matchesStatus = !statusFilter || emp.status === statusFilter;
       return (
         matchesSearch && matchesDepartment && matchesPosition && matchesStatus
@@ -86,9 +99,7 @@ export function EmployeesPage() {
     async function run() {
       try {
         await employeeService.deleteEmployee(deletingEmployee.id);
-        setEmployees((prev) =>
-          prev.filter((e) => e.id !== deletingEmployee.id),
-        );
+        await reloadEmployees();
         toast.success("Employee deleted successfully");
       } catch {
         toast.error("Failed to delete employee");
@@ -103,20 +114,12 @@ export function EmployeesPage() {
   const handleSave = async (employee) => {
     try {
       if (editingEmployee) {
-        const updatedWrapper = await employeeService.updateEmployee(
-          employee.id,
-          employee,
-        );
-        const updatedEmployee =
-          updatedWrapper?.data ?? updatedWrapper ?? employee;
-        setEmployees((prev) =>
-          prev.map((e) => (e.id === employee.id ? updatedEmployee : e)),
-        );
+        await employeeService.updateEmployee(employee.id, employee);
+        await reloadEmployees();
         toast.success("Employee updated successfully");
       } else {
-        const createdWrapper = await employeeService.createEmployee(employee);
-        const newEmployee = createdWrapper?.data ?? createdWrapper ?? employee;
-        setEmployees((prev) => [newEmployee, ...prev]);
+        await employeeService.createEmployee(employee);
+        await reloadEmployees();
         toast.success("Employee added successfully");
       }
 
@@ -199,7 +202,7 @@ export function EmployeesPage() {
 
       {deletingEmployee && (
         <DeleteEmployeeModal
-          employeeName={deletingEmployee.name}
+          employeeName={`${deletingEmployee.firstName ?? ""} ${deletingEmployee.lastName ?? ""}`.trim() || "-"}
           onClose={() => setDeletingEmployee(null)}
           onConfirm={handleDeleteConfirm}
         />

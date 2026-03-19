@@ -27,10 +27,10 @@ public class EmployeeRequest {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
-    @NotBlank(message = "Department cannot be blank")
+    @NotNull(message = "Department is required")
     private Department department;
 
-    @NotBlank(message = "Position cannot be blank")
+    @NotNull(message = "Position is required")
     private Position position;
 
     @NotNull(message = "Role cannot be blank")

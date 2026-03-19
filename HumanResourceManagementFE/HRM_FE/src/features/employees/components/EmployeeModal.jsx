@@ -1,20 +1,110 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
+
+import departmentService from "@/features/departments/api/departmentService";
+import positionService from "@/features/departments/api/positionService";
 
 export function EmployeeModal({ employee, onClose, onSave }) {
-  const [formData, setFormData] = useState(
-    employee || {
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      role: "",
-    },
-  );
+  const isEdit = !!employee?.id;
+
+  const [departmentsLoading, setDepartmentsLoading] = useState(true);
+  const [departments, setDepartments] = useState([]);
+  const [positionsLoading, setPositionsLoading] = useState(false);
+  const [positions, setPositions] = useState([]);
+
+  // Backend expects { department: {id}, position: {id} }
+  const [formData, setFormData] = useState(() => ({
+    id: employee?.id,
+    firstName: employee?.firstName ?? "",
+    lastName: employee?.lastName ?? "",
+    email: employee?.email ?? "",
+    role: employee?.role ?? "",
+    password: "",
+    confirmPassword: "",
+    departmentId: employee?.department?.id ?? "",
+    positionId: employee?.position?.id ?? "",
+  }));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      setDepartmentsLoading(true);
+      try {
+        const res = await departmentService.getDepartments();
+        const list = Array.isArray(res) ? res : res ?? [];
+        if (!cancelled) setDepartments(list);
+      } catch {
+        if (!cancelled) toast.error("Failed to load departments");
+      } finally {
+        if (!cancelled) setDepartmentsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const deptId = formData.departmentId;
+    if (!deptId) {
+      setPositions([]);
+      setFormData((p) => ({ ...p, positionId: "" }));
+      return;
+    }
+
+    (async () => {
+      setPositionsLoading(true);
+      try {
+        const res = await positionService.getDepartmentPositions(deptId);
+        const list = Array.isArray(res) ? res : res ?? [];
+        if (!cancelled) setPositions(list);
+      } catch {
+        if (!cancelled) toast.error("Failed to load positions");
+      } finally {
+        if (!cancelled) setPositionsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.departmentId]);
+
+  const selectedDepartmentName = useMemo(() => {
+    const d = departments.find((x) => x?.id === formData.departmentId);
+    return d?.name ?? "";
+  }, [departments, formData.departmentId]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    if (!formData.departmentId) return toast.error("Please select a department");
+    if (!formData.positionId) return toast.error("Please select a position");
+
+    if (!isEdit) {
+      if (!formData.password || formData.password.length < 8) {
+        return toast.error("Password must be at least 8 characters");
+      }
+      if (formData.password !== formData.confirmPassword) {
+        return toast.error("Password confirmation does not match");
+      }
+    }
+
+    const payload = {
+      ...(isEdit ? { id: formData.id } : {}),
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim(),
+      role: formData.role,
+      department: { id: formData.departmentId },
+      position: { id: formData.positionId },
+      ...(isEdit ? {} : { password: formData.password }),
+    };
+
+    onSave(payload);
   };
 
   return (
@@ -99,7 +189,66 @@ export function EmployeeModal({ employee, onClose, onSave }) {
               />
             </div>
 
-            <div>
+            <div className="col-span-2">
+              <label className="block mb-1.5">
+                <span style={{ color: "#FF4D4F" }}>*</span> Department
+              </label>
+              <select
+                required
+                value={formData.departmentId}
+                onChange={(e) =>
+                  setFormData((p) => ({
+                    ...p,
+                    departmentId: e.target.value,
+                    positionId: "",
+                  }))
+                }
+                disabled={departmentsLoading}
+                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150 disabled:opacity-60"
+                style={{ borderColor: "#E8E8E8" }}
+              >
+                <option value="">
+                  {departmentsLoading ? "Loading departments…" : "Select department"}
+                </option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col-span-2">
+              <label className="block mb-1.5">
+                <span style={{ color: "#FF4D4F" }}>*</span> Position
+              </label>
+              <select
+                required
+                value={formData.positionId}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, positionId: e.target.value }))
+                }
+                disabled={!formData.departmentId || positionsLoading}
+                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150 disabled:opacity-60"
+                style={{ borderColor: "#E8E8E8" }}
+              >
+                <option value="">
+                  {!formData.departmentId
+                    ? "Select department first"
+                    : positionsLoading
+                      ? `Loading positions for ${selectedDepartmentName || "department"}…`
+                      : "Select position"}
+                </option>
+                {positions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {!isEdit && (
+              <div>
               <label className="block mb-1.5">
                 <span style={{ color: "#FF4D4F" }}>*</span> Password
               </label>
@@ -114,7 +263,27 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                 className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
                 style={{ borderColor: "#E8E8E8" }}
               />
-            </div>
+              </div>
+            )}
+
+            {!isEdit && (
+              <div>
+                <label className="block mb-1.5">
+                  <span style={{ color: "#FF4D4F" }}>*</span> Confirm Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={formData.confirmPassword}
+                  onChange={(e) =>
+                    setFormData({ ...formData, confirmPassword: e.target.value })
+                  }
+                  className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
+                  style={{ borderColor: "#E8E8E8" }}
+                />
+              </div>
+            )}
 
             <div>
               <label className="block mb-1.5">
