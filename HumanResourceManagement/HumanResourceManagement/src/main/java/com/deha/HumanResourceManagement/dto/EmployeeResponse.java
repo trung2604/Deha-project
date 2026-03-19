@@ -1,6 +1,8 @@
 package com.deha.HumanResourceManagement.dto;
 
+import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Employee;
+import com.deha.HumanResourceManagement.entity.Position;
 import com.deha.HumanResourceManagement.entity.Role;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,6 +19,8 @@ public class EmployeeResponse {
     private String firstName;
     private String lastName;
     private String email;
+    private Department department;
+    private Position position;
     private Role role;
     private Date createdAt;
 
@@ -26,6 +30,8 @@ public class EmployeeResponse {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
+                employee.getDepartment(),
+                employee.getPosition(),
                 employee.getRole(),
                 employee.getCreatedAt()
         );
