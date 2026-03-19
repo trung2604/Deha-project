@@ -17,6 +17,7 @@ import java.util.UUID;
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
 
+
     public EmployeeService(EmployeeRepository employeeRepository) {
         this.employeeRepository = employeeRepository;
     }
@@ -44,8 +45,8 @@ public class EmployeeService {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
-                employee.getDepartment(),
-                employee.getPosition(),
+                employee.getDepartment().getName(),
+                employee.getPosition().getName(),
                 employee.getRole(),
                 employee.getCreatedAt()
         );
@@ -67,8 +68,8 @@ public class EmployeeService {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
-                employee.getDepartment(),
-                employee.getPosition(),
+                employee.getDepartment().getName(),
+                employee.getPosition().getName(),
                 employee.getRole(),
                 employee.getCreatedAt()
         );

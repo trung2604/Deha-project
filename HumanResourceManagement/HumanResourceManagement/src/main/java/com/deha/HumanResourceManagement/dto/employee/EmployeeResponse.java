@@ -19,8 +19,8 @@ public class EmployeeResponse {
     private String firstName;
     private String lastName;
     private String email;
-    private Department department;
-    private Position position;
+    private String departmentName;
+    private String positionName;
     private Role role;
     private Date createdAt;
 
@@ -30,8 +30,8 @@ public class EmployeeResponse {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
-                employee.getDepartment(),
-                employee.getPosition(),
+                employee.getDepartment().getName(),
+                employee.getPosition().getName(),
                 employee.getRole(),
                 employee.getCreatedAt()
         );
