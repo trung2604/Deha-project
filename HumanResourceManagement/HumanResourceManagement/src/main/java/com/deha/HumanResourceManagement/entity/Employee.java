@@ -7,44 +7,45 @@ import lombok.Data;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "employees")
 @Data
 public class Employee {
+
     @Id
     @UuidGenerator
     private UUID id;
 
-    @Column(name="first_name", nullable = false, length = 100, unique = false)
+    @Column(name = "first_name", nullable = false, length = 100)
     @NotNull(message = "First name cannot be null")
     private String firstName;
 
-    @Column(name="last_name", nullable = false, length = 100, unique = false)
+    @Column(name = "last_name", nullable = false, length = 100)
     @NotNull(message = "Last name cannot be null")
     private String lastName;
 
-    @Column(name="email", nullable = false, length = 100, unique = true)
+    @Column(name = "email", nullable = false, length = 100, unique = true)
     @Email(message = "Email is not correct format")
     private String email;
 
-    @Column(name="password", nullable = false, length = 255, unique = false)
+    @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name="is_active", nullable = false)
+    @Column(name = "is_active", nullable = false)
     private boolean isActive;
 
-    @JoinColumn(name = "department_id", referencedColumnName = "id", nullable = true)
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", nullable = false)
     private Department department;
 
-    @OneToMany(mappedBy = "employee")
-    private List<EmployeePosition> position;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "position_id", nullable = false)
+    private Position position;
 
-    @Column(name = "role", nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
     private Role role;
 
     @Column(name = "created_at", nullable = false)

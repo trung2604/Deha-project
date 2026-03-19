@@ -1,5 +1,7 @@
 package com.deha.HumanResourceManagement.dto;
 
+import com.deha.HumanResourceManagement.entity.Department;
+import com.deha.HumanResourceManagement.entity.Position;
 import com.deha.HumanResourceManagement.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -23,6 +25,12 @@ public class UpdateEmployeeRequest {
     @NotNull(message = "Email is required")
     @Email(message = "Email is not correct format")
     private String email;
+
+    @NotBlank(message = "Department cannot be blank")
+    private Department department;
+
+    @NotBlank(message = "Position cannot be blank")
+    private Position position;
 
     @NotNull(message = "Role cannot be blank")
     private Role role;

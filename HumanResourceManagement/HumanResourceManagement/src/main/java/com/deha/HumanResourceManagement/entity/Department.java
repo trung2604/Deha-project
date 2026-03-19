@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,7 +19,13 @@ public class Department {
     @Column(name = "name", nullable = false, length = 100, unique = true)
     private String name;
 
-    @OneToMany(mappedBy = "department")
-    private List<Employee> employees;
+    @Column(name = "description", nullable = true, length = 255, unique = false)
+    private String description;
+
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Position> positions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Employee> employees = new ArrayList<>();
 }
 

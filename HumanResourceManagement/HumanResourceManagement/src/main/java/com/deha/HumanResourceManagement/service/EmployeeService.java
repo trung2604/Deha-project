@@ -25,12 +25,17 @@ public class EmployeeService {
         if(employeeRepository.existsByEmail(employeeRequest.getEmail())) {
             throw new ResourceAlreadyExistException("Email already exists");
         }
+        if(employeeRequest.getPosition().getDepartment().getId() != employeeRequest.getDepartment().getId()){
+            throw new IllegalArgumentException("Position does not belong to the specified department");
+        }
         Employee employee = new Employee();
         employee.setFirstName(employeeRequest.getFirstName());
         employee.setLastName(employeeRequest.getLastName());
         employee.setEmail(employeeRequest.getEmail());
         employee.setRole(employeeRequest.getRole());
         employee.setPassword(employeeRequest.getPassword());
+        employee.setDepartment(employeeRequest.getDepartment());
+        employee.setPosition(employeeRequest.getPosition());
         employee.setCreatedAt(new Date());
         employee.setActive(true);
         employeeRepository.save(employee);
@@ -39,6 +44,8 @@ public class EmployeeService {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
+                employee.getDepartment(),
+                employee.getPosition(),
                 employee.getRole(),
                 employee.getCreatedAt()
         );
@@ -47,6 +54,9 @@ public class EmployeeService {
     public EmployeeResponse updateEmployee(UUID id, UpdateEmployeeRequest employeeRequest) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+        if(employeeRequest.getPosition().getDepartment().getId() != employeeRequest.getDepartment().getId()){
+            throw new IllegalArgumentException("Position does not belong to the specified department");
+        }
         employee.setFirstName(employeeRequest.getFirstName());
         employee.setLastName(employeeRequest.getLastName());
         employee.setEmail(employeeRequest.getEmail());
@@ -57,6 +67,8 @@ public class EmployeeService {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getEmail(),
+                employee.getDepartment(),
+                employee.getPosition(),
                 employee.getRole(),
                 employee.getCreatedAt()
         );

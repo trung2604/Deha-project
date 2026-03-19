@@ -11,13 +11,18 @@ import java.util.UUID;
 @Table(name = "positions")
 @Data
 public class Position {
+
     @Id
     @UuidGenerator
     private UUID id;
 
-    @Column(name = "name", nullable = false, length = 100, unique = true)
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
+
     @OneToMany(mappedBy = "position")
-    private List<EmployeePosition> employeePositions;
+    private List<Employee> employees;
 }
