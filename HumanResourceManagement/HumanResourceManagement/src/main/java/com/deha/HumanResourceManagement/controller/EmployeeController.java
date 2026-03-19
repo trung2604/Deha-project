@@ -1,8 +1,8 @@
 package com.deha.HumanResourceManagement.controller;
 
 import com.deha.HumanResourceManagement.dto.ApiResponse;
-import com.deha.HumanResourceManagement.dto.EmployeeRequest;
-import com.deha.HumanResourceManagement.dto.UpdateEmployeeRequest;
+import com.deha.HumanResourceManagement.dto.employee.EmployeeRequest;
+import com.deha.HumanResourceManagement.dto.employee.UpdateEmployeeRequest;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.service.EmployeeService;
 import jakarta.validation.Valid;

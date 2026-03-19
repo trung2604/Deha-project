@@ -1,4 +1,4 @@
-package com.deha.HumanResourceManagement.dto;
+package com.deha.HumanResourceManagement.dto.employee;
 
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Employee;

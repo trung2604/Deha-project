@@ -1,8 +1,8 @@
 package com.deha.HumanResourceManagement.service;
 
-import com.deha.HumanResourceManagement.dto.EmployeeRequest;
-import com.deha.HumanResourceManagement.dto.EmployeeResponse;
-import com.deha.HumanResourceManagement.dto.UpdateEmployeeRequest;
+import com.deha.HumanResourceManagement.dto.employee.EmployeeRequest;
+import com.deha.HumanResourceManagement.dto.employee.EmployeeResponse;
+import com.deha.HumanResourceManagement.dto.employee.UpdateEmployeeRequest;
 import com.deha.HumanResourceManagement.entity.Employee;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;

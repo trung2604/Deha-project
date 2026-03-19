@@ -1,4 +1,4 @@
-package com.deha.HumanResourceManagement.dto;
+package com.deha.HumanResourceManagement.dto.employee;
 
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Position;
@@ -6,11 +6,14 @@ import com.deha.HumanResourceManagement.entity.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class EmployeeRequest {
+@AllArgsConstructor
+@NoArgsConstructor
+public class UpdateEmployeeRequest {
     @NotNull(message = "First name is required")
     @NotBlank(message = "First name cannot be blank")
     private String firstName;
@@ -22,10 +25,6 @@ public class EmployeeRequest {
     @NotNull(message = "Email is required")
     @Email(message = "Email is not correct format")
     private String email;
-
-    @NotBlank(message = "Password cannot be blank")
-    @Size(min = 8, message = "Password must be at least 8 characters")
-    private String password;
 
     @NotBlank(message = "Department cannot be blank")
     private Department department;

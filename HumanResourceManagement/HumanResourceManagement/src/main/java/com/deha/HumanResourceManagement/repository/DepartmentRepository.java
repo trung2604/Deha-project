@@ -1,14 +1,12 @@
 package com.deha.HumanResourceManagement.repository;
 
-
-import com.deha.HumanResourceManagement.entity.Employee;
+import com.deha.HumanResourceManagement.entity.Department;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
-    boolean existsByEmail(String email);
+public interface DepartmentRepository extends JpaRepository<Department, UUID> {
+    boolean existsByName(String name);
 }
