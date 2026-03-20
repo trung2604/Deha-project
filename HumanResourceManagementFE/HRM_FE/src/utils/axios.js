@@ -35,7 +35,9 @@ axiosInstance.interceptors.response.use(
     const status = error.response?.status;
     const originalRequest = error.config;
 
-    if (status === 401 && originalRequest && !originalRequest._skipAuthRefresh) {
+    // Some secured endpoints may return 403 (AccessDenied) instead of 401 (Unauthorized)
+    // when the JWT is missing/expired/invalid. Refresh in both cases.
+    if ((status === 401 || status === 403) && originalRequest && !originalRequest._skipAuthRefresh) {
       if (originalRequest._retry) {
         localStorage.removeItem("auth_token");
         localStorage.removeItem("user_info");

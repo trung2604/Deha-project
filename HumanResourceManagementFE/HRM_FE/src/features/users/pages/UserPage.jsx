@@ -10,8 +10,13 @@ import UserService from "@/features/users/api/UserService";
 export function UsersPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [Users, setUsers] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [positionFilter, setPositionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -25,32 +30,54 @@ export function UsersPage() {
     async function load() {
       setLoading(true);
       try {
-        const res = await UserService.getUsers();
+        const keyword = (debouncedSearchTerm ?? "").trim();
+        const res = keyword
+          ? await UserService.searchUsers({ keyword, page, size })
+          : await UserService.getUsers({ page, size });
         if (!res || typeof res.status !== "number") throw new Error("Invalid response");
         if (res.status < 200 || res.status >= 300) throw new Error(res.message || "Request failed");
-        const list = Array.isArray(res.data) ? res.data : (res.data ?? []);
-        if (!cancelled) setUsers(Array.isArray(list) ? list : []);
+        const list = Array.isArray(res.data.content) ? res.data.content : (res.data.content ?? []);
+        setUsers(Array.isArray(list) ? list : []);
+        setTotalPages(res.data.totalPages);
+        setTotalElements(res.data.totalElements);
+        setPage(res.data.page);
+        setSize(res.data.size);
       } catch {
-        if (!cancelled) toast.error("Failed to load Users");
+        toast.error("Failed to load Users");
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
-
     load();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [page, size, debouncedSearchTerm]);
+
+  // Debounce server-side search to avoid firing request on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+      setPage(0); // Reset to first page when keyword actually updates (debounced).
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
   const reloadUsers = async () => {
     setLoading(true);
     try {
-      const res = await UserService.getUsers();
+      const keyword = (debouncedSearchTerm ?? "").trim();
+      const res = keyword
+        ? await UserService.searchUsers({ keyword, page, size })
+        : await UserService.getUsers({ page, size });
       if (!res || typeof res.status !== "number") throw new Error("Invalid response");
       if (res.status < 200 || res.status >= 300) throw new Error(res.message || "Request failed");
-      const list = Array.isArray(res.data) ? res.data : (res.data ?? []);
+      const list = Array.isArray(res.data.content) ? res.data.content : (res.data.content ?? []);
       setUsers(Array.isArray(list) ? list : []);
+      setTotalPages(res.data.totalPages);
+      setTotalElements(res.data.totalElements);
+      setPage(res.data.page);
+      setSize(res.data.size);
     } catch {
       toast.error("Failed to load Users");
     } finally {
@@ -59,42 +86,34 @@ export function UsersPage() {
   };
 
   const departments = useMemo(
-    () => [...new Set(Users.map((e) => e.departmentName).filter(Boolean))],
-    [Users],
+    () => [...new Set(users.map((e) => e.departmentName).filter(Boolean))],
+    [users],
   );
   const positions = useMemo(
-    () => [...new Set(Users.map((e) => e.positionName).filter(Boolean))],
-    [Users],
+    () => [...new Set(users.map((e) => e.positionName).filter(Boolean))],
+    [users],
   );
 
+  // Server-side search is handled by the backend (keyword). Here we only apply
+  // dropdown filters on the current server page.
   const filteredUsers = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-    return Users.filter((emp) => {
-      const firstName = (emp.firstName ?? "").toString().toLowerCase();
-      const lastName = (emp.lastName ?? "").toString().toLowerCase();
-      const email = (emp.email ?? "").toString().toLowerCase();
-      const matchesSearch =
-        !query ||
-        firstName.includes(query) ||
-        lastName.includes(query) ||
-        email.includes(query);
+    return users.filter((emp) => {
       const matchesDepartment =
         !departmentFilter || emp.departmentName === departmentFilter;
       const matchesPosition =
         !positionFilter || emp.positionName === positionFilter;
       const computedStatus = emp.active ? "Active" : "Inactive";
       const matchesStatus = !statusFilter || computedStatus === statusFilter;
-      return (
-        matchesSearch && matchesDepartment && matchesPosition && matchesStatus
-      );
+      return matchesDepartment && matchesPosition && matchesStatus;
     });
-  }, [Users, searchTerm, departmentFilter, positionFilter, statusFilter]);
+  }, [users, departmentFilter, positionFilter, statusFilter]);
 
   const handleReset = () => {
     setSearchTerm("");
     setDepartmentFilter("");
     setPositionFilter("");
     setStatusFilter("");
+    setPage(0);
   };
 
   const handleDeleteConfirm = () => {
@@ -140,6 +159,15 @@ export function UsersPage() {
     }
   };
 
+  const handleSearchTermChange = (value) => {
+    setSearchTerm(value);
+  };
+
+  const handleSizeChange = (newSize) => {
+    setSize(newSize);
+    setPage(0); // Reset to first page when page size changes.
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -163,7 +191,7 @@ export function UsersPage() {
               fontWeight: "600",
             }}
           >
-            {Users.length}
+            {totalElements}
           </span>
         </div>
         <button
@@ -180,7 +208,7 @@ export function UsersPage() {
 
       <UserFilters
         searchTerm={searchTerm}
-        onSearchTermChange={setSearchTerm}
+        onSearchTermChange={handleSearchTermChange}
         departmentFilter={departmentFilter}
         onDepartmentFilterChange={setDepartmentFilter}
         positionFilter={positionFilter}
@@ -197,6 +225,12 @@ export function UsersPage() {
         users={filteredUsers}
         onEdit={setEditingUser}
         onDelete={setDeletingUser}
+        totalPages={totalPages}
+        totalElements={totalElements}
+        page={page}
+        size={size}
+        onPageChange={setPage}
+        onSizeChange={handleSizeChange}
       />
 
       {(showAddModal || editingUser) && (

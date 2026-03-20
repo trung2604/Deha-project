@@ -1,8 +1,8 @@
 import axios from "@/utils/axios";
 
 const UserService = {
-  getUsers: async (params = {}) => {
-    return await axios.get("/users", { params });
+  getUsers: async ({ page = 0, size = 10 } = {}) => {
+    return await axios.get("/users", { params: { page, size } });
   },
 
   getUser: async (id) => {
@@ -21,9 +21,9 @@ const UserService = {
     return await axios.delete(`/users/${id}`);
   },
 
-  searchUsers: async (searchTerm) => {
+  searchUsers: async ({ keyword, page = 0, size = 10 } = {}) => {
     return await axios.get("/users/search", {
-      params: { q: searchTerm },
+      params: { keyword, page, size },
     });
   },
 

@@ -10,6 +10,8 @@ import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -115,11 +117,9 @@ public class UserService {
         );
     }
 
-    public List<UserResponse> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream()
-                .map(UserResponse::fromEntity)
-                .toList();
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        Page<User> users = userRepository.findAll(pageable);
+        return users.map(UserResponse::fromEntity);
     }
 
     public UserResponse getUserById(UUID id) {
@@ -132,5 +132,10 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         userRepository.delete(user);
+    }
+
+    public Page<UserResponse> searchUsers(String keyword, Pageable pageable) {
+        Page<User> users = userRepository.searchUsers(keyword, pageable);
+        return users.map(UserResponse::fromEntity);
     }
 }

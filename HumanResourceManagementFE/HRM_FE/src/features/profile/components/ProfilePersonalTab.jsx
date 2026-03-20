@@ -1,15 +1,16 @@
+import { Input } from "antd";
+
 function ReadOnlyField({ label, value }) {
   return (
     <div>
       <label className="block mb-2" style={{ color: "#0A0A0A", fontSize: "14px", fontWeight: "500" }}>
         {label}
       </label>
-      <input
-        type="text"
+      <Input
         value={value || "N/A"}
         readOnly
-        className="w-full px-4 py-2 rounded-lg border outline-none"
         style={{ borderColor: "#E8E8E8", backgroundColor: "#F5F7FA", color: "#595959" }}
+        size="middle"
       />
     </div>
   );

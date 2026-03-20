@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
-
+import { Input, Select } from "antd";
 import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
 
@@ -21,7 +21,6 @@ export function UserModal({ user, onClose, onSave, submitting }) {
     email: user?.email ?? "",
     role: user?.role ?? "",
     password: "",
-    confirmPassword: "",
     departmentId: user?.departmentId ?? user?.department?.id ?? "",
     positionId: user?.positionId ?? user?.position?.id ?? "",
   }));
@@ -33,7 +32,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
       setDepartmentsLoading(true);
       try {
         const res = await departmentService.getDepartments();
-        const list = Array.isArray(res?.data) ? res.data : res?.data ?? [];
+        const list = Array.isArray(res?.data) ? res.data : (res?.data ?? []);
         if (!cancelled) setDepartments(list);
       } catch {
         if (!cancelled) toast.error("Failed to load departments");
@@ -60,7 +59,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
       setPositionsLoading(true);
       try {
         const res = await positionService.getDepartmentPositions(deptId);
-        const list = Array.isArray(res?.data) ? res.data : res?.data ?? [];
+        const list = Array.isArray(res?.data) ? res.data : (res?.data ?? []);
         if (!cancelled) setPositions(list);
       } catch {
         if (!cancelled) toast.error("Failed to load positions");
@@ -81,15 +80,14 @@ export function UserModal({ user, onClose, onSave, submitting }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.departmentId) return toast.error("Please select a department");
+    if (!formData.departmentId)
+      return toast.error("Please select a department");
     if (!formData.positionId) return toast.error("Please select a position");
+    if (!formData.role) return toast.error("Please select a role");
 
     if (!isEdit) {
       if (!formData.password || formData.password.length < 8) {
         return toast.error("Password must be at least 8 characters");
-      }
-      if (formData.password !== formData.confirmPassword) {
-        return toast.error("Password confirmation does not match");
       }
     }
 
@@ -109,7 +107,10 @@ export function UserModal({ user, onClose, onSave, submitting }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={() => !submitting && onClose()} />
+      <div
+        className="fixed inset-0 bg-black/50 z-40"
+        onClick={() => !submitting && onClose()}
+      />
       <div
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[560px] rounded-xl z-50"
         style={{
@@ -146,16 +147,12 @@ export function UserModal({ user, onClose, onSave, submitting }) {
               <label className="block mb-1.5">
                 <span style={{ color: "#FF4D4F" }}>*</span> First Name
               </label>
-              <input
-                type="text"
+              <Input
                 required
                 value={formData.firstName}
-                onChange={(e) =>
-                  setFormData({ ...formData, firstName: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 disabled={submitting}
-                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
-                style={{ borderColor: "#E8E8E8" }}
+                size="middle"
               />
             </div>
 
@@ -163,16 +160,12 @@ export function UserModal({ user, onClose, onSave, submitting }) {
               <label className="block mb-1.5">
                 <span style={{ color: "#FF4D4F" }}>*</span> Last Name
               </label>
-              <input
-                type="text"
+              <Input
                 required
                 value={formData.lastName}
-                onChange={(e) =>
-                  setFormData({ ...formData, lastName: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 disabled={submitting}
-                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
-                style={{ borderColor: "#E8E8E8" }}
+                size="middle"
               />
             </div>
 
@@ -180,113 +173,80 @@ export function UserModal({ user, onClose, onSave, submitting }) {
               <label className="block mb-1.5">
                 <span style={{ color: "#FF4D4F" }}>*</span> Email
               </label>
-              <input
+              <Input
                 type="email"
                 required
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 disabled={submitting}
-                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
-                style={{ borderColor: "#E8E8E8" }}
+                size="middle"
               />
             </div>
 
             <div className="col-span-2">
               <label className="block mb-1.5">
-                <span style={{ color: "#FF4D4F" }}>*</span> Department
+                <span placeholder="Select department" style={{ color: "#FF4D4F" }}>*</span> Department
               </label>
-              <select
-                required
+              <Select
                 value={formData.departmentId}
-                onChange={(e) =>
+                onChange={(value) =>
                   setFormData((p) => ({
                     ...p,
-                    departmentId: e.target.value,
+                    departmentId: value ?? "",
                     positionId: "",
                   }))
                 }
                 disabled={departmentsLoading || submitting}
-                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150 disabled:opacity-60"
-                style={{ borderColor: "#E8E8E8" }}
-              >
-                <option value="">
-                  {departmentsLoading ? "Loading departments…" : "Select department"}
-                </option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+                placeholder={
+                  departmentsLoading ? "Loading departments…" : "Select department"
+                }
+                style={{ width: "100%" }}
+                size="middle"
+                options={departments.map((d) => ({ value: d.id, label: d.name }))}
+              />
             </div>
 
             <div className="col-span-2">
               <label className="block mb-1.5">
-                <span style={{ color: "#FF4D4F" }}>*</span> Position
+                <span placeholder="Chosse department first" style={{ color: "#FF4D4F" }}>*</span> Position
               </label>
-              <select
-                required
+              <Select
                 value={formData.positionId}
-                onChange={(e) =>
-                  setFormData((p) => ({ ...p, positionId: e.target.value }))
+                onChange={(value) =>
+                  setFormData((p) => ({ ...p, positionId: value ?? "" }))
                 }
-                disabled={!formData.departmentId || positionsLoading || submitting}
-                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150 disabled:opacity-60"
-                style={{ borderColor: "#E8E8E8" }}
-              >
-                <option value="">
-                  {!formData.departmentId
+                disabled={
+                  !formData.departmentId || positionsLoading || submitting
+                }
+                placeholder={
+                  !formData.departmentId
                     ? "Select department first"
                     : positionsLoading
                       ? `Loading positions for ${selectedDepartmentName || "department"}…`
-                      : "Select position"}
-                </option>
-                {positions.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+                      : "Select position"
+                }
+                style={{ width: "100%" }}
+                size="middle"
+                options={positions.map((p) => ({ value: p.id, label: p.name }))}
+              />
             </div>
 
             {!isEdit && (
               <div>
-              <label className="block mb-1.5">
-                <span style={{ color: "#FF4D4F" }}>*</span> Password
-              </label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
-                disabled={submitting}
-                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
-                style={{ borderColor: "#E8E8E8" }}
-              />
-              </div>
-            )}
-
-            {!isEdit && (
-              <div>
                 <label className="block mb-1.5">
-                  <span style={{ color: "#FF4D4F" }}>*</span> Confirm Password
+                  <span style={{ color: "#FF4D4F" }}>*</span> Password
                 </label>
-                <input
-                  type="password"
+
+                <Input.Password
+                  placeholder="Enter password"
                   required
                   minLength={8}
-                  value={formData.confirmPassword}
+                  value={formData.password}
                   onChange={(e) =>
-                    setFormData({ ...formData, confirmPassword: e.target.value })
+                    setFormData({ ...formData, password: e.target.value })
                   }
                   disabled={submitting}
-                  className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
-                  style={{ borderColor: "#E8E8E8" }}
+                  size="middle"
                 />
               </div>
             )}
@@ -295,20 +255,18 @@ export function UserModal({ user, onClose, onSave, submitting }) {
               <label className="block mb-1.5">
                 <span style={{ color: "#FF4D4F" }}>*</span> Role
               </label>
-              <select
-                required
+              <Select
                 value={formData.role}
-                onChange={(e) =>
-                  setFormData({ ...formData, role: e.target.value })
-                }
+                onChange={(value) => setFormData({ ...formData, role: value ?? "" })}
                 disabled={submitting}
-                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
-                style={{ borderColor: "#E8E8E8" }}
-              >
-                <option value="">Select role</option>
-                <option value="ROLE_ADMIN">ADMIN</option>
-                <option value="ROLE_EMPLOYEE">EMPLOYEE</option>
-              </select>
+                placeholder="Select role"
+                style={{ width: "100%" }}
+                size="middle"
+                options={[
+                  { value: "ROLE_ADMIN", label: "ADMIN" },
+                  { value: "ROLE_EMPLOYEE", label: "EMPLOYEE" },
+                ]}
+              />
             </div>
           </div>
 

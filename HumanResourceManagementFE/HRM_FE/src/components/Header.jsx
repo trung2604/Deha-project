@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { Input } from 'antd';
 
 const breadcrumbMap = {
   '/': ['Dashboard'],
@@ -146,14 +147,15 @@ export function Header({ onMenuClick }) {
 
       <div className="hidden md:flex items-center flex-1 max-w-md mx-auto relative">
         <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#595959' }} />
-          <input
+          <Input
             type="text"
             placeholder="Search users, departments, leave requests..."
-            className="w-full h-9 pl-10 pr-4 rounded-lg border-0 outline-none transition-all duration-150"
+            className="w-full h-9 pr-4 rounded-lg border-0!"
             style={{ backgroundColor: '#F5F7FA', color: '#0A0A0A' }}
             value={searchTerm}
             onChange={handleSearchChange}
+            prefix={<Search className="w-4 h-4" style={{ color: '#595959' }} />}
+            size="middle"
           />
         </div>
 

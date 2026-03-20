@@ -1,13 +1,33 @@
-import { Edit, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
+import { Select } from "antd";
 
 const statusColors = {
   Active: { bg: "rgba(82, 196, 26, 0.1)", text: "#52C41A" },
   Inactive: { bg: "rgba(255, 77, 79, 0.1)", text: "#FF4D4F" },
-  "On Leave": { bg: "rgba(250, 140, 22, 0.1)", text: "#FA8C16" },
 };
 
-export function UserTable({ loading, users = [], onEdit, onDelete }) {
+export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, totalElements, page, size, onPageChange, onSizeChange }) {
   const list = Array.isArray(users) ? users : [];
+
+  const currentPage = Math.max(0, Number(page ?? 0));
+  const pageCount = Math.max(0, Number(totalPages ?? 0));
+  const currentSize = Math.max(1, Number(size ?? 10));
+  const pageSizeOptions = [5, 10, 20, 50].includes(currentSize)
+    ? [5, 10, 20, 50]
+    : [currentSize, 5, 10, 20, 50];
+  const canPrev = currentPage > 0;
+  const canNext = pageCount > 0 ? currentPage + 1 < pageCount : false;
+
+  const safeOnPageChange = (nextPage) => {
+    if (typeof onPageChange !== "function") return;
+    onPageChange(nextPage);
+  };
+
+  const safeOnSizeChange = (nextSize) => {
+    if (typeof onSizeChange !== "function") return;
+    onSizeChange(nextSize);
+  };
+
   return (
     <div
       className="rounded-xl overflow-hidden"
@@ -239,14 +259,59 @@ export function UserTable({ loading, users = [], onEdit, onDelete }) {
         </table>
       </div>
 
-      {!loading && list.length > 0 && (
+      {!loading && (
         <div
-          className="px-6 py-4 border-t flex items-center justify-end"
+          className="px-6 py-4 border-t flex items-center justify-between gap-4"
           style={{ borderColor: "#E8E8E8" }}
         >
           <span style={{ color: "#595959", fontSize: "13px" }}>
-            Showing {list.length} of {list.length} users
+            Showing {list.length} users{typeof totalElements === "number" ? ` (total: ${totalElements})` : ""}
           </span>
+
+          <div className="flex items-center gap-2">
+            <Select
+              value={currentSize}
+              onChange={(value) => safeOnSizeChange(Number(value))}
+              style={{ width: 110 }}
+              size="middle"
+              options={pageSizeOptions.map((opt) => ({
+                value: opt,
+                label: `${opt}/page`,
+              }))}
+            />
+
+            <button
+              onClick={() => safeOnPageChange(Math.max(0, currentPage - 1))}
+              disabled={!canPrev}
+              className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors duration-150"
+              style={{
+                borderColor: "#E8E8E8",
+                color: canPrev ? "#1677FF" : "#A0A0A0",
+                backgroundColor: canPrev ? "transparent" : "rgba(0,0,0,0.02)",
+                cursor: canPrev ? "pointer" : "not-allowed",
+              }}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <span style={{ color: "#595959", fontSize: "13px", minWidth: 92, textAlign: "center" }}>
+              Page {pageCount > 0 ? currentPage + 1 : 0} / {pageCount}
+            </span>
+
+            <button
+              onClick={() => safeOnPageChange(currentPage + 1)}
+              disabled={!canNext}
+              className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors duration-150"
+              style={{
+                borderColor: "#E8E8E8",
+                color: canNext ? "#1677FF" : "#A0A0A0",
+                backgroundColor: canNext ? "transparent" : "rgba(0,0,0,0.02)",
+                cursor: canNext ? "pointer" : "not-allowed",
+              }}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>

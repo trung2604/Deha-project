@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
+import { Input } from "antd";
 
 export function DepartmentModal({ open, department, onClose, onSubmit, submitting }) {
   const initial = useMemo(
@@ -14,7 +15,11 @@ export function DepartmentModal({ open, department, onClose, onSubmit, submittin
 
   useEffect(() => {
     if (!open) return;
-    setForm(initial);
+    // Defer to avoid React warning about setting state synchronously in effects.
+    const t = setTimeout(() => {
+      setForm(initial);
+    }, 0);
+    return () => clearTimeout(t);
   }, [open, initial]);
 
   if (!open) return null;
@@ -47,20 +52,19 @@ export function DepartmentModal({ open, department, onClose, onSubmit, submittin
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="space-y-4 mb-6">
+        <form onSubmit={handleSubmit} className="p-5">
+          <div className="space-y-3 mb-4">
             <div>
               <label className="block mb-1.5" style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: "500" }}>
                 <span style={{ color: "#FF4D4F" }}>*</span> Department Name
               </label>
-              <input
-                type="text"
+              <Input
                 required
                 value={form.name}
                 onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150 focus:border-blue-500"
-                style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
                 placeholder="e.g. Engineering"
+                style={{ width: "100%" }}
+                size="middle"
               />
             </div>
 
@@ -68,12 +72,13 @@ export function DepartmentModal({ open, department, onClose, onSubmit, submittin
               <label className="block mb-1.5" style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: "500" }}>
                 Description
               </label>
-              <textarea
+              <Input.TextArea
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border outline-none transition-all duration-150 focus:border-blue-500 resize-none"
-                style={{ borderColor: "#E8E8E8", fontSize: "14px", minHeight: "96px" }}
+                rows={4}
+                style={{ fontSize: "14px", minHeight: "80px" }}
                 placeholder="Brief description of the department"
+                size="middle"
               />
             </div>
           </div>

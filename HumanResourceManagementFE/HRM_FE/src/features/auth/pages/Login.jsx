@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
+import { Checkbox, Input } from "antd";
 
 function defaultHomePath(user) {
   const role = user?.role;
@@ -13,7 +13,6 @@ function defaultHomePath(user) {
 export function Login() {
   const navigate = useNavigate();
   const { isAuthenticated, user, login } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -101,14 +100,14 @@ export function Login() {
             >
               Email Address
             </label>
-            <input
+            <Input
               type="email"
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               disabled={submitting}
-              className="w-full h-10 px-3 rounded-lg border outline-none transition-all duration-150 focus:border-blue-500"
               style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
+              size="middle"
               placeholder="you@company.com"
             />
           </div>
@@ -120,46 +119,29 @@ export function Login() {
             >
               Password
             </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                disabled={submitting}
-                className="w-full h-10 px-3 pr-10 rounded-lg border outline-none transition-all duration-150 focus:border-blue-500"
-                style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                disabled={submitting}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded transition-colors"
-              >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" style={{ color: "#595959" }} />
-                ) : (
-                  <Eye className="w-4 h-4" style={{ color: "#595959" }} />
-                )}
-              </button>
-            </div>
+            <Input.Password
+              required
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              disabled={submitting}
+              style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
+              placeholder="••••••••"
+              size="middle"
+            />
           </div>
 
           <div className="flex items-center justify-start">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-2">
+              <Checkbox
                 checked={formData.remember}
-                onChange={(e) => setFormData({ ...formData, remember: e.target.checked })}
+                onChange={(e) =>
+                  setFormData({ ...formData, remember: e.target.checked })
+                }
                 disabled={submitting}
-                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                style={{ accentColor: "#1677FF" }}
+                style={{ margin: 0 }}
               />
-              <span style={{ color: "#595959", fontSize: "13px" }}>
-                Remember me
-              </span>
-            </label>
+              <span style={{ color: "#595959", fontSize: "13px" }}>Remember me</span>
+            </div>
           </div>
 
           <button
