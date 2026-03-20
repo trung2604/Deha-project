@@ -1,4 +1,5 @@
 import { Search } from 'lucide-react';
+import { Select, Input } from 'antd';
 
 export function UserFilters({
   searchTerm,
@@ -20,74 +21,53 @@ export function UserFilters({
     >
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-[200px] relative">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-            style={{ color: '#595959' }}
-          />
-          <input
-            type="text"
+          <Input
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => onSearchTermChange(e.target.value)}
-            className="w-full h-9 pl-10 pr-4 rounded-lg border outline-none transition-all duration-150"
-            style={{
-              borderColor: '#E8E8E8',
-              color: '#0A0A0A',
-            }}
+            prefix={<Search className="w-4 h-4" style={{ color: '#595959' }} />}
+            style={{ width: '100%' }}
+            size="middle"
           />
         </div>
 
-        <select
+        <Select
           value={departmentFilter}
-          onChange={(e) => onDepartmentFilterChange(e.target.value)}
-          className="h-9 px-3 rounded-lg border outline-none transition-all duration-150 cursor-pointer"
-          style={{
-            borderColor: '#E8E8E8',
-            color: '#0A0A0A',
-            minWidth: '140px',
-          }}
-        >
-          <option value="">All Departments</option>
-          {departments.map((dept) => (
-            <option key={dept} value={dept}>
-              {dept}
-            </option>
-          ))}
-        </select>
+          onChange={(value) => onDepartmentFilterChange(value ?? '')}
+          style={{ minWidth: '140px' }}
+          placeholder="All Departments"
+          size="middle"
+          options={[
+            { value: '', label: 'All Departments' },
+            ...departments.map((dept) => ({ value: dept, label: dept })),
+          ]}
+        />
 
-        <select
+        <Select
           value={positionFilter}
-          onChange={(e) => onPositionFilterChange(e.target.value)}
-          className="h-9 px-3 rounded-lg border outline-none transition-all duration-150 cursor-pointer"
-          style={{
-            borderColor: '#E8E8E8',
-            color: '#0A0A0A',
-            minWidth: '140px',
-          }}
-        >
-          <option value="">All Positions</option>
-          {positions.map((pos) => (
-            <option key={pos} value={pos}>
-              {pos}
-            </option>
-          ))}
-        </select>
+          onChange={(value) => onPositionFilterChange(value ?? '')}
+          style={{ minWidth: '140px' }}
+          placeholder="All Positions"
+          size="middle"
+          options={[
+            { value: '', label: 'All Positions' },
+            ...positions.map((pos) => ({ value: pos, label: pos })),
+          ]}
+        />
 
-        <select
+        <Select
           value={statusFilter}
-          onChange={(e) => onStatusFilterChange(e.target.value)}
-          className="h-9 px-3 rounded-lg border outline-none transition-all duration-150 cursor-pointer"
-          style={{
-            borderColor: '#E8E8E8',
-            color: '#0A0A0A',
-            minWidth: '120px',
-          }}
-        >
-          <option value="">All Status</option>
-          <option value="Active">Active</option>
-          <option value="Inactive">Inactive</option>
-          <option value="On Leave">On Leave</option>
-        </select>
+          onChange={(value) => onStatusFilterChange(value ?? '')}
+          style={{ minWidth: '120px' }}
+          placeholder="All Status"
+          size="middle"
+          options={[
+            { value: '', label: 'All Status' },
+            { value: 'Active', label: 'Active' },
+            { value: 'Inactive', label: 'Inactive' },
+            { value: 'On Leave', label: 'On Leave' },
+          ]}
+        />
 
         <button
           onClick={onReset}
