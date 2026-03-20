@@ -21,11 +21,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("""
     SELECT u FROM User u
     WHERE 
-        LOWER(u.firstName) LIKE LOWER(CONCAT(:keyword, '%'))
-        OR LOWER(u.lastName) LIKE LOWER(CONCAT(:keyword, '%'))
-        OR LOWER(u.email) LIKE LOWER(CONCAT(:keyword, '%'))
-""")
+        u.firstName ILIKE CONCAT('%', :keyword, '%')
+        OR u.lastName ILIKE CONCAT('%', :keyword, '%')
+        OR u.email ILIKE CONCAT('%', :keyword, '%')
+    """)
     Page<User> searchUsers(@Param("keyword") String keyword, Pageable pageable);
-
     Page<User> findAll(Pageable pageable);
 }
