@@ -6,7 +6,8 @@ const statusColors = {
   "On Leave": { bg: "rgba(250, 140, 22, 0.1)", text: "#FA8C16" },
 };
 
-export function EmployeeTable({ loading, employees, onEdit, onDelete }) {
+export function UserTable({ loading, users = [], onEdit, onDelete }) {
+  const list = Array.isArray(users) ? users : [];
   return (
     <div
       className="rounded-xl overflow-hidden"
@@ -27,7 +28,7 @@ export function EmployeeTable({ loading, employees, onEdit, onDelete }) {
                   fontWeight: "600",
                 }}
               >
-                Employee
+                User
               </th>
               <th
                 className="px-6 py-3 text-left uppercase tracking-wide"
@@ -48,6 +49,36 @@ export function EmployeeTable({ loading, employees, onEdit, onDelete }) {
                 }}
               >
                 Role
+              </th>
+              <th
+                className="px-6 py-3 text-left uppercase tracking-wide"
+                style={{
+                  color: "#595959",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                }}
+              >
+                Department
+              </th>
+              <th
+                className="px-6 py-3 text-left uppercase tracking-wide"
+                style={{
+                  color: "#595959",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                }}
+              >
+                Position
+              </th>
+              <th
+                className="px-6 py-3 text-left uppercase tracking-wide"
+                style={{
+                  color: "#595959",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                }}
+              >
+                Status
               </th>
               <th
                 className="px-6 py-3 text-left uppercase tracking-wide"
@@ -79,37 +110,37 @@ export function EmployeeTable({ loading, employees, onEdit, onDelete }) {
                   className="border-t"
                   style={{ borderColor: "#E8E8E8" }}
                 >
-                  <td className="px-6 py-4" colSpan={6}>
+                  <td className="px-6 py-4" colSpan={8}>
                     <div className="h-10 rounded shimmer" />
                   </td>
                 </tr>
               ))
-            ) : employees.length === 0 ? (
+            ) : list.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-16 text-center">
+                <td colSpan={8} className="px-6 py-16 text-center">
                   <p style={{ color: "#595959", fontSize: "14px" }}>
-                    No employees found
+                    No users found
                   </p>
                 </td>
               </tr>
             ) : (
-              employees.map((employee) => (
+              list.map((user) => (
                 <tr
-                  key={employee.id}
+                  key={user.id}
                   className="border-t transition-colors duration-150 hover:bg-blue-50/30"
                   style={{ borderColor: "#E8E8E8", height: "56px" }}
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0"
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0"
                         style={{
                           backgroundColor: "#1677FF",
                           fontSize: "13px",
                           fontWeight: "600",
                         }}
                       >
-                        {`${(employee.firstName ?? "").charAt(0)}${(employee.lastName ?? "").charAt(0)}`.toUpperCase()}
+                        {`${(user.firstName ?? "").charAt(0)}${(user.lastName ?? "").charAt(0)}`.toUpperCase()}
                       </div>
                       <div>
                         <div
@@ -119,24 +150,56 @@ export function EmployeeTable({ loading, employees, onEdit, onDelete }) {
                             fontWeight: "500",
                           }}
                         >
-                          {`${employee.firstName ?? ""} ${employee.lastName ?? ""}`.trim() ||
+                          {`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
                             "Unknown"}
                         </div>
                         <div style={{ color: "#595959", fontSize: "13px" }}>
-                          {employee.email ?? "-"}
+                          {user.email ?? "-"}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <span style={{ color: "#0A0A0A", fontSize: "14px" }}>
-                      {employee.email ?? "-"}
+                      {user.email ?? "-"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span style={{ color: "#595959", fontSize: "14px" }}>
-                      {employee.role ?? "-"}
+                      {user.role ?? "-"}
                     </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span style={{ color: "#595959", fontSize: "14px" }}>
+                      {user.departmentName ?? "-"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span style={{ color: "#595959", fontSize: "14px" }}>
+                      {user.positionName ?? "-"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    {(() => {
+                      const status = user.active ? "Active" : "Inactive";
+                      const colors = statusColors[status] ?? {
+                        bg: "rgba(0,0,0,0.04)",
+                        text: "#595959",
+                      };
+                      return (
+                        <span
+                          className="px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor: colors.bg,
+                            color: colors.text,
+                            fontSize: "12px",
+                            fontWeight: "700",
+                          }}
+                        >
+                          {status}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4">
                     <span
@@ -146,22 +209,22 @@ export function EmployeeTable({ loading, employees, onEdit, onDelete }) {
                         fontFamily: "JetBrains Mono, monospace",
                       }}
                     >
-                      {employee.createdAt
-                        ? new Date(employee.createdAt).toLocaleString()
+                      {user.createdAt
+                        ? new Date(user.createdAt).toLocaleString()
                         : "-"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => onEdit(employee)}
+                        onClick={() => onEdit(user)}
                         className="p-2 rounded-lg transition-colors duration-150 hover:bg-blue-50"
                         style={{ color: "#1677FF" }}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => onDelete(employee)}
+                        onClick={() => onDelete(user)}
                         className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50"
                         style={{ color: "#FF4D4F" }}
                       >
@@ -176,13 +239,13 @@ export function EmployeeTable({ loading, employees, onEdit, onDelete }) {
         </table>
       </div>
 
-      {!loading && employees.length > 0 && (
+      {!loading && list.length > 0 && (
         <div
           className="px-6 py-4 border-t flex items-center justify-end"
           style={{ borderColor: "#E8E8E8" }}
         >
           <span style={{ color: "#595959", fontSize: "13px" }}>
-            Showing {employees.length} of {employees.length} employees
+            Showing {list.length} of {list.length} users
           </span>
         </div>
       )}

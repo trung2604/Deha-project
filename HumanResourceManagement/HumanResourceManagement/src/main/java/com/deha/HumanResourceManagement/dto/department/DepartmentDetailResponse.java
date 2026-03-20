@@ -15,6 +15,6 @@ public class DepartmentDetailResponse {
     private String name;
     private String description;
     private List<DepartmentPositionItem> positions;
-    private List<DepartmentEmployeeItem> employees;
+    private List<DepartmentUserItem> users;
 }
 

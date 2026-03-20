@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react';
 
-export function EmployeeFilters({
+export function UserFilters({
   searchTerm,
   onSearchTermChange,
   departmentFilter,
@@ -26,7 +26,7 @@ export function EmployeeFilters({
           />
           <input
             type="text"
-            placeholder="Search employees..."
+            placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => onSearchTermChange(e.target.value)}
             className="w-full h-9 pl-10 pr-4 rounded-lg border outline-none transition-all duration-150"

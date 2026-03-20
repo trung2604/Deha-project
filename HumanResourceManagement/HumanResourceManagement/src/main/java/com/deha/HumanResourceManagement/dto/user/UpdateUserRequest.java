@@ -1,4 +1,4 @@
-package com.deha.HumanResourceManagement.dto.employee;
+package com.deha.HumanResourceManagement.dto.user;
 
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Position;
@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateEmployeeRequest {
+public class UpdateUserRequest {
     @NotNull(message = "First name is required")
     @NotBlank(message = "First name cannot be blank")
     private String firstName;

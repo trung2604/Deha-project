@@ -29,8 +29,14 @@ export function DepartmentsPage() {
   const refreshAll = async () => {
     setLoading(true);
     try {
-      const [deptRes] = await Promise.all([departmentService.getDepartments()]);
-      setDepartments(Array.isArray(deptRes) ? deptRes : deptRes ?? []);
+      const deptRes = await departmentService.getDepartments();
+      if (deptRes?.status < 200 || deptRes?.status >= 300) {
+        toast.error(deptRes?.message || "Failed to load departments");
+        setDepartments([]);
+        return;
+      }
+      const list = Array.isArray(deptRes?.data) ? deptRes.data : deptRes?.data ?? [];
+      setDepartments(Array.isArray(list) ? list : []);
     } finally {
       setLoading(false);
     }
@@ -45,7 +51,12 @@ export function DepartmentsPage() {
     setPositionPreviewLoadingByDeptId((p) => ({ ...p, [departmentId]: true }));
     try {
       const res = await positionService.getDepartmentPositions(departmentId);
-      const list = Array.isArray(res) ? res : res ?? [];
+      if (res?.status < 200 || res?.status >= 300) {
+        toast.error(res?.message || "Failed to load positions");
+        setPositionPreviewByDeptId((p) => ({ ...p, [departmentId]: [] }));
+        return;
+      }
+      const list = Array.isArray(res?.data) ? res.data : res?.data ?? [];
       setPositionPreviewByDeptId((p) => ({
         ...p,
         [departmentId]: list.map((x) => x?.name).filter(Boolean),
@@ -72,7 +83,13 @@ export function DepartmentsPage() {
     setDeptPositionsLoading(true);
     try {
       const res = await positionService.getDepartmentPositions(departmentId);
-      setDeptPositions(Array.isArray(res) ? res : res ?? []);
+      if (res?.status < 200 || res?.status >= 300) {
+        toast.error(res?.message || "Failed to load positions");
+        setDeptPositions([]);
+        return;
+      }
+      const list = Array.isArray(res?.data) ? res.data : res?.data ?? [];
+      setDeptPositions(Array.isArray(list) ? list : []);
     } finally {
       setDeptPositionsLoading(false);
     }
@@ -92,11 +109,13 @@ export function DepartmentsPage() {
     setSubmitting(true);
     try {
       if (editingDepartment?.id) {
-        await departmentService.updateDepartment(editingDepartment.id, payload);
-        toast.success("Department updated successfully");
+        const res = await departmentService.updateDepartment(editingDepartment.id, payload);
+        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to save department");
+        toast.success(res?.message || "Department updated successfully");
       } else {
-        await departmentService.createDepartment(payload);
-        toast.success("Department created successfully");
+        const res = await departmentService.createDepartment(payload);
+        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to save department");
+        toast.success(res?.message || "Department created successfully");
       }
       setDeptModalOpen(false);
       setEditingDepartment(null);
@@ -113,8 +132,9 @@ export function DepartmentsPage() {
     if (!deletingDepartment?.id) return;
     setSubmitting(true);
     try {
-      await departmentService.deleteDepartment(deletingDepartment.id);
-      toast.success("Department deleted successfully");
+      const res = await departmentService.deleteDepartment(deletingDepartment.id);
+      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to delete department");
+      toast.success(res?.message || "Department deleted successfully");
       setDeletingDepartment(null);
       await refreshAll();
     } catch (e) {
@@ -130,8 +150,9 @@ export function DepartmentsPage() {
     if (!deptId) return;
     setSubmitting(true);
     try {
-      await positionService.createDepartmentPosition(deptId, { name: positionPayload });
-      toast.success("Position created successfully");
+      const res = await positionService.createDepartmentPosition(deptId, { name: positionPayload });
+      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to create position");
+      toast.success(res?.message || "Position created successfully");
       await refreshDepartmentPositions(deptId);
     } catch (e) {
       toast.error("Failed to create position");
@@ -146,8 +167,9 @@ export function DepartmentsPage() {
     if (!deptId) return;
     setSubmitting(true);
     try {
-      await positionService.updateDepartmentPosition(deptId, id, { name });
-      toast.success("Position updated successfully");
+      const res = await positionService.updateDepartmentPosition(deptId, id, { name });
+      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to update position");
+      toast.success(res?.message || "Position updated successfully");
       await refreshDepartmentPositions(deptId);
     } catch (e) {
       toast.error("Failed to update position");
@@ -162,8 +184,9 @@ export function DepartmentsPage() {
     if (!deptId) return;
     setSubmitting(true);
     try {
-      await positionService.deleteDepartmentPosition(deptId, id);
-      toast.success("Position deleted successfully");
+      const res = await positionService.deleteDepartmentPosition(deptId, id);
+      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to delete position");
+      toast.success(res?.message || "Position deleted successfully");
       await refreshDepartmentPositions(deptId);
     } catch (e) {
       toast.error("Failed to delete position");

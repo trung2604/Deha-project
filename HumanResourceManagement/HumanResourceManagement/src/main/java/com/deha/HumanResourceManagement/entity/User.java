@@ -10,9 +10,9 @@ import java.util.Date;
 import java.util.UUID;
 
 @Entity
-@Table(name = "employees")
+@Table(name = "users")
 @Data
-public class Employee {
+public class User {
 
     @Id
     @UuidGenerator
@@ -37,11 +37,11 @@ public class Employee {
     private boolean isActive;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "department_id", nullable = false)
+    @JoinColumn(name = "department_id")
     private Department department;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "position_id", nullable = false)
+    @JoinColumn(name = "position_id")
     private Position position;
 
     @Enumerated(EnumType.STRING)

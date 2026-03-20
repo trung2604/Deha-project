@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
 
-export function EmployeeModal({ employee, onClose, onSave }) {
-  const isEdit = !!employee?.id;
+export function UserModal({ user, onClose, onSave, submitting }) {
+  const isEdit = !!user?.id;
 
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [departments, setDepartments] = useState([]);
@@ -15,15 +15,15 @@ export function EmployeeModal({ employee, onClose, onSave }) {
 
   // Backend expects { department: {id}, position: {id} }
   const [formData, setFormData] = useState(() => ({
-    id: employee?.id,
-    firstName: employee?.firstName ?? "",
-    lastName: employee?.lastName ?? "",
-    email: employee?.email ?? "",
-    role: employee?.role ?? "",
+    id: user?.id,
+    firstName: user?.firstName ?? "",
+    lastName: user?.lastName ?? "",
+    email: user?.email ?? "",
+    role: user?.role ?? "",
     password: "",
     confirmPassword: "",
-    departmentId: employee?.department?.id ?? "",
-    positionId: employee?.position?.id ?? "",
+    departmentId: user?.departmentId ?? user?.department?.id ?? "",
+    positionId: user?.positionId ?? user?.position?.id ?? "",
   }));
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
       setDepartmentsLoading(true);
       try {
         const res = await departmentService.getDepartments();
-        const list = Array.isArray(res) ? res : res ?? [];
+        const list = Array.isArray(res?.data) ? res.data : res?.data ?? [];
         if (!cancelled) setDepartments(list);
       } catch {
         if (!cancelled) toast.error("Failed to load departments");
@@ -60,7 +60,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
       setPositionsLoading(true);
       try {
         const res = await positionService.getDepartmentPositions(deptId);
-        const list = Array.isArray(res) ? res : res ?? [];
+        const list = Array.isArray(res?.data) ? res.data : res?.data ?? [];
         if (!cancelled) setPositions(list);
       } catch {
         if (!cancelled) toast.error("Failed to load positions");
@@ -79,7 +79,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
     return d?.name ?? "";
   }, [departments, formData.departmentId]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.departmentId) return toast.error("Please select a department");
     if (!formData.positionId) return toast.error("Please select a position");
@@ -104,12 +104,12 @@ export function EmployeeModal({ employee, onClose, onSave }) {
       ...(isEdit ? {} : { password: formData.password }),
     };
 
-    onSave(payload);
+    await onSave(payload);
   };
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 z-40" onClick={() => !submitting && onClose()} />
       <div
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[560px] rounded-xl z-50"
         style={{
@@ -129,11 +129,12 @@ export function EmployeeModal({ employee, onClose, onSave }) {
               color: "#0A0A0A",
             }}
           >
-            {employee ? "Edit Employee" : "Add New Employee"}
+            {user ? "Edit User" : "Add New User"}
           </h3>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            disabled={submitting}
+            className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-60"
           >
             <X className="w-5 h-5" style={{ color: "#595959" }} />
           </button>
@@ -152,6 +153,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                 onChange={(e) =>
                   setFormData({ ...formData, firstName: e.target.value })
                 }
+                disabled={submitting}
                 className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
                 style={{ borderColor: "#E8E8E8" }}
               />
@@ -168,6 +170,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                 onChange={(e) =>
                   setFormData({ ...formData, lastName: e.target.value })
                 }
+                disabled={submitting}
                 className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
                 style={{ borderColor: "#E8E8E8" }}
               />
@@ -184,6 +187,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
+                disabled={submitting}
                 className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
                 style={{ borderColor: "#E8E8E8" }}
               />
@@ -203,7 +207,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                     positionId: "",
                   }))
                 }
-                disabled={departmentsLoading}
+                disabled={departmentsLoading || submitting}
                 className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150 disabled:opacity-60"
                 style={{ borderColor: "#E8E8E8" }}
               >
@@ -228,7 +232,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                 onChange={(e) =>
                   setFormData((p) => ({ ...p, positionId: e.target.value }))
                 }
-                disabled={!formData.departmentId || positionsLoading}
+                disabled={!formData.departmentId || positionsLoading || submitting}
                 className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150 disabled:opacity-60"
                 style={{ borderColor: "#E8E8E8" }}
               >
@@ -260,6 +264,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
+                disabled={submitting}
                 className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
                 style={{ borderColor: "#E8E8E8" }}
               />
@@ -279,6 +284,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                   onChange={(e) =>
                     setFormData({ ...formData, confirmPassword: e.target.value })
                   }
+                  disabled={submitting}
                   className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
                   style={{ borderColor: "#E8E8E8" }}
                 />
@@ -295,13 +301,13 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                 onChange={(e) =>
                   setFormData({ ...formData, role: e.target.value })
                 }
+                disabled={submitting}
                 className="w-full h-9 px-3 rounded-lg border outline-none transition-all duration-150"
                 style={{ borderColor: "#E8E8E8" }}
               >
                 <option value="">Select role</option>
-                <option value="HR">HR</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="EMPLOYEE">EMPLOYEE</option>
+                <option value="ROLE_ADMIN">ADMIN</option>
+                <option value="ROLE_EMPLOYEE">EMPLOYEE</option>
               </select>
             </div>
           </div>
@@ -310,14 +316,16 @@ export function EmployeeModal({ employee, onClose, onSave }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 h-9 rounded-lg transition-colors duration-150 hover:bg-gray-100"
+              disabled={submitting}
+              className="px-4 h-9 rounded-lg transition-colors duration-150 hover:bg-gray-100 disabled:opacity-60"
               style={{ color: "#0A0A0A", fontSize: "14px", fontWeight: "500" }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 h-9 rounded-lg transition-all duration-150 hover:opacity-90"
+              disabled={submitting}
+              className="px-4 h-9 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
               style={{
                 backgroundColor: "#1677FF",
                 color: "#FFFFFF",
@@ -325,7 +333,7 @@ export function EmployeeModal({ employee, onClose, onSave }) {
                 fontWeight: "500",
               }}
             >
-              {employee ? "Update" : "Submit"}
+              {submitting ? "Saving..." : user ? "Update" : "Submit"}
             </button>
           </div>
         </form>

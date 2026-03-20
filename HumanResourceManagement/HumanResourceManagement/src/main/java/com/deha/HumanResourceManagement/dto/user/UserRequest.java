@@ -1,4 +1,4 @@
-package com.deha.HumanResourceManagement.dto.employee;
+package com.deha.HumanResourceManagement.dto.user;
 
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Position;
@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-public class EmployeeRequest {
+public class UserRequest {
     @NotNull(message = "First name is required")
     @NotBlank(message = "First name cannot be blank")
     private String firstName;
