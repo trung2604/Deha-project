@@ -1,6 +1,6 @@
 import { Trash2 } from 'lucide-react';
 
-export function DeleteEmployeeModal({ employeeName, onClose, onConfirm }) {
+export function DeleteUserModal({ userName, onClose, onConfirm }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
@@ -24,10 +24,10 @@ export function DeleteEmployeeModal({ employeeName, onClose, onConfirm }) {
               color: '#0A0A0A',
             }}
           >
-            Delete Employee?
+            Delete User?
           </h3>
           <p className="mb-6" style={{ color: '#595959', fontSize: '14px' }}>
-            Are you sure you want to delete <strong>{employeeName}</strong>? This action cannot be undone.
+            Are you sure you want to delete <strong>{userName}</strong>? This action cannot be undone.
           </p>
           <div className="flex items-center gap-2 w-full">
             <button

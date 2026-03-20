@@ -1,10 +1,20 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isAuthenticated, initializing } = useAuth();
+
+  if (initializing) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">

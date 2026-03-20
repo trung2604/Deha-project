@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Activity, Building2, CalendarCheck, DollarSign, FileText, LayoutDashboard, Users } from 'lucide-react';
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/employees', label: 'Employees', icon: Users },
+  { path: '/users', label: 'Users', icon: Users },
   { path: '/departments', label: 'Departments', icon: Building2 },
   { path: '/attendance', label: 'Attendance', icon: CalendarCheck },
   { path: '/leave-requests', label: 'Leave Requests', icon: FileText },
@@ -13,11 +14,12 @@ const navItems = [
 
 export function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
+  const { user } = useAuth();
 
   return (
     <>
       <aside className="hidden lg:flex flex-col w-60 h-full" style={{ backgroundColor: '#141414' }}>
-        <SidebarContent location={location} onClose={onClose} />
+        <SidebarContent location={location} onClose={onClose} user={user} />
       </aside>
 
       <aside
@@ -26,13 +28,17 @@ export function Sidebar({ isOpen, onClose }) {
         }`}
         style={{ backgroundColor: '#141414' }}
       >
-        <SidebarContent location={location} onClose={onClose} />
+        <SidebarContent location={location} onClose={onClose} user={user} />
       </aside>
     </>
   );
 }
 
-function SidebarContent({ location, onClose }) {
+function SidebarContent({ location, onClose, user }) {
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
+  const initials = ((user?.firstName?.[0] || '') + (user?.lastName?.[0] || '') || 'U').toUpperCase();
+  const role = user?.role || 'Employee';
+
   return (
     <>
       <div className="h-16 flex items-center px-6 border-b border-white/10">
@@ -69,7 +75,7 @@ function SidebarContent({ location, onClose }) {
                   style={{ backgroundColor: '#1677FF' }}
                 />
               )}
-              <Icon className="w-5 h-5 flex-shrink-0" />
+              <Icon className="w-5 h-5 shrink-0" />
               <span className="font-medium" style={{ fontSize: '14px' }}>
                 {item.label}
               </span>
@@ -90,14 +96,14 @@ function SidebarContent({ location, onClose }) {
             className="w-8 h-8 rounded-full flex items-center justify-center text-white"
             style={{ backgroundColor: '#1677FF', fontSize: '12px', fontWeight: '600' }}
           >
-            JD
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-white font-medium truncate" style={{ fontSize: '14px' }}>
-              John Doe
+              {fullName}
             </div>
             <div className="text-white/50 truncate" style={{ fontSize: '12px' }}>
-              Admin
+              {role}
             </div>
           </div>
         </div>

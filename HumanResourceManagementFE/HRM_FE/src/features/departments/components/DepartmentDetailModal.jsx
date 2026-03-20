@@ -13,14 +13,19 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
   const [positionsModalOpen, setPositionsModalOpen] = useState(false);
 
   const positions = useMemo(() => department?.positions ?? [], [department]);
-  const employees = useMemo(() => department?.employees ?? [], [department]);
+  const users = useMemo(() => department?.users ?? [], [department]);
 
   const refresh = async () => {
     if (!departmentId) return;
     setLoading(true);
     try {
       const res = await departmentService.getDepartment(departmentId);
-      const next = res ?? null;
+      if (res?.status < 200 || res?.status >= 300) {
+        toast.error(res?.message || "Failed to load department");
+        setDepartment(null);
+        return;
+      }
+      const next = res?.data ?? null;
       setDepartment(next);
       const posNames = (next?.positions ?? []).map((p) => p?.name).filter(Boolean);
       onPositionsChanged?.(departmentId, posNames);
@@ -41,12 +46,12 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
     if (!departmentId) return;
     setSubmitting(true);
     try {
-      await positionService.createDepartmentPosition(departmentId, { name });
-      toast.success("Position created successfully");
+      const res = await positionService.createDepartmentPosition(departmentId, { name });
+      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to create position");
+      toast.success(res?.message || "Position created successfully");
       await refresh();
-    } catch (e) {
+    } catch {
       toast.error("Failed to create position");
-      throw e;
     } finally {
       setSubmitting(false);
     }
@@ -56,12 +61,12 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
     if (!departmentId) return;
     setSubmitting(true);
     try {
-      await positionService.updateDepartmentPosition(departmentId, positionId, { name });
-      toast.success("Position updated successfully");
+      const res = await positionService.updateDepartmentPosition(departmentId, positionId, { name });
+      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to update position");
+      toast.success(res?.message || "Position updated successfully");
       await refresh();
-    } catch (e) {
+    } catch {
       toast.error("Failed to update position");
-      throw e;
     } finally {
       setSubmitting(false);
     }
@@ -71,12 +76,12 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
     if (!departmentId) return;
     setSubmitting(true);
     try {
-      await positionService.deleteDepartmentPosition(departmentId, positionId);
-      toast.success("Position deleted successfully");
+      const res = await positionService.deleteDepartmentPosition(departmentId, positionId);
+      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to delete position");
+      toast.success(res?.message || "Position deleted successfully");
       await refresh();
-    } catch (e) {
+    } catch {
       toast.error("Failed to delete position");
-      throw e;
     } finally {
       setSubmitting(false);
     }
@@ -184,9 +189,9 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
             <div className="lg:col-span-2">
               <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#E8E8E8" }}>
                 <div className="px-5 py-4 border-b" style={{ borderColor: "#E8E8E8" }}>
-                  <div style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: 800 }}>Employees</div>
+                  <div style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: 800 }}>Users</div>
                   <div style={{ color: "#8C8C8C", fontSize: "13px", marginTop: "2px" }}>
-                    {employees.length} employees
+                    {users.length} users
                   </div>
                 </div>
 
@@ -212,7 +217,7 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
                       </tr>
                     </thead>
                     <tbody>
-                      {employees.map((e) => (
+                      {users.map((e) => (
                         <tr key={e.id} className="border-t" style={{ borderColor: "#F0F0F0" }}>
                           <td className="px-5 py-3" style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: 600 }}>
                             {e.firstName} {e.lastName}
@@ -242,10 +247,10 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
                         </tr>
                       ))}
 
-                      {employees.length === 0 && (
+                      {users.length === 0 && (
                         <tr>
                           <td colSpan={5} className="px-5 py-10" style={{ color: "#8C8C8C", fontSize: "14px" }}>
-                            No employees in this department.
+                            No users in this department.
                           </td>
                         </tr>
                       )}

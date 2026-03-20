@@ -1,7 +1,6 @@
 package com.deha.HumanResourceManagement.entity;
 
 public enum Role {
-    HR,
-    ADMIN,
-    EMPLOYEE
+    ROLE_ADMIN,
+    ROLE_EMPLOYEE
 }

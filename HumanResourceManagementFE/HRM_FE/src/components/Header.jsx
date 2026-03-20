@@ -16,10 +16,11 @@ import {
   XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 const breadcrumbMap = {
   '/': ['Dashboard'],
-  '/employees': ['Employees'],
+  '/users': ['Users'],
   '/departments': ['Departments'],
   '/attendance': ['Attendance'],
   '/leave-requests': ['Leave Requests'],
@@ -46,6 +47,7 @@ const notificationColors = {
 export function Header({ onMenuClick }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -56,6 +58,8 @@ export function Header({ onMenuClick }) {
   const notificationListRef = useRef(null);
 
   const breadcrumbs = breadcrumbMap[location.pathname] || ['Dashboard'];
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
+  const initials = (user?.firstName?.[0] || '') + (user?.lastName?.[0] || '') || 'U';
 
   const unreadCount = notifications.filter((n) => !n.read).length;
   const displayedNotifications = notifications.slice(0, displayedCount);
@@ -79,7 +83,7 @@ export function Header({ onMenuClick }) {
     return () => setDisplayedCount(5);
   }, [notificationOpen]);
 
-  const searchResults = { employees: [], departments: [], leaveRequests: [] };
+  const searchResults = { users: [], departments: [], leaveRequests: [] };
   const totalResults = 0;
 
   const handleSearchChange = (e) => {
@@ -102,10 +106,10 @@ export function Header({ onMenuClick }) {
   };
 
   const handleLogout = () => {
+    logout();
+    setDropdownOpen(false);
     toast.success('Logged out successfully');
-    setTimeout(() => {
-      navigate('/login');
-    }, 300);
+    navigate('/login', { replace: true });
   };
 
   return (
@@ -145,7 +149,7 @@ export function Header({ onMenuClick }) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#595959' }} />
           <input
             type="text"
-            placeholder="Search employees, departments, leave requests..."
+            placeholder="Search users, departments, leave requests..."
             className="w-full h-9 pl-10 pr-4 rounded-lg border-0 outline-none transition-all duration-150"
             style={{ backgroundColor: '#F5F7FA', color: '#0A0A0A' }}
             value={searchTerm}
@@ -169,26 +173,26 @@ export function Header({ onMenuClick }) {
                 </p>
               </div>
               <div className="max-h-96 overflow-y-auto">
-                {searchResults.employees.length > 0 && (
+                {searchResults.users.length > 0 && (
                   <div>
                     <div className="px-4 py-2" style={{ backgroundColor: '#F5F7FA' }}>
                       <p style={{ color: '#595959', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase' }}>
-                        Employees ({searchResults.employees.length})
+                        Users ({searchResults.users.length})
                       </p>
                     </div>
-                    {searchResults.employees.map((emp) => (
+                    {searchResults.users.map((user) => (
                       <div
-                        key={emp.id}
-                        onClick={() => handleResultClick('/employees')}
+                        key={user.id}
+                        onClick={() => handleResultClick('/users')}
                         className="px-4 py-3 border-b hover:bg-gray-50 transition-colors cursor-pointer"
                         style={{ borderColor: '#E8E8E8' }}
                       >
                         <div className="flex gap-3 items-center">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(22, 119, 255, 0.1)' }}>
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(22, 119, 255, 0.1)' }}>
                             <Users className="w-4 h-4" style={{ color: '#1677FF' }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#0A0A0A' }}>{emp.name}</h4>
+                            <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#0A0A0A' }}>{user.name}</h4>
                           </div>
                         </div>
                       </div>
@@ -211,7 +215,7 @@ export function Header({ onMenuClick }) {
                         style={{ borderColor: '#E8E8E8' }}
                       >
                         <div className="flex gap-3 items-center">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(22, 119, 255, 0.1)' }}>
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(22, 119, 255, 0.1)' }}>
                             <Building2 className="w-4 h-4" style={{ color: '#1677FF' }} />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -238,11 +242,11 @@ export function Header({ onMenuClick }) {
                         style={{ borderColor: '#E8E8E8' }}
                       >
                         <div className="flex gap-3 items-center">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(22, 119, 255, 0.1)' }}>
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'rgba(22, 119, 255, 0.1)' }}>
                             <Calendar className="w-4 h-4" style={{ color: '#1677FF' }} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#0A0A0A' }}>{req.employee}</h4>
+                            <h4 style={{ fontSize: '13px', fontWeight: '600', color: '#0A0A0A' }}>{req.user}</h4>
                           </div>
                         </div>
                       </div>
@@ -325,7 +329,7 @@ export function Header({ onMenuClick }) {
                             }}
                           >
                             <div className="flex gap-3">
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.bg }}>
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: colors.bg }}>
                                 <Icon className="w-4 h-4" style={{ color: colors.text }} />
                               </div>
                               <div className="flex-1 min-w-0">
@@ -333,7 +337,7 @@ export function Header({ onMenuClick }) {
                                   <h4 style={{ fontSize: '13px', fontWeight: notification.read ? '500' : '600', color: '#0A0A0A' }}>
                                     {notification.title}
                                   </h4>
-                                  {!notification.read && <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1" style={{ backgroundColor: '#1677FF' }} />}
+                                  {!notification.read && <div className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ backgroundColor: '#1677FF' }} />}
                                 </div>
                                 <p className="mb-1" style={{ color: '#595959', fontSize: '12px', lineHeight: '1.4' }}>
                                   {notification.message}
@@ -380,10 +384,10 @@ export function Header({ onMenuClick }) {
         <div className="relative">
           <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: '#1677FF', fontSize: '12px', fontWeight: '600' }}>
-              JD
+              {initials.toUpperCase()}
             </div>
             <span className="hidden sm:block font-medium" style={{ color: '#0A0A0A', fontSize: '14px' }}>
-              John Doe
+              {fullName}
             </span>
             <ChevronDown className="w-4 h-4" style={{ color: '#595959' }} />
           </button>

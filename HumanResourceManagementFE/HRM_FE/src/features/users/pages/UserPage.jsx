@@ -1,22 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { EmployeeFilters } from "../components/EmployeeFilters";
-import { EmployeeTable } from "../components/EmployeeTable";
-import { EmployeeModal } from "../components/EmployeeModal";
-import { DeleteEmployeeModal } from "../components/DeleteEmployeeModal";
-import employeeService from "../api/employeeService";
+import { UserFilters } from "../components/UserFilters";
+import { UserTable } from "../components/UserTable";
+import { UserModal } from "@/features/users/components/UserModal";
+import { DeleteUserModal } from "@/features/users/components/DeleteUserModal";
+import UserService from "@/features/users/api/UserService";
 
-export function EmployeesPage() {
+export function UsersPage() {
   const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [Users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [positionFilter, setPositionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState(null);
-  const [deletingEmployee, setDeletingEmployee] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+  const [deletingUser, setDeletingUser] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -24,13 +25,13 @@ export function EmployeesPage() {
     async function load() {
       setLoading(true);
       try {
-        const data = await employeeService.getEmployees();
-        const list = Array.isArray(data)
-          ? data
-          : (data?.items ?? data?.data ?? []);
-        if (!cancelled) setEmployees(Array.isArray(list) ? list : []);
+        const res = await UserService.getUsers();
+        if (!res || typeof res.status !== "number") throw new Error("Invalid response");
+        if (res.status < 200 || res.status >= 300) throw new Error(res.message || "Request failed");
+        const list = Array.isArray(res.data) ? res.data : (res.data ?? []);
+        if (!cancelled) setUsers(Array.isArray(list) ? list : []);
       } catch {
-        if (!cancelled) toast.error("Failed to load employees");
+        if (!cancelled) toast.error("Failed to load Users");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -42,31 +43,33 @@ export function EmployeesPage() {
     };
   }, []);
 
-  const reloadEmployees = async () => {
+  const reloadUsers = async () => {
     setLoading(true);
     try {
-      const data = await employeeService.getEmployees();
-      const list = Array.isArray(data) ? data : (data?.items ?? data?.data ?? []);
-      setEmployees(Array.isArray(list) ? list : []);
+      const res = await UserService.getUsers();
+      if (!res || typeof res.status !== "number") throw new Error("Invalid response");
+      if (res.status < 200 || res.status >= 300) throw new Error(res.message || "Request failed");
+      const list = Array.isArray(res.data) ? res.data : (res.data ?? []);
+      setUsers(Array.isArray(list) ? list : []);
     } catch {
-      toast.error("Failed to load employees");
+      toast.error("Failed to load Users");
     } finally {
       setLoading(false);
     }
   };
 
   const departments = useMemo(
-    () => [...new Set(employees.map((e) => e.departmentName).filter(Boolean))],
-    [employees],
+    () => [...new Set(Users.map((e) => e.departmentName).filter(Boolean))],
+    [Users],
   );
   const positions = useMemo(
-    () => [...new Set(employees.map((e) => e.positionName).filter(Boolean))],
-    [employees],
+    () => [...new Set(Users.map((e) => e.positionName).filter(Boolean))],
+    [Users],
   );
 
-  const filteredEmployees = useMemo(() => {
+  const filteredUsers = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    return employees.filter((emp) => {
+    return Users.filter((emp) => {
       const firstName = (emp.firstName ?? "").toString().toLowerCase();
       const lastName = (emp.lastName ?? "").toString().toLowerCase();
       const email = (emp.email ?? "").toString().toLowerCase();
@@ -79,12 +82,13 @@ export function EmployeesPage() {
         !departmentFilter || emp.departmentName === departmentFilter;
       const matchesPosition =
         !positionFilter || emp.positionName === positionFilter;
-      const matchesStatus = !statusFilter || emp.status === statusFilter;
+      const computedStatus = emp.active ? "Active" : "Inactive";
+      const matchesStatus = !statusFilter || computedStatus === statusFilter;
       return (
         matchesSearch && matchesDepartment && matchesPosition && matchesStatus
       );
     });
-  }, [employees, searchTerm, departmentFilter, positionFilter, statusFilter]);
+  }, [Users, searchTerm, departmentFilter, positionFilter, statusFilter]);
 
   const handleReset = () => {
     setSearchTerm("");
@@ -94,39 +98,45 @@ export function EmployeesPage() {
   };
 
   const handleDeleteConfirm = () => {
-    if (!deletingEmployee) return;
+    if (!deletingUser) return;
 
     async function run() {
       try {
-        await employeeService.deleteEmployee(deletingEmployee.id);
-        await reloadEmployees();
-        toast.success("Employee deleted successfully");
+        const res = await UserService.deleteUser(deletingUser.id);
+        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to delete User");
+        await reloadUsers();
+        toast.success(res?.message || "User deleted successfully");
       } catch {
-        toast.error("Failed to delete employee");
+        toast.error("Failed to delete User");
       } finally {
-        setDeletingEmployee(null);
+        setDeletingUser(null);
       }
     }
 
     run();
   };
 
-  const handleSave = async (employee) => {
+  const handleSave = async (User) => {
+    setSaving(true);
     try {
-      if (editingEmployee) {
-        await employeeService.updateEmployee(employee.id, employee);
-        await reloadEmployees();
-        toast.success("Employee updated successfully");
+      if (editingUser) {
+        const res = await UserService.updateUser(User.id, User);
+        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to save User");
+        await reloadUsers();
+        toast.success(res?.message || "User updated successfully");
       } else {
-        await employeeService.createEmployee(employee);
-        await reloadEmployees();
-        toast.success("Employee added successfully");
+        const res = await UserService.createUser(User);
+        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to save User");
+        await reloadUsers();
+        toast.success(res?.message || "User added successfully");
       }
 
       setShowAddModal(false);
-      setEditingEmployee(null);
+      setEditingUser(null);
     } catch {
-      toast.error("Failed to save employee");
+      toast.error("Failed to save User");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -142,7 +152,7 @@ export function EmployeesPage() {
               color: "#0A0A0A",
             }}
           >
-            Employees
+            Users
           </h1>
           <span
             className="px-3 py-1 rounded-full"
@@ -153,7 +163,7 @@ export function EmployeesPage() {
               fontWeight: "600",
             }}
           >
-            {employees.length}
+            {Users.length}
           </span>
         </div>
         <button
@@ -163,12 +173,12 @@ export function EmployeesPage() {
         >
           <Plus className="w-4 h-4" />
           <span style={{ fontSize: "14px", fontWeight: "500" }}>
-            Add Employee
+            Add User
           </span>
         </button>
       </div>
 
-      <EmployeeFilters
+      <UserFilters
         searchTerm={searchTerm}
         onSearchTermChange={setSearchTerm}
         departmentFilter={departmentFilter}
@@ -182,28 +192,32 @@ export function EmployeesPage() {
         onReset={handleReset}
       />
 
-      <EmployeeTable
+      <UserTable
         loading={loading}
-        employees={filteredEmployees}
-        onEdit={setEditingEmployee}
-        onDelete={setDeletingEmployee}
+        users={filteredUsers}
+        onEdit={setEditingUser}
+        onDelete={setDeletingUser}
       />
 
-      {(showAddModal || editingEmployee) && (
-        <EmployeeModal
-          employee={editingEmployee}
+      {(showAddModal || editingUser) && (
+        <UserModal
+          User={editingUser}
           onClose={() => {
             setShowAddModal(false);
-            setEditingEmployee(null);
+            setEditingUser(null);
           }}
           onSave={handleSave}
+          submitting={saving}
         />
       )}
 
-      {deletingEmployee && (
-        <DeleteEmployeeModal
-          employeeName={`${deletingEmployee.firstName ?? ""} ${deletingEmployee.lastName ?? ""}`.trim() || "-"}
-          onClose={() => setDeletingEmployee(null)}
+      {deletingUser && (
+        <DeleteUserModal
+          UserName={
+            `${deletingUser.firstName ?? ""} ${deletingUser.lastName ?? ""}`.trim() ||
+            "-"
+          }
+          onClose={() => setDeletingUser(null)}
           onConfirm={handleDeleteConfirm}
         />
       )}

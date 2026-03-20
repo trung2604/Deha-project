@@ -26,6 +26,6 @@ public class Department {
     private List<Position> positions = new ArrayList<>();
 
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Employee> employees = new ArrayList<>();
+    private List<User> users = new ArrayList<>();
 }
 

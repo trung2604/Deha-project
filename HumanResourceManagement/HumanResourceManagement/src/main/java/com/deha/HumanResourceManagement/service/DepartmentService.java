@@ -2,11 +2,11 @@ package com.deha.HumanResourceManagement.service;
 
 import com.deha.HumanResourceManagement.dto.department.DepartmentRequest;
 import com.deha.HumanResourceManagement.dto.department.DepartmentDetailResponse;
-import com.deha.HumanResourceManagement.dto.department.DepartmentEmployeeItem;
+import com.deha.HumanResourceManagement.dto.department.DepartmentUserItem;
 import com.deha.HumanResourceManagement.dto.department.DepartmentPositionItem;
 import com.deha.HumanResourceManagement.dto.department.DepartmentResponse;
 import com.deha.HumanResourceManagement.entity.Department;
-import com.deha.HumanResourceManagement.entity.Employee;
+import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.Position;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
@@ -81,8 +81,8 @@ public class DepartmentService {
                 .map(p -> new DepartmentPositionItem(p.getId(), p.getName()))
                 .toList();
 
-        var employees = department.getEmployees().stream()
-                .map(e -> toDepartmentEmployeeItem(e))
+        var users = department.getUsers().stream()
+                .map(e -> toDepartmentUserItem(e))
                 .toList();
 
         return new DepartmentDetailResponse(
@@ -90,7 +90,7 @@ public class DepartmentService {
                 department.getName(),
                 department.getDescription(),
                 positions,
-                employees
+                users
         );
     }
 
@@ -109,9 +109,9 @@ public class DepartmentService {
                 () -> new ResourceNotFoundException("Department not found with id: " + id));
     }
 
-    private static DepartmentEmployeeItem toDepartmentEmployeeItem(Employee e) {
+    private static DepartmentUserItem toDepartmentUserItem(User e) {
         Position p = e.getPosition();
-        return new DepartmentEmployeeItem(
+        return new DepartmentUserItem(
                 e.getId(),
                 e.getFirstName(),
                 e.getLastName(),

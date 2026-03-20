@@ -24,5 +24,5 @@ public class Position {
     private Department department;
 
     @OneToMany(mappedBy = "position")
-    private List<Employee> employees;
+    private List<User> users;
 }
