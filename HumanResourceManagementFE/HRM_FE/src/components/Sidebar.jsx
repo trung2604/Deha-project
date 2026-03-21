@@ -18,15 +18,26 @@ export function Sidebar({ isOpen, onClose }) {
 
   return (
     <>
-      <aside className="hidden lg:flex flex-col w-60 h-full" style={{ backgroundColor: '#141414' }}>
+      <aside
+        className="hidden lg:flex flex-col w-64 h-full border-r border-white/10"
+        style={{
+          background:
+            'linear-gradient(180deg, #111827 0%, #111827 35%, #0B1220 100%)',
+          boxShadow: '8px 0 30px rgba(17, 24, 39, 0.22)',
+        }}
+      >
         <SidebarContent location={location} onClose={onClose} user={user} />
       </aside>
 
       <aside
-        className={`fixed top-0 left-0 z-40 h-full w-60 transform transition-transform duration-200 lg:hidden ${
+        className={`fixed top-0 left-0 z-40 h-full w-64 transform transition-transform duration-200 lg:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        style={{ backgroundColor: '#141414' }}
+        style={{
+          background:
+            'linear-gradient(180deg, #111827 0%, #111827 35%, #0B1220 100%)',
+          boxShadow: '8px 0 30px rgba(17, 24, 39, 0.22)',
+        }}
       >
         <SidebarContent location={location} onClose={onClose} user={user} />
       </aside>
@@ -43,7 +54,7 @@ function SidebarContent({ location, onClose, user }) {
     <>
       <div className="h-16 flex items-center px-6 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#1677FF' }} />
+          <div className="w-2 h-2 rounded-full shadow-[0_0_12px_rgba(22,119,255,0.9)]" style={{ backgroundColor: '#1677FF' }} />
           <span
             className="font-semibold tracking-tight"
             style={{ color: '#FFFFFF', fontFamily: 'DM Sans, sans-serif', fontSize: '18px' }}
@@ -63,10 +74,11 @@ function SidebarContent({ location, onClose, user }) {
               key={item.path}
               to={item.path}
               onClick={onClose}
-              className="flex items-center gap-3 px-3 h-12 mb-1 rounded-lg transition-all duration-150 relative group"
+              className="flex items-center gap-3 px-3 h-12 mb-1 rounded-xl transition-all duration-200 relative group overflow-hidden"
               style={{
                 color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.65)',
-                backgroundColor: isActive ? 'rgba(22, 119, 255, 0.1)' : 'transparent',
+                backgroundColor: isActive ? 'rgba(22, 119, 255, 0.16)' : 'transparent',
+                boxShadow: isActive ? 'inset 0 0 0 1px rgba(22,119,255,0.24)' : 'none',
               }}
             >
               {isActive && (
@@ -75,7 +87,7 @@ function SidebarContent({ location, onClose, user }) {
                   style={{ backgroundColor: '#1677FF' }}
                 />
               )}
-              <Icon className="w-5 h-5 shrink-0" />
+              <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 ${isActive ? 'scale-105' : 'group-hover:scale-105'}`} />
               <span className="font-medium" style={{ fontSize: '14px' }}>
                 {item.label}
               </span>

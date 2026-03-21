@@ -2,12 +2,8 @@ package com.deha.HumanResourceManagement.service;
 
 import com.deha.HumanResourceManagement.dto.department.DepartmentRequest;
 import com.deha.HumanResourceManagement.dto.department.DepartmentDetailResponse;
-import com.deha.HumanResourceManagement.dto.department.DepartmentUserItem;
-import com.deha.HumanResourceManagement.dto.department.DepartmentPositionItem;
 import com.deha.HumanResourceManagement.dto.department.DepartmentResponse;
 import com.deha.HumanResourceManagement.entity.Department;
-import com.deha.HumanResourceManagement.entity.User;
-import com.deha.HumanResourceManagement.entity.Position;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.DepartmentRepository;
@@ -33,25 +29,17 @@ public class DepartmentService {
             throw new ResourceAlreadyExistException("Department with the same name already exists.");
         }
         Department department = new Department();
-        department.setName(departmentRequest.getName());
-        department.setDescription(departmentRequest.getDescription());
+        department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
         departmentRepository.save(department);
-        return new DepartmentResponse(
-                department.getId(),
-                department.getName(),
-                department.getDescription());
+        return DepartmentResponse.fromEntity(department);
     }
 
     public DepartmentResponse updateDepartment(UUID id, DepartmentRequest departmentRequest){
         Department department = departmentRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Department not found with id: " + id));
-        department.setName(departmentRequest.getName());
-        department.setDescription(departmentRequest.getDescription());
+        department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
         departmentRepository.save(department);
-        return new DepartmentResponse(
-                department.getId(),
-                department.getName(),
-                department.getDescription());
+        return DepartmentResponse.fromEntity(department);
     }
 
     @Transactional
@@ -65,62 +53,24 @@ public class DepartmentService {
     public DepartmentResponse getDepartmentById(UUID id){
         Department department = departmentRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Department not found with id: " + id));
-        return new DepartmentResponse(
-                department.getId(),
-                department.getName(),
-                department.getDescription()
-        );
+        return DepartmentResponse.fromEntity(department);
     }
 
     @Transactional(readOnly = true)
     public DepartmentDetailResponse getDepartmentDetailById(UUID id) {
         Department department = departmentRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Department not found with id: " + id));
-
-        var positions = department.getPositions().stream()
-                .map(p -> new DepartmentPositionItem(p.getId(), p.getName()))
-                .toList();
-
-        var users = department.getUsers().stream()
-                .map(e -> toDepartmentUserItem(e))
-                .toList();
-
-        return new DepartmentDetailResponse(
-                department.getId(),
-                department.getName(),
-                department.getDescription(),
-                positions,
-                users
-        );
+        return DepartmentDetailResponse.fromEntity(department);
     }
 
     public List<DepartmentResponse> getAllDepartments(){
         return departmentRepository.findAll().stream()
-                .map(department -> new DepartmentResponse(
-                        department.getId(),
-                        department.getName(),
-                        department.getDescription()
-                ))
+                .map(DepartmentResponse::fromEntity)
                 .toList();
     }
 
     public Department findDepartmentById(UUID id) {
         return departmentRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Department not found with id: " + id));
-    }
-
-    private static DepartmentUserItem toDepartmentUserItem(User e) {
-        Position p = e.getPosition();
-        return new DepartmentUserItem(
-                e.getId(),
-                e.getFirstName(),
-                e.getLastName(),
-                e.getEmail(),
-                e.getRole(),
-                e.isActive(),
-                e.getCreatedAt(),
-                p != null ? p.getId() : null,
-                p != null ? p.getName() : null
-        );
     }
 }

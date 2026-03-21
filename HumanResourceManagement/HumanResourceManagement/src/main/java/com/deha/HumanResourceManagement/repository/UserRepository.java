@@ -18,13 +18,42 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
-    @Query("""
-    SELECT u FROM User u
-    WHERE 
-        u.firstName ILIKE CONCAT('%', :keyword, '%')
-        OR u.lastName ILIKE CONCAT('%', :keyword, '%')
-        OR u.email ILIKE CONCAT('%', :keyword, '%')
-    """)
-    Page<User> searchUsers(@Param("keyword") String keyword, Pageable pageable);
+    @Query(value = """
+    SELECT *
+    FROM users u
+    WHERE
+        (
+            :keyword IS NULL
+            OR u.first_name ILIKE CONCAT('%', :keyword, '%')
+            OR u.last_name ILIKE CONCAT('%', :keyword, '%')
+            OR u.email ILIKE CONCAT('%', :keyword, '%')
+        )
+        AND (:departmentId IS NULL OR u.department_id = :departmentId)
+        AND (:positionId IS NULL OR u.position_id = :positionId)
+        AND (:active IS NULL OR u.is_active = :active)
+    """,
+            countQuery = """
+    SELECT COUNT(*)
+    FROM users u
+    WHERE
+        (
+            :keyword IS NULL
+            OR u.first_name ILIKE CONCAT('%', :keyword, '%')
+            OR u.last_name ILIKE CONCAT('%', :keyword, '%')
+            OR u.email ILIKE CONCAT('%', :keyword, '%')
+        )
+        AND (:departmentId IS NULL OR u.department_id = :departmentId)
+        AND (:positionId IS NULL OR u.position_id = :positionId)
+        AND (:active IS NULL OR u.is_active = :active)
+    """,
+            nativeQuery = true)
+    Page<User> searchUsers(
+            @Param("keyword") String keyword,
+            @Param("departmentId") UUID departmentId,
+            @Param("positionId") UUID positionId,
+            @Param("active") Boolean active,
+            Pageable pageable
+    );
+
     Page<User> findAll(Pageable pageable);
 }

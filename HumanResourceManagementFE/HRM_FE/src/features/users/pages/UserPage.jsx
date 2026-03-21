@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { UserFilters } from "../components/UserFilters";
@@ -6,6 +6,14 @@ import { UserTable } from "../components/UserTable";
 import { UserModal } from "@/features/users/components/UserModal";
 import { DeleteUserModal } from "@/features/users/components/DeleteUserModal";
 import UserService from "@/features/users/api/UserService";
+import departmentService from "@/features/departments/api/departmentService";
+import positionService from "@/features/departments/api/positionService";
+import {
+  getPageContent,
+  getPageMeta,
+  getResponseMessage,
+  isSuccessResponse,
+} from "@/utils/apiResponse";
 
 export function UsersPage() {
   const [loading, setLoading] = useState(false);
@@ -23,36 +31,89 @@ export function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadFilters() {
+      try {
+        const [deptRes, posRes] = await Promise.all([
+          departmentService.getDepartments(),
+          positionService.getPositions(),
+        ]);
+        if (!cancelled) {
+          const deptList = Array.isArray(deptRes?.data) ? deptRes.data : [];
+          const posList = Array.isArray(posRes?.data) ? posRes.data : [];
+          setDepartments(deptList);
+          setPositions(posList);
+        }
+      } catch {
+        if (!cancelled) toast.error("Failed to load filter options");
+      }
+    }
+    loadFilters();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function load() {
+    const fetchUsers = async () => {
       setLoading(true);
       try {
-        const keyword = (debouncedSearchTerm ?? "").trim();
-        const res = keyword
-          ? await UserService.searchUsers({ keyword, page, size })
-          : await UserService.getUsers({ page, size });
-        if (!res || typeof res.status !== "number") throw new Error("Invalid response");
-        if (res.status < 200 || res.status >= 300) throw new Error(res.message || "Request failed");
-        const list = Array.isArray(res.data.content) ? res.data.content : (res.data.content ?? []);
-        setUsers(Array.isArray(list) ? list : []);
-        setTotalPages(res.data.totalPages);
-        setTotalElements(res.data.totalElements);
-        setPage(res.data.page);
-        setSize(res.data.size);
+        const keyword = (debouncedSearchTerm ?? "").trim() || undefined;
+        const departmentId = departmentFilter || undefined;
+        const positionId = positionFilter || undefined;
+        const active = statusFilter === "" ? undefined : statusFilter === "true";
+        const res = await UserService.getUsers({ keyword, departmentId, positionId, active, page, size });
+        if (!isSuccessResponse(res)) throw new Error(getResponseMessage(res));
+        const list = getPageContent(res);
+        const meta = getPageMeta(res);
+        if (!cancelled) {
+          setUsers(Array.isArray(list) ? list : []);
+          setTotalPages(meta.totalPages);
+          setTotalElements(meta.totalElements);
+          setPage(meta.page);
+          setSize(meta.size);
+        }
       } catch {
-        toast.error("Failed to load Users");
+        if (!cancelled) toast.error("Failed to load Users");
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
-    load();
+    };
+
+    fetchUsers();
     return () => {
       cancelled = true;
     };
-  }, [page, size, debouncedSearchTerm]);
+  }, [page, size, debouncedSearchTerm, departmentFilter, positionFilter, statusFilter]);
+
+  const reloadUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const keyword = (debouncedSearchTerm ?? "").trim() || undefined;
+      const departmentId = departmentFilter || undefined;
+      const positionId = positionFilter || undefined;
+      const active = statusFilter === "" ? undefined : statusFilter === "true";
+      const res = await UserService.getUsers({ keyword, departmentId, positionId, active, page, size });
+      if (!isSuccessResponse(res)) throw new Error(getResponseMessage(res));
+      const list = getPageContent(res);
+      const meta = getPageMeta(res);
+      setUsers(Array.isArray(list) ? list : []);
+      setTotalPages(meta.totalPages);
+      setTotalElements(meta.totalElements);
+      setPage(meta.page);
+      setSize(meta.size);
+    } catch {
+      toast.error("Failed to load Users");
+    } finally {
+      setLoading(false);
+    }
+  }, [debouncedSearchTerm, departmentFilter, page, positionFilter, size, statusFilter]);
 
   // Debounce server-side search to avoid firing request on every keystroke.
   useEffect(() => {
@@ -63,50 +124,11 @@ export function UsersPage() {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-  const reloadUsers = async () => {
-    setLoading(true);
-    try {
-      const keyword = (debouncedSearchTerm ?? "").trim();
-      const res = keyword
-        ? await UserService.searchUsers({ keyword, page, size })
-        : await UserService.getUsers({ page, size });
-      if (!res || typeof res.status !== "number") throw new Error("Invalid response");
-      if (res.status < 200 || res.status >= 300) throw new Error(res.message || "Request failed");
-      const list = Array.isArray(res.data.content) ? res.data.content : (res.data.content ?? []);
-      setUsers(Array.isArray(list) ? list : []);
-      setTotalPages(res.data.totalPages);
-      setTotalElements(res.data.totalElements);
-      setPage(res.data.page);
-      setSize(res.data.size);
-    } catch {
-      toast.error("Failed to load Users");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const departments = useMemo(
-    () => [...new Set(users.map((e) => e.departmentName).filter(Boolean))],
-    [users],
-  );
-  const positions = useMemo(
-    () => [...new Set(users.map((e) => e.positionName).filter(Boolean))],
-    [users],
-  );
-
-  // Server-side search is handled by the backend (keyword). Here we only apply
-  // dropdown filters on the current server page.
-  const filteredUsers = useMemo(() => {
-    return users.filter((emp) => {
-      const matchesDepartment =
-        !departmentFilter || emp.departmentName === departmentFilter;
-      const matchesPosition =
-        !positionFilter || emp.positionName === positionFilter;
-      const computedStatus = emp.active ? "Active" : "Inactive";
-      const matchesStatus = !statusFilter || computedStatus === statusFilter;
-      return matchesDepartment && matchesPosition && matchesStatus;
-    });
-  }, [users, departmentFilter, positionFilter, statusFilter]);
+  const filteredUsers = useMemo(() => users, [users]);
+  const filteredPositions = useMemo(() => {
+    if (!departmentFilter) return positions;
+    return positions.filter((p) => p.departmentId === departmentFilter);
+  }, [positions, departmentFilter]);
 
   const handleReset = () => {
     setSearchTerm("");
@@ -122,9 +144,9 @@ export function UsersPage() {
     async function run() {
       try {
         const res = await UserService.deleteUser(deletingUser.id);
-        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to delete User");
+        if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to delete User"));
         await reloadUsers();
-        toast.success(res?.message || "User deleted successfully");
+        toast.success(getResponseMessage(res, "User deleted successfully"));
       } catch {
         toast.error("Failed to delete User");
       } finally {
@@ -135,19 +157,19 @@ export function UsersPage() {
     run();
   };
 
-  const handleSave = async (User) => {
+  const handleSave = async (userPayload) => {
     setSaving(true);
     try {
       if (editingUser) {
-        const res = await UserService.updateUser(User.id, User);
-        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to save User");
+        const res = await UserService.updateUser(userPayload.id, userPayload);
+        if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save User"));
         await reloadUsers();
-        toast.success(res?.message || "User updated successfully");
+        toast.success(getResponseMessage(res, "User updated successfully"));
       } else {
-        const res = await UserService.createUser(User);
-        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to save User");
+        const res = await UserService.createUser(userPayload);
+        if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save User"));
         await reloadUsers();
-        toast.success(res?.message || "User added successfully");
+        toast.success(getResponseMessage(res, "User added successfully"));
       }
 
       setShowAddModal(false);
@@ -161,6 +183,28 @@ export function UsersPage() {
 
   const handleSearchTermChange = (value) => {
     setSearchTerm(value);
+  };
+
+  const handleDepartmentFilterChange = (value) => {
+    setDepartmentFilter(value);
+    setPositionFilter((currentPositionId) => {
+      if (!value) return "";
+      const isValid = positions.some(
+        (p) => p.id === currentPositionId && p.departmentId === value,
+      );
+      return isValid ? currentPositionId : "";
+    });
+    setPage(0);
+  };
+
+  const handlePositionFilterChange = (value) => {
+    setPositionFilter(value);
+    setPage(0);
+  };
+
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    setPage(0);
   };
 
   const handleSizeChange = (newSize) => {
@@ -185,10 +229,12 @@ export function UsersPage() {
           <span
             className="px-3 py-1 rounded-full"
             style={{
-              backgroundColor: "rgba(22, 119, 255, 0.1)",
+              background:
+                "linear-gradient(135deg, rgba(22, 119, 255, 0.14), rgba(22, 119, 255, 0.08))",
               color: "#1677FF",
               fontSize: "13px",
               fontWeight: "600",
+              boxShadow: "inset 0 0 0 1px rgba(22,119,255,0.16)",
             }}
           >
             {totalElements}
@@ -196,8 +242,13 @@ export function UsersPage() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 h-9 rounded-lg transition-all duration-150 hover:opacity-90"
-          style={{ backgroundColor: "#1677FF", color: "#FFFFFF" }}
+          className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95"
+          style={{
+            background:
+              "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
+            color: "#FFFFFF",
+            boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
+          }}
         >
           <Plus className="w-4 h-4" />
           <span style={{ fontSize: "14px", fontWeight: "500" }}>
@@ -210,13 +261,13 @@ export function UsersPage() {
         searchTerm={searchTerm}
         onSearchTermChange={handleSearchTermChange}
         departmentFilter={departmentFilter}
-        onDepartmentFilterChange={setDepartmentFilter}
+        onDepartmentFilterChange={handleDepartmentFilterChange}
         positionFilter={positionFilter}
-        onPositionFilterChange={setPositionFilter}
+        onPositionFilterChange={handlePositionFilterChange}
         statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
+        onStatusFilterChange={handleStatusFilterChange}
         departments={departments}
-        positions={positions}
+        positions={filteredPositions}
         onReset={handleReset}
       />
 
@@ -235,7 +286,7 @@ export function UsersPage() {
 
       {(showAddModal || editingUser) && (
         <UserModal
-          User={editingUser}
+          user={editingUser}
           onClose={() => {
             setShowAddModal(false);
             setEditingUser(null);

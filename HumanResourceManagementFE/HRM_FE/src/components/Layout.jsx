@@ -9,7 +9,23 @@ export function Layout() {
   const { isAuthenticated, initializing } = useAuth();
 
   if (initializing) {
-    return null;
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{
+          background:
+            'radial-gradient(circle at 20% 20%, rgba(22,119,255,0.12), transparent 40%), #F5F7FA',
+        }}
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: '#1677FF', borderTopColor: 'transparent' }}
+          />
+          <p style={{ color: '#595959', fontSize: '14px', fontWeight: 500 }}>Loading workspace...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -17,14 +33,20 @@ export function Layout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div
+      className="flex h-screen overflow-hidden"
+      style={{
+        background:
+          'radial-gradient(circle at 0% 0%, rgba(22,119,255,0.08), transparent 36%), #F5F7FA',
+      }}
+    >
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
-        <main className="flex-1 overflow-y-auto" style={{ backgroundColor: '#F5F7FA' }}>
-          <div className="p-6">
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 md:p-6">
             <Outlet />
           </div>
         </main>

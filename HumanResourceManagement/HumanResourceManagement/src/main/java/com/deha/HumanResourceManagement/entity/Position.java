@@ -25,4 +25,20 @@ public class Position {
 
     @OneToMany(mappedBy = "position")
     private List<User> users;
+
+    public void rename(String name) {
+        this.name = name;
+    }
+
+    public void assignDepartment(Department department) {
+        this.department = department;
+    }
+
+    public boolean belongsToDepartment(UUID departmentId) {
+        return this.department != null && this.department.getId() != null && this.department.getId().equals(departmentId);
+    }
+
+    public boolean isNameChanged(String newName) {
+        return newName != null && !newName.equalsIgnoreCase(this.name);
+    }
 }

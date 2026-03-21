@@ -15,8 +15,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -40,42 +38,24 @@ public class UserService {
         }
         UUID departmentId = userRequest.getDepartment() != null ? userRequest.getDepartment().getId() : null;
         UUID positionId = userRequest.getPosition() != null ? userRequest.getPosition().getId() : null;
-        if (departmentId == null || positionId == null) {
-            throw new IllegalArgumentException("Department and Position are required");
-        }
 
         Department department = departmentService.findDepartmentById(departmentId);
         Position position = positionRepository.findById(positionId).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + positionId));
 
-        if (position.getDepartment() == null || !departmentId.equals(position.getDepartment().getId())) {
-            throw new IllegalArgumentException("Position does not belong to the specified department");
-        }
-
         User user = new User();
-        user.setFirstName(userRequest.getFirstName());
-        user.setLastName(userRequest.getLastName());
-        user.setEmail(userRequest.getEmail());
-        user.setRole(userRequest.getRole());
-        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-        user.setDepartment(department);
-        user.setPosition(position);
-        user.setCreatedAt(new Date());
-        user.setActive(true);
-        userRepository.save(user);
-        return new UserResponse(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                user.getDepartment() != null ? user.getDepartment().getId() : null,
-                user.getDepartment().getName(),
-                user.getPosition() != null ? user.getPosition().getId() : null,
-                user.getPosition().getName(),
-                user.getRole(),
-                user.isActive(),
-                user.getCreatedAt()
+        user.applyBasicInfo(
+                userRequest.getFirstName(),
+                userRequest.getLastName(),
+                userRequest.getEmail(),
+                userRequest.getRole()
         );
+        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
+        user.assignDepartmentAndPosition(department, position);
+        user.markCreatedNow();
+        user.activate();
+        userRepository.save(user);
+        return UserResponse.fromEntity(user);
     }
 
     public UserResponse updateUser(UUID id, UpdateUserRequest UserRequest) {
@@ -83,42 +63,24 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         UUID departmentId = UserRequest.getDepartment() != null ? UserRequest.getDepartment().getId() : null;
         UUID positionId = UserRequest.getPosition() != null ? UserRequest.getPosition().getId() : null;
-        if (departmentId == null || positionId == null) {
-            throw new IllegalArgumentException("Department and Position are required");
-        }
 
         Department department = departmentService.findDepartmentById(departmentId);
         Position position = positionRepository.findById(positionId).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + positionId));
 
-        if (position.getDepartment() == null || !departmentId.equals(position.getDepartment().getId())) {
-            throw new IllegalArgumentException("Position does not belong to the specified department");
-        }
-
-        user.setFirstName(UserRequest.getFirstName());
-        user.setLastName(UserRequest.getLastName());
-        user.setEmail(UserRequest.getEmail());
-        user.setRole(UserRequest.getRole());
-        user.setDepartment(department);
-        user.setPosition(position);
-        userRepository.save(user);
-        return new UserResponse(
-                user.getId(),
-                user.getFirstName(),
-                user.getLastName(),
-                user.getEmail(),
-                user.getDepartment() != null ? user.getDepartment().getId() : null,
-                user.getDepartment().getName(),
-                user.getPosition() != null ? user.getPosition().getId() : null,
-                user.getPosition().getName(),
-                user.getRole(),
-                user.isActive(),
-                user.getCreatedAt()
+        user.applyBasicInfo(
+                UserRequest.getFirstName(),
+                UserRequest.getLastName(),
+                UserRequest.getEmail(),
+                UserRequest.getRole()
         );
+        user.assignDepartmentAndPosition(department, position);
+        userRepository.save(user);
+        return UserResponse.fromEntity(user);
     }
 
     public Page<UserResponse> getAllUsers(Pageable pageable) {
-        Page<User> users = userRepository.findAll(pageable);
+        Page<User> users = userRepository.searchUsers(null, null, null, null, pageable);
         return users.map(UserResponse::fromEntity);
     }
 
@@ -135,7 +97,14 @@ public class UserService {
     }
 
     public Page<UserResponse> searchUsers(String keyword, Pageable pageable) {
-        Page<User> users = userRepository.searchUsers(keyword, pageable);
+        String normalizedKeyword = keyword != null && !keyword.isBlank() ? keyword.trim() : null;
+        Page<User> users = userRepository.searchUsers(normalizedKeyword, null, null, null, pageable);
+        return users.map(UserResponse::fromEntity);
+    }
+
+    public Page<UserResponse> getUsersWithFilters(String keyword, UUID departmentId, UUID positionId, Boolean active, Pageable pageable) {
+        String normalizedKeyword = keyword != null && !keyword.isBlank() ? keyword.trim() : null;
+        Page<User> users = userRepository.searchUsers(normalizedKeyword, departmentId, positionId, active, pageable);
         return users.map(UserResponse::fromEntity);
     }
 }

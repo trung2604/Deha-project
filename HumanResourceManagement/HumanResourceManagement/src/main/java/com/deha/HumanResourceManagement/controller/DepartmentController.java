@@ -24,93 +24,38 @@ public class DepartmentController {
 
     @GetMapping()
     public ApiResponse getAllDepartment() {
-        ApiResponse response = new ApiResponse();
-        response.setMessage("Department retrieved successfully");
-        response.setStatus(HttpStatus.OK.value());
-        response.setData(departmentService.getAllDepartments());
-        return response;
+        return success("Department retrieved successfully", HttpStatus.OK, departmentService.getAllDepartments());
     }
 
     @GetMapping("/{id}")
     public ApiResponse getDepartmentById(@PathVariable UUID id) {
-        try{
-            ApiResponse response = new ApiResponse();
-            response.setMessage("Department retrieved successfully");
-            response.setStatus(HttpStatus.OK.value());
-            response.setData(departmentService.getDepartmentDetailById(id));
-            return response;
-        } catch (IllegalArgumentException e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage(e.getMessage());
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
-            return response;
-        }
+        return success("Department retrieved successfully", HttpStatus.OK, departmentService.getDepartmentDetailById(id));
     }
 
     @PostMapping()
     public ApiResponse createDepartment(@RequestBody @Valid DepartmentRequest departmentRequest) {
-        try {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("Department created successfully");
-            response.setStatus(HttpStatus.CREATED.value());
-            response.setData(departmentService.createDepartment(departmentRequest));
-            return response;
-        } catch (IllegalArgumentException e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage(e.getMessage());
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
-            return response;
-        }
+        return success("Department created successfully", HttpStatus.CREATED, departmentService.createDepartment(departmentRequest));
     }
 
     @PutMapping("/{id}")
     public ApiResponse updateDepartment(@PathVariable UUID id, @RequestBody @Valid DepartmentRequest departmentRequest) {
-        try {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("Department updated successfully");
-            response.setStatus(HttpStatus.OK.value());
-            response.setData(departmentService.updateDepartment(id, departmentRequest));
-            return response;
-        } catch (IllegalArgumentException e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage(e.getMessage());
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
-            return response;
-        }
+        return success("Department updated successfully", HttpStatus.OK, departmentService.updateDepartment(id, departmentRequest));
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse deleteDepartment(@PathVariable UUID id) {
-        try {
-            departmentService.deleteDepartment(id);
-            ApiResponse response = new ApiResponse();
-            response.setMessage("Department deleted successfully");
-            response.setStatus(HttpStatus.OK.value());
-            return response;
-        } catch (IllegalArgumentException e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage(e.getMessage());
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
-            return response;
-        }
+        departmentService.deleteDepartment(id);
+        return success("Department deleted successfully", HttpStatus.OK, null);
     }
 
     @GetMapping("/{departmentId}/positions")
     public ApiResponse getDepartmentPositions(@PathVariable UUID departmentId) {
-        ApiResponse response = new ApiResponse();
-        response.setMessage("Positions retrieved successfully");
-        response.setStatus(HttpStatus.OK.value());
-        response.setData(positionService.getAllPositionsOfDepartment(departmentId));
-        return response;
+        return success("Positions retrieved successfully", HttpStatus.OK, positionService.getAllPositionsOfDepartment(departmentId));
     }
 
     @PostMapping("/{departmentId}/positions")
     public ApiResponse createDepartmentPosition(@PathVariable UUID departmentId, @RequestBody @Valid PositionRequest positionRequest) {
-        ApiResponse response = new ApiResponse();
-        response.setMessage("Position created successfully");
-        response.setStatus(HttpStatus.CREATED.value());
-        response.setData(positionService.createPosition(departmentId, positionRequest));
-        return response;
+        return success("Position created successfully", HttpStatus.CREATED, positionService.createPosition(departmentId, positionRequest));
     }
 
     @PutMapping("/{departmentId}/positions/{positionId}")
@@ -119,19 +64,21 @@ public class DepartmentController {
             @PathVariable UUID positionId,
             @RequestBody @Valid PositionRequest positionRequest
     ) {
-        ApiResponse response = new ApiResponse();
-        response.setMessage("Position updated successfully");
-        response.setStatus(HttpStatus.OK.value());
-        response.setData(positionService.updatePosition(positionId, departmentId, positionRequest));
-        return response;
+        return success("Position updated successfully", HttpStatus.OK, positionService.updatePosition(positionId, departmentId, positionRequest));
     }
 
     @DeleteMapping("/{departmentId}/positions/{positionId}")
     public ApiResponse deleteDepartmentPosition(@PathVariable UUID departmentId, @PathVariable UUID positionId) {
         positionService.deletePositionInDepartment(departmentId, positionId);
+        return success("Position deleted successfully", HttpStatus.OK, null);
+    }
+
+    private ApiResponse success(String message, HttpStatus status, Object data) {
         ApiResponse response = new ApiResponse();
-        response.setMessage("Position deleted successfully");
-        response.setStatus(HttpStatus.OK.value());
+        response.setMessage(message);
+        response.setStatus(status.value());
+        response.setData(data);
         return response;
     }
+
 }

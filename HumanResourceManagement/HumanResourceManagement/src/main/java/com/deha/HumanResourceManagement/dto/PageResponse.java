@@ -3,6 +3,7 @@ package com.deha.HumanResourceManagement.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -15,4 +16,14 @@ public class PageResponse<T> {
     private int size;
     private long totalElements;
     private int totalPages;
+
+    public static <T> PageResponse<T> fromPage(Page<T> page) {
+        return new PageResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
+    }
 }

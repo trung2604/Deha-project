@@ -5,8 +5,6 @@ import com.deha.HumanResourceManagement.dto.PageResponse;
 import com.deha.HumanResourceManagement.dto.user.UserRequest;
 import com.deha.HumanResourceManagement.dto.user.UpdateUserRequest;
 import com.deha.HumanResourceManagement.dto.user.UserResponse;
-import com.deha.HumanResourceManagement.entity.User;
-import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -28,101 +26,54 @@ public class UserController {
 
     @PostMapping()
     public ApiResponse createUser(@RequestBody @Valid UserRequest userRequest) {
-        try {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("User created successfully");
-            response.setStatus(HttpStatus.CREATED.value());
-            response.setData(userService.createUser(userRequest));
-            return response;
-        } catch (ResourceAlreadyExistException e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage(e.getMessage());
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
-            return response;
-        }
+        return success("User created successfully", HttpStatus.CREATED, userService.createUser(userRequest));
     }
 
     @PutMapping("/{id}")
     public ApiResponse updateUser(@PathVariable UUID id, @RequestBody @Valid UpdateUserRequest UserRequest) {
-        try {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("User updated successfully");
-            response.setStatus(HttpStatus.OK.value());
-            response.setData(userService.updateUser(id, UserRequest));
-            return response;
-        } catch (IllegalArgumentException e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage(e.getMessage());
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
-            return response;
-        }
+        return success("User updated successfully", HttpStatus.OK, userService.updateUser(id, UserRequest));
     }
 
     @GetMapping()
     public ApiResponse getAllUsers(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) UUID departmentId,
+            @RequestParam(required = false) UUID positionId,
+            @RequestParam(required = false) Boolean active,
             @PageableDefault(page = 0, size = 10) Pageable pageable
     ) {
-        ApiResponse response = new ApiResponse();
-        Page<UserResponse> results = userService.getAllUsers(pageable);
-        PageResponse pageResponse = new PageResponse();
-        pageResponse.setContent(results.getContent());
-        pageResponse.setPage(results.getNumber());
-        pageResponse.setSize(results.getSize());
-        pageResponse.setTotalElements(results.getTotalElements());
-        pageResponse.setTotalPages(results.getTotalPages());
-        response.setMessage("Users retrieved successfully");
-        response.setStatus(HttpStatus.OK.value());
-        response.setData(pageResponse);
-        return response;
+        Page<UserResponse> results = userService.getUsersWithFilters(keyword, departmentId, positionId, active, pageable);
+        return success("Users retrieved successfully", HttpStatus.OK, PageResponse.fromPage(results));
     }
 
     @GetMapping("/{id}")
     public ApiResponse getUserById(@PathVariable UUID id) {
-        try {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("User retrieved successfully");
-            response.setStatus(HttpStatus.OK.value());
-            response.setData(userService.getUserById(id));
-            return response;
-        } catch (IllegalArgumentException e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage(e.getMessage());
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
-            return response;
-        }
+        return success("User retrieved successfully", HttpStatus.OK, userService.getUserById(id));
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse deleteUser(@PathVariable UUID id) {
-        try{
-            userService.deleteUser(id);
-            ApiResponse response = new ApiResponse();
-            response.setMessage("User deleted successfully");
-            response.setStatus(HttpStatus.OK.value());
-            return response;
-        } catch (IllegalArgumentException e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage(e.getMessage());
-            response.setStatus(HttpStatus.BAD_REQUEST.value());
-            return response;
-        }
+        userService.deleteUser(id);
+        return success("User deleted successfully", HttpStatus.OK, null);
     }
 
     @GetMapping("/search")
     public ApiResponse searchUsers(
             @RequestParam String keyword,
+            @RequestParam(required = false) UUID departmentId,
+            @RequestParam(required = false) UUID positionId,
+            @RequestParam(required = false) Boolean active,
             @PageableDefault(page = 0, size = 10, sort = "firstName") Pageable pageable) {
+        Page<UserResponse> results = userService.getUsersWithFilters(keyword, departmentId, positionId, active, pageable);
+        return success("Users retrieved successfully", HttpStatus.OK, PageResponse.fromPage(results));
+    }
+
+    private ApiResponse success(String message, HttpStatus status, Object data) {
         ApiResponse response = new ApiResponse();
-        Page<UserResponse> results = userService.searchUsers(keyword, pageable);
-        PageResponse pageResponse = new PageResponse();
-        pageResponse.setContent(results.getContent());
-        pageResponse.setPage(results.getNumber());
-        pageResponse.setSize(results.getSize());
-        pageResponse.setTotalElements(results.getTotalElements());
-        pageResponse.setTotalPages(results.getTotalPages());
-        response.setMessage("Users retrieved successfully");
-        response.setStatus(HttpStatus.OK.value());
-        response.setData(pageResponse);
+        response.setMessage(message);
+        response.setStatus(status.value());
+        response.setData(data);
         return response;
     }
+
 }

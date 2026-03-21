@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { ProfilePersonalTab } from "../components/ProfilePersonalTab";
@@ -8,7 +9,23 @@ import { ProfileTabs } from "../components/ProfileTabs";
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState("personal");
-  const { user } = useAuth();
+  const [savingProfile, setSavingProfile] = useState(false);
+  const { user, updateProfile } = useAuth();
+
+  const handleSaveProfile = async (payload) => {
+    setSavingProfile(true);
+    try {
+      const res = await updateProfile(payload);
+      if (!res.ok) {
+        toast.error(res.message || "Failed to update profile");
+        return false;
+      }
+      toast.success(res.message || "Profile updated successfully");
+      return true;
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -24,7 +41,11 @@ export default function Profile() {
             <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
             <div className="p-6">
-              {activeTab === "personal" ? <ProfilePersonalTab user={user} /> : <ProfileSecurityTab />}
+              {activeTab === "personal" ? (
+                <ProfilePersonalTab user={user} onSave={handleSaveProfile} saving={savingProfile} />
+              ) : (
+                <ProfileSecurityTab />
+              )}
             </div>
           </div>
         </div>

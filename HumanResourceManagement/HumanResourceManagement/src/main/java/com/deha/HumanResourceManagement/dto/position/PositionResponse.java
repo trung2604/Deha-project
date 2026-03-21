@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.dto.position;
 
+import com.deha.HumanResourceManagement.entity.Position;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,4 +15,14 @@ public class PositionResponse {
     private String name;
     private UUID departmentId;
     private String departmentName;
+
+    public static PositionResponse fromEntity(Position position) {
+        if (position == null) return null;
+        return new PositionResponse(
+                position.getId(),
+                position.getName(),
+                position.getDepartment() != null ? position.getDepartment().getId() : null,
+                position.getDepartment() != null ? position.getDepartment().getName() : null
+        );
+    }
 }

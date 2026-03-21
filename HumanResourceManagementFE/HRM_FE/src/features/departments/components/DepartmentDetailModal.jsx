@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, Settings2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Spin } from "antd";
+import { getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
 
 import departmentService from "../api/departmentService";
 import positionService from "../api/positionService";
@@ -24,8 +25,8 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
     setLoading(true);
     try {
       const res = await departmentService.getDepartment(departmentId);
-      if (res?.status < 200 || res?.status >= 300) {
-        toast.error(res?.message || "Failed to load department");
+      if (!isSuccessResponse(res)) {
+        toast.error(getResponseMessage(res, "Failed to load department"));
         setDepartment(null);
         return;
       }
@@ -59,6 +60,12 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
     return () => clearTimeout(t);
   }, [open, mounted]);
 
+  useEffect(() => {
+    if (!open) {
+      setPositionsModalOpen(false);
+    }
+  }, [open, departmentId]);
+
   if (!mounted) return null;
 
   const fadeStyle = {
@@ -72,8 +79,8 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
     setSubmitting(true);
     try {
       const res = await positionService.createDepartmentPosition(departmentId, { name });
-      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to create position");
-      toast.success(res?.message || "Position created successfully");
+      if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to create position"));
+      toast.success(getResponseMessage(res, "Position created successfully"));
       await refresh();
     } catch {
       toast.error("Failed to create position");
@@ -87,8 +94,8 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
     setSubmitting(true);
     try {
       const res = await positionService.updateDepartmentPosition(departmentId, positionId, { name });
-      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to update position");
-      toast.success(res?.message || "Position updated successfully");
+      if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to update position"));
+      toast.success(getResponseMessage(res, "Position updated successfully"));
       await refresh();
     } catch {
       toast.error("Failed to update position");
@@ -102,8 +109,8 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
     setSubmitting(true);
     try {
       const res = await positionService.deleteDepartmentPosition(departmentId, positionId);
-      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to delete position");
-      toast.success(res?.message || "Position deleted successfully");
+      if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to delete position"));
+      toast.success(getResponseMessage(res, "Position deleted successfully"));
       await refresh();
     } catch {
       toast.error("Failed to delete position");
@@ -132,7 +139,7 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
           maxHeight: "calc(100vh - 40px)",
         }}
       >
-        <div style={fadeStyle} className="relative h-full w-full">
+        <div style={fadeStyle} className="relative h-full w-full flex flex-col min-h-0">
           <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "#E8E8E8" }}>
             <div className="flex items-center gap-3">
               <div
