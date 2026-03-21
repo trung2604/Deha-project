@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react';
-import { Select, Input } from 'antd';
+import { Select, Input, Button } from 'antd';
 
 export function UserFilters({
   searchTerm,
@@ -26,6 +26,7 @@ export function UserFilters({
             value={searchTerm}
             onChange={(e) => onSearchTermChange(e.target.value)}
             prefix={<Search className="w-4 h-4" style={{ color: '#595959' }} />}
+            allowClear
             style={{ width: '100%' }}
             size="middle"
           />
@@ -37,9 +38,10 @@ export function UserFilters({
           style={{ minWidth: '140px' }}
           placeholder="All Departments"
           size="middle"
+          allowClear
           options={[
             { value: '', label: 'All Departments' },
-            ...departments.map((dept) => ({ value: dept, label: dept })),
+            ...departments.map((dept) => ({ value: dept.id, label: dept.name })),
           ]}
         />
 
@@ -49,9 +51,10 @@ export function UserFilters({
           style={{ minWidth: '140px' }}
           placeholder="All Positions"
           size="middle"
+          allowClear
           options={[
             { value: '', label: 'All Positions' },
-            ...positions.map((pos) => ({ value: pos, label: pos })),
+            ...positions.map((pos) => ({ value: pos.id, label: pos.name })),
           ]}
         />
 
@@ -61,21 +64,22 @@ export function UserFilters({
           style={{ minWidth: '120px' }}
           placeholder="All Status"
           size="middle"
+          allowClear
           options={[
             { value: '', label: 'All Status' },
-            { value: 'Active', label: 'Active' },
-            { value: 'Inactive', label: 'Inactive' },
-            { value: 'On Leave', label: 'On Leave' },
+            { value: 'true', label: 'Active' },
+            { value: 'false', label: 'Inactive' },
           ]}
         />
 
-        <button
+        <Button
           onClick={onReset}
-          className="px-3 h-9 transition-colors duration-150 hover:underline"
-          style={{ color: '#1677FF', fontSize: '14px', fontWeight: '500' }}
+          type="text"
+          size="middle"
+          style={{ color: '#1677FF', fontSize: '14px', fontWeight: '500', paddingInline: 8 }}
         >
           Reset
-        </button>
+        </Button>
       </div>
     </div>
   );

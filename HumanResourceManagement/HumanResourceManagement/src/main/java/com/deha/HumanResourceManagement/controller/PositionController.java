@@ -20,65 +20,31 @@ public class PositionController {
 
     @GetMapping()
     public ApiResponse getAllPositions() {
-        try {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("Positions retrieved successfully");
-            response.setStatus(HttpStatus.OK.value());
-            response.setData(positionService.getAllPositions());
-            return response;
-        } catch (Exception e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("An error occurred while retrieving positions: " + e.getMessage());
-            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-            return response;
-        }
+        return success("Positions retrieved successfully", HttpStatus.OK, positionService.getAllPositions());
     }
 
     @GetMapping("/{id}")
     public ApiResponse getPositionById(@PathVariable UUID id) {
-        try {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("Position retrieved successfully");
-            response.setStatus(HttpStatus.OK.value());
-            response.setData(positionService.getPositionById(id));
-            return response;
-        } catch (Exception e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("An error occurred while retrieving position: " + e.getMessage());
-            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-            return response;
-        }
+        return success("Position retrieved successfully", HttpStatus.OK, positionService.getPositionById(id));
     }
 
     @PutMapping("/{id}")
     public ApiResponse updatePosition(@PathVariable UUID id, @RequestParam UUID departmentId, @RequestBody @Valid PositionRequest positionRequest) {
-        try {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("Position updated successfully");
-            response.setStatus(HttpStatus.OK.value());
-            response.setData(positionService.updatePosition(id, departmentId, positionRequest));
-            return response;
-        } catch (Exception e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("An error occurred while updating position: " + e.getMessage());
-            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-            return response;
-        }
+        return success("Position updated successfully", HttpStatus.OK, positionService.updatePosition(id, departmentId, positionRequest));
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse deletePosition(@PathVariable UUID id) {
-        try{
-            positionService.deletePosition(id);
-            ApiResponse response = new ApiResponse();
-            response.setMessage("Position deleted successfully");
-            response.setStatus(HttpStatus.OK.value());
-            return response;
-        } catch (Exception e) {
-            ApiResponse response = new ApiResponse();
-            response.setMessage("An error occurred while deleting position: " + e.getMessage());
-            response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-            return response;
-        }
+        positionService.deletePosition(id);
+        return success("Position deleted successfully", HttpStatus.OK, null);
     }
+
+    private ApiResponse success(String message, HttpStatus status, Object data) {
+        ApiResponse response = new ApiResponse();
+        response.setMessage(message);
+        response.setStatus(status.value());
+        response.setData(data);
+        return response;
+    }
+
 }

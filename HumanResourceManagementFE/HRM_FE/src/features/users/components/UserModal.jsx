@@ -21,8 +21,8 @@ export function UserModal({ user, onClose, onSave, submitting }) {
     email: user?.email ?? "",
     role: user?.role ?? "",
     password: "",
-    departmentId: user?.departmentId ?? user?.department?.id ?? "",
-    positionId: user?.positionId ?? user?.position?.id ?? "",
+    departmentId: user?.departmentId ?? user?.department?.id ?? undefined,
+    positionId: user?.positionId ?? user?.position?.id ?? undefined,
   }));
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
     const deptId = formData.departmentId;
     if (!deptId) {
       setPositions([]);
-      setFormData((p) => ({ ...p, positionId: "" }));
+      setFormData((p) => ({ ...p, positionId: undefined }));
       return;
     }
 
@@ -192,8 +192,8 @@ export function UserModal({ user, onClose, onSave, submitting }) {
                 onChange={(value) =>
                   setFormData((p) => ({
                     ...p,
-                    departmentId: value ?? "",
-                    positionId: "",
+                    departmentId: value ?? undefined,
+                    positionId: undefined,
                   }))
                 }
                 disabled={departmentsLoading || submitting}
@@ -213,7 +213,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
               <Select
                 value={formData.positionId}
                 onChange={(value) =>
-                  setFormData((p) => ({ ...p, positionId: value ?? "" }))
+                  setFormData((p) => ({ ...p, positionId: value ?? undefined }))
                 }
                 disabled={
                   !formData.departmentId || positionsLoading || submitting

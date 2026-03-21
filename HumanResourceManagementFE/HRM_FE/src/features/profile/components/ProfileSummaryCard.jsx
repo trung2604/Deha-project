@@ -20,7 +20,7 @@ export function ProfileSummaryCard({ user }) {
     { icon: Mail, label: "Email", value: user?.email || "N/A" },
     { icon: Phone, label: "Phone", value: user?.phone || "N/A" },
     { icon: Briefcase, label: "Department", value: user?.departmentName || "N/A" },
-    { icon: Calendar, label: "Join Date", value: formatDate(user?.joinDate) },
+    { icon: Calendar, label: "Join Date", value: formatDate(user?.createdAt) },
   ];
 
   return (

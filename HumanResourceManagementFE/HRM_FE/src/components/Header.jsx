@@ -115,8 +115,12 @@ export function Header({ onMenuClick }) {
 
   return (
     <header
-      className="h-16 border-b flex items-center justify-between px-6 sticky top-0 z-20"
-      style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}
+      className="h-16 border-b flex items-center justify-between px-4 md:px-6 sticky top-0 z-20 backdrop-blur-md"
+      style={{
+        backgroundColor: 'rgba(255,255,255,0.82)',
+        borderColor: 'rgba(232,232,232,0.9)',
+        boxShadow: '0 8px 20px rgba(15, 23, 42, 0.04)',
+      }}
     >
       <div className="flex items-center gap-4">
         <button
@@ -150,8 +154,12 @@ export function Header({ onMenuClick }) {
           <Input
             type="text"
             placeholder="Search users, departments, leave requests..."
-            className="w-full h-9 pr-4 rounded-lg border-0!"
-            style={{ backgroundColor: '#F5F7FA', color: '#0A0A0A' }}
+            className="w-full h-9 pr-4 rounded-xl border-0!"
+            style={{
+              backgroundColor: 'rgba(15,23,42,0.04)',
+              color: '#0A0A0A',
+              boxShadow: 'inset 0 0 0 1px rgba(15,23,42,0.06)',
+            }}
             value={searchTerm}
             onChange={handleSearchChange}
             prefix={<Search className="w-4 h-4" style={{ color: '#595959' }} />}
@@ -280,7 +288,7 @@ export function Header({ onMenuClick }) {
         <div className="relative">
           <button
             onClick={() => setNotificationOpen(!notificationOpen)}
-            className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors"
             style={{ color: '#0A0A0A' }}
           >
             <Bell className="w-5 h-5" />
@@ -384,7 +392,10 @@ export function Header({ onMenuClick }) {
         <div className="w-px h-6" style={{ backgroundColor: '#E8E8E8' }} />
 
         <div className="relative">
-          <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          >
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: '#1677FF', fontSize: '12px', fontWeight: '600' }}>
               {initials.toUpperCase()}
             </div>

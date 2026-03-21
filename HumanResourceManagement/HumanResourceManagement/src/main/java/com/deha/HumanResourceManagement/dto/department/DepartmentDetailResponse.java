@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.dto.department;
 
+import com.deha.HumanResourceManagement.entity.Department;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,5 +17,20 @@ public class DepartmentDetailResponse {
     private String description;
     private List<DepartmentPositionItem> positions;
     private List<DepartmentUserItem> users;
+
+    public static DepartmentDetailResponse fromEntity(Department department) {
+        if (department == null) return null;
+        return new DepartmentDetailResponse(
+                department.getId(),
+                department.getName(),
+                department.getDescription(),
+                department.getPositions().stream()
+                        .map(DepartmentPositionItem::fromEntity)
+                        .toList(),
+                department.getUsers().stream()
+                        .map(DepartmentUserItem::fromEntity)
+                        .toList()
+        );
+    }
 }
 

@@ -7,6 +7,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +21,7 @@ import java.util.Set;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+    private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
@@ -39,32 +42,32 @@ public class JwtFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             try {
+                String tokenType = jwtUtil.extractTokenType(token);
+                if (!"access".equals(tokenType)) {
+                    SecurityContextHolder.clearContext();
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
                 String username = jwtUtil.extractUsername(token);
                 User user = userRepository.findByEmail(username).orElse(null);
                 if (user == null || !user.isActive()) {
                     SecurityContextHolder.clearContext();
                 } else {
-                    // Spring Security's `hasRole("ADMIN")` typically expects `ROLE_ADMIN`,
-                    // but rolePrefix/authority mapping can vary. Provide both forms to be safe.
                     String roleName = user.getRole().name();
-                    String roleWithPrefix = "ROLE_" + roleName;
+                    String grantedRole = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
                     Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-                    authorities.add(new SimpleGrantedAuthority(roleWithPrefix));
-                    authorities.add(new SimpleGrantedAuthority(roleName));
-                    // In case DB already stores "ROLE_ADMIN" style enum/string (defensive)
-                    if (roleName.startsWith("ROLE_")) {
-                        authorities.add(new SimpleGrantedAuthority(roleName));
-                    }
-
-                    var auth = new UsernamePasswordAuthenticationToken(
+                    authorities.add(new SimpleGrantedAuthority(grantedRole));
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                             username,
                             null,
                             authorities
                     );
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
                 // invalid/expired token: skip authentication
+                log.debug("JWT authentication skipped due to invalid token: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }

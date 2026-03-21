@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import authService from "../api/authService";
+import { getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
 
 const AuthContext = createContext(null);
 
@@ -30,14 +31,9 @@ export function AuthProvider({ children }) {
   const refreshProfile = useCallback(async () => {
     try {
       const res = await authService.getMe();
-      if (!res || typeof res.status !== "number") {
+      if (!isSuccessResponse(res)) {
         clearAuth();
-        return { ok: false, message: "Invalid server response" };
-      }
-
-      if (res.status < 200 || res.status >= 300) {
-        clearAuth();
-        return { ok: false, message: res.message || "Unauthorized" };
+        return { ok: false, message: getResponseMessage(res, "Unauthorized") };
       }
 
       const profile = res.data ?? null;
@@ -50,14 +46,30 @@ export function AuthProvider({ children }) {
     }
   }, [clearAuth]);
 
+  const updateProfile = useCallback(
+    async (payload) => {
+      try {
+        const res = await authService.updateMe(payload);
+        if (!isSuccessResponse(res)) {
+          return { ok: false, message: getResponseMessage(res, "Update profile failed") };
+        }
+
+        const profile = res.data ?? null;
+        setUser(profile);
+        localStorage.setItem(USER_KEY, JSON.stringify(profile));
+        return { ok: true, data: profile, message: res.message || "Profile updated successfully" };
+      } catch {
+        return { ok: false, message: "Update profile failed" };
+      }
+    },
+    [],
+  );
+
   const login = useCallback(
     async (credentials) => {
       const res = await authService.login(credentials);
-      if (!res || typeof res.status !== "number") {
-        return { ok: false, message: "Invalid server response" };
-      }
-      if (res.status < 200 || res.status >= 300) {
-        return { ok: false, message: res.message || "Login failed" };
+      if (!isSuccessResponse(res)) {
+        return { ok: false, message: getResponseMessage(res, "Login failed") };
       }
 
       const nextToken = res.data?.token;
@@ -112,8 +124,9 @@ export function AuthProvider({ children }) {
       login,
       logout,
       refreshProfile,
+      updateProfile,
     }),
-    [token, user, initializing, login, logout, refreshProfile],
+    [token, user, initializing, login, logout, refreshProfile, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

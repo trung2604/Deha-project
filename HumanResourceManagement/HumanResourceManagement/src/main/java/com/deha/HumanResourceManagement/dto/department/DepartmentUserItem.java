@@ -1,6 +1,7 @@
 package com.deha.HumanResourceManagement.dto.department;
 
 import com.deha.HumanResourceManagement.entity.Role;
+import com.deha.HumanResourceManagement.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -21,5 +22,20 @@ public class DepartmentUserItem {
     private Date createdAt;
     private UUID positionId;
     private String positionName;
+
+    public static DepartmentUserItem fromEntity(User user) {
+        if (user == null) return null;
+        return new DepartmentUserItem(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getRole(),
+                user.isActive(),
+                user.getCreatedAt(),
+                user.getPosition() != null ? user.getPosition().getId() : null,
+                user.getPosition() != null ? user.getPosition().getName() : null
+        );
+    }
 }
 

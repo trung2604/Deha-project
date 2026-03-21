@@ -85,18 +85,18 @@ export function PositionsModal({
         }}
       />
       <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[720px] rounded-xl z-50 flex flex-col overflow-hidden"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[860px] rounded-2xl z-50 flex flex-col overflow-hidden"
         style={{
           backgroundColor: "#FFFFFF",
           boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
-          height: "560px",
+          height: "620px",
           maxHeight: "calc(100vh - 40px)",
           maxWidth: "calc(100vw - 40px)",
         }}
         // keep interactions smooth while closing
         aria-hidden={closing}
       >
-        <div style={fadeStyle} className="relative h-full w-full">
+        <div style={fadeStyle} className="relative h-full w-full flex flex-col min-h-0">
           {submitting && (
             <div
               className="absolute inset-0 z-50"
@@ -131,7 +131,7 @@ export function PositionsModal({
             </button>
           </div>
 
-          <div className="p-6 space-y-5 flex-1 flex flex-col overflow-hidden min-h-0">
+          <div className="p-6 space-y-4 flex-1 flex flex-col overflow-hidden min-h-0">
             <div className="rounded-xl p-4 border" style={{ borderColor: "#E8E8E8" }}>
               <div className="flex items-center justify-between mb-3">
                 <div style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>Add position</div>
@@ -147,9 +147,9 @@ export function PositionsModal({
                 <button
                   onClick={handleCreate}
                   disabled={submitting || !newName.trim() || !department?.id}
-                  className="flex items-center gap-2 px-4 h-9 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
+                  className="flex items-center gap-2 px-5 h-9 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
                   style={{
-                    backgroundColor: "#1677FF",
+                    background: "linear-gradient(135deg, #69B1FF 0%, #4096FF 100%)",
                     color: "#FFFFFF",
                     fontSize: "14px",
                     fontWeight: "500",
@@ -175,17 +175,17 @@ export function PositionsModal({
               </div>
 
               <div
-                className="flex-1 min-h-0 overflow-hidden rounded-xl border"
+                className="flex-1 min-h-0 overflow-hidden rounded-xl border flex flex-col"
                 style={{ borderColor: "#E8E8E8", backgroundColor: "#FFFFFF" }}
               >
-                <div className="h-full overflow-y-auto p-3 space-y-2 pr-1">
+                <div className="flex-1 min-h-0 overflow-y-auto pr-1">
                   {deptPositions.map((p) => {
                     const isEditing = editingId === p.id;
                     return (
                       <div
                         key={p.id}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 border"
-                        style={{ borderColor: "#E8E8E8" }}
+                        className="flex items-center gap-3 px-4 py-3 border-b last:border-b-0"
+                        style={{ borderColor: "#F0F0F0" }}
                       >
                         {isEditing ? (
                           <>
@@ -263,7 +263,7 @@ export function PositionsModal({
                   })}
 
                   {deptPositions.length === 0 && (
-                    <div className="rounded-lg p-4 border" style={{ borderColor: "#E8E8E8", color: "#8C8C8C" }}>
+                    <div className="m-3 rounded-lg p-4 border" style={{ borderColor: "#E8E8E8", color: "#8C8C8C" }}>
                       No positions yet. Add the first position above.
                     </div>
                   )}

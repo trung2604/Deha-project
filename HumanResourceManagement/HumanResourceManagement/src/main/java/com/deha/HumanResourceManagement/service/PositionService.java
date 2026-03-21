@@ -4,6 +4,7 @@ import com.deha.HumanResourceManagement.dto.position.PositionRequest;
 import com.deha.HumanResourceManagement.dto.position.PositionResponse;
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Position;
+import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
@@ -25,33 +26,20 @@ public class PositionService {
 
     public List<PositionResponse> getAllPositionsOfDepartment(UUID departmentId) {
         return positionRepository.findAllByDepartmentId(departmentId).stream()
-                .map(position -> new PositionResponse(
-                        position.getId(),
-                        position.getName(),
-                        position.getDepartment() != null ? position.getDepartment().getId() : null,
-                        position.getDepartment() != null ? position.getDepartment().getName() : null))
+                .map(PositionResponse::fromEntity)
                 .toList();
     }
 
     public List<PositionResponse> getAllPositions() {
         return positionRepository.findAll().stream()
-                .map(position -> new PositionResponse(
-                        position.getId(),
-                        position.getName(),
-                        position.getDepartment() != null ? position.getDepartment().getId() : null,
-                        position.getDepartment() != null ? position.getDepartment().getName() : null))
+                .map(PositionResponse::fromEntity)
                 .toList();
     }
 
     public PositionResponse getPositionById(UUID id) {
         Position position = positionRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + id));
-        return new PositionResponse(
-                position.getId(),
-                position.getName(),
-                position.getDepartment() != null ? position.getDepartment().getId() : null,
-                position.getDepartment() != null ? position.getDepartment().getName() : null
-        );
+        return PositionResponse.fromEntity(position);
     }
 
     @Transactional
@@ -63,11 +51,11 @@ public class PositionService {
         }
 
         Position newPosition = new Position();
-        newPosition.setName(request.getName());
-        newPosition.setDepartment(department);
+        newPosition.rename(request.getName());
+        newPosition.assignDepartment(department);
         positionRepository.save(newPosition);
 
-        return new PositionResponse(newPosition.getId(), newPosition.getName(), department.getId(), department.getName());
+        return PositionResponse.fromEntity(newPosition);
     }
 
     @Transactional
@@ -76,23 +64,18 @@ public class PositionService {
                 () -> new ResourceNotFoundException("Position not found with id: " + id));
 
         Department department = departmentService.findDepartmentById(departmentId);
-        if (!existingPosition.getDepartment().getId().equals(departmentId)) {
-            existingPosition.setDepartment(department);
+        if (!existingPosition.belongsToDepartment(departmentId)) {
+            existingPosition.assignDepartment(department);
         }
 
-        boolean nameChanged = request.getName() != null && !request.getName().equalsIgnoreCase(existingPosition.getName());
+        boolean nameChanged = existingPosition.isNameChanged(request.getName());
         if (nameChanged && positionRepository.existsByNameInDepartment(departmentId, request.getName())) {
             throw new ResourceAlreadyExistException("Position with the same name already exists in the department.");
         }
 
-        existingPosition.setName(request.getName());
+        existingPosition.rename(request.getName());
         positionRepository.save(existingPosition);
-        return new PositionResponse(
-                existingPosition.getId(),
-                existingPosition.getName(),
-                existingPosition.getDepartment() != null ? existingPosition.getDepartment().getId() : null,
-                existingPosition.getDepartment() != null ? existingPosition.getDepartment().getName() : null
-        );
+        return PositionResponse.fromEntity(existingPosition);
     }
 
     @Transactional
@@ -106,8 +89,8 @@ public class PositionService {
     public void deletePositionInDepartment(UUID departmentId, UUID positionId) {
         Position position = positionRepository.findById(positionId).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + positionId));
-        if (position.getDepartment() == null || !position.getDepartment().getId().equals(departmentId)) {
-            throw new IllegalArgumentException("Position does not belong to the specified department");
+        if (!position.belongsToDepartment(departmentId)) {
+            throw new BadRequestException("Position does not belong to the specified department");
         }
         positionRepository.delete(position);
     }

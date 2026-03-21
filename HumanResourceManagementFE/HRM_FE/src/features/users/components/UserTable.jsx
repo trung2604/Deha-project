@@ -28,6 +28,24 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
     onSizeChange(nextSize);
   };
 
+  const formatRole = (role) => {
+    if (!role) return "-";
+    return String(role).replace(/^ROLE_/, "");
+  };
+
+  const formatCreatedAt = (value) => {
+    if (!value) return "-";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "-";
+    return d.toLocaleString(undefined, {
+      month: "numeric",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <div
       className="rounded-xl overflow-hidden"
@@ -37,86 +55,54 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
       }}
     >
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full table-fixed">
           <thead style={{ backgroundColor: "#F5F7FA" }}>
             <tr>
               <th
-                className="px-6 py-3 text-left uppercase tracking-wide"
-                style={{
-                  color: "#595959",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                }}
+                className="px-4 py-3 text-left uppercase tracking-wide"
+                style={{ width: "18%", color: "#595959", fontSize: "11px", fontWeight: "600" }}
               >
                 User
               </th>
               <th
-                className="px-6 py-3 text-left uppercase tracking-wide"
-                style={{
-                  color: "#595959",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                }}
+                className="px-4 py-3 text-left uppercase tracking-wide"
+                style={{ width: "18%", color: "#595959", fontSize: "11px", fontWeight: "600" }}
               >
                 Email
               </th>
               <th
-                className="px-6 py-3 text-left uppercase tracking-wide"
-                style={{
-                  color: "#595959",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                }}
+                className="px-4 py-3 text-left uppercase tracking-wide"
+                style={{ width: "10%", color: "#595959", fontSize: "11px", fontWeight: "600" }}
               >
                 Role
               </th>
               <th
-                className="px-6 py-3 text-left uppercase tracking-wide"
-                style={{
-                  color: "#595959",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                }}
+                className="px-4 py-3 text-left uppercase tracking-wide"
+                style={{ width: "10%", color: "#595959", fontSize: "11px", fontWeight: "600" }}
               >
                 Department
               </th>
               <th
-                className="px-6 py-3 text-left uppercase tracking-wide"
-                style={{
-                  color: "#595959",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                }}
+                className="px-4 py-3 text-left uppercase tracking-wide"
+                style={{ width: "14%", color: "#595959", fontSize: "11px", fontWeight: "600" }}
               >
                 Position
               </th>
               <th
-                className="px-6 py-3 text-left uppercase tracking-wide"
-                style={{
-                  color: "#595959",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                }}
+                className="px-4 py-3 text-left uppercase tracking-wide"
+                style={{ width: "8%", color: "#595959", fontSize: "11px", fontWeight: "600" }}
               >
                 Status
               </th>
               <th
-                className="px-6 py-3 text-left uppercase tracking-wide"
-                style={{
-                  color: "#595959",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                }}
+                className="px-4 py-3 text-left uppercase tracking-wide"
+                style={{ width: "14%", color: "#595959", fontSize: "11px", fontWeight: "600" }}
               >
                 Created At
               </th>
               <th
-                className="px-6 py-3 text-left uppercase tracking-wide"
-                style={{
-                  color: "#595959",
-                  fontSize: "11px",
-                  fontWeight: "600",
-                }}
+                className="px-4 py-3 text-left uppercase tracking-wide"
+                style={{ width: "8%", color: "#595959", fontSize: "11px", fontWeight: "600" }}
               >
                 Actions
               </th>
@@ -130,14 +116,14 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                   className="border-t"
                   style={{ borderColor: "#E8E8E8" }}
                 >
-                  <td className="px-6 py-4" colSpan={8}>
+                  <td className="px-4 py-4" colSpan={8}>
                     <div className="h-10 rounded shimmer" />
                   </td>
                 </tr>
               ))
             ) : list.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-16 text-center">
+                <td colSpan={8} className="px-4 py-16 text-center">
                   <p style={{ color: "#595959", fontSize: "14px" }}>
                     No users found
                   </p>
@@ -150,10 +136,10 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                   className="border-t transition-colors duration-150 hover:bg-blue-50/30"
                   style={{ borderColor: "#E8E8E8", height: "56px" }}
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0"
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0"
                         style={{
                           backgroundColor: "#1677FF",
                           fontSize: "13px",
@@ -174,32 +160,32 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                             "Unknown"}
                         </div>
                         <div style={{ color: "#595959", fontSize: "13px" }}>
-                          {user.email ?? "-"}
+                          ID: {user.id ? String(user.id).slice(0, 8) : "-"}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span style={{ color: "#0A0A0A", fontSize: "14px" }}>
+                  <td className="px-4 py-4 truncate">
+                    <span className="block truncate" style={{ color: "#0A0A0A", fontSize: "14px" }}>
                       {user.email ?? "-"}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span style={{ color: "#595959", fontSize: "14px" }}>
-                      {user.role ?? "-"}
+                  <td className="px-4 py-4 truncate">
+                    <span className="block truncate" style={{ color: "#595959", fontSize: "14px" }} title={user.role ?? "-"}>
+                      {formatRole(user.role)}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span style={{ color: "#595959", fontSize: "14px" }}>
+                  <td className="px-4 py-4 truncate">
+                    <span className="block truncate" style={{ color: "#595959", fontSize: "14px" }}>
                       {user.departmentName ?? "-"}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span style={{ color: "#595959", fontSize: "14px" }}>
+                  <td className="px-4 py-4 truncate">
+                    <span className="block truncate" style={{ color: "#595959", fontSize: "14px" }}>
                       {user.positionName ?? "-"}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4">
                     {(() => {
                       const status = user.active ? "Active" : "Inactive";
                       const colors = statusColors[status] ?? {
@@ -221,7 +207,7 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                       );
                     })()}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <span
                       style={{
                         color: "#595959",
@@ -229,12 +215,10 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                         fontFamily: "JetBrains Mono, monospace",
                       }}
                     >
-                      {user.createdAt
-                        ? new Date(user.createdAt).toLocaleString()
-                        : "-"}
+                      {formatCreatedAt(user.createdAt)}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => onEdit(user)}

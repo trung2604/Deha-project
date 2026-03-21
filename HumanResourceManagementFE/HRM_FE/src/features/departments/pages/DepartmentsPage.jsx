@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Building2, Plus, Settings2, Trash2, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { DepartmentDetailModal } from "../components/DepartmentDetailModal";
+import { getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
 
 import departmentService from "../api/departmentService";
 import positionService from "../api/positionService";
@@ -30,8 +31,8 @@ export function DepartmentsPage() {
     setLoading(true);
     try {
       const deptRes = await departmentService.getDepartments();
-      if (deptRes?.status < 200 || deptRes?.status >= 300) {
-        toast.error(deptRes?.message || "Failed to load departments");
+      if (!isSuccessResponse(deptRes)) {
+        toast.error(getResponseMessage(deptRes, "Failed to load departments"));
         setDepartments([]);
         return;
       }
@@ -51,8 +52,8 @@ export function DepartmentsPage() {
     setPositionPreviewLoadingByDeptId((p) => ({ ...p, [departmentId]: true }));
     try {
       const res = await positionService.getDepartmentPositions(departmentId);
-      if (res?.status < 200 || res?.status >= 300) {
-        toast.error(res?.message || "Failed to load positions");
+      if (!isSuccessResponse(res)) {
+        toast.error(getResponseMessage(res, "Failed to load positions"));
         setPositionPreviewByDeptId((p) => ({ ...p, [departmentId]: [] }));
         return;
       }
@@ -83,8 +84,8 @@ export function DepartmentsPage() {
     setDeptPositionsLoading(true);
     try {
       const res = await positionService.getDepartmentPositions(departmentId);
-      if (res?.status < 200 || res?.status >= 300) {
-        toast.error(res?.message || "Failed to load positions");
+      if (!isSuccessResponse(res)) {
+        toast.error(getResponseMessage(res, "Failed to load positions"));
         setDeptPositions([]);
         return;
       }
@@ -110,12 +111,12 @@ export function DepartmentsPage() {
     try {
       if (editingDepartment?.id) {
         const res = await departmentService.updateDepartment(editingDepartment.id, payload);
-        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to save department");
-        toast.success(res?.message || "Department updated successfully");
+        if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save department"));
+        toast.success(getResponseMessage(res, "Department updated successfully"));
       } else {
         const res = await departmentService.createDepartment(payload);
-        if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to save department");
-        toast.success(res?.message || "Department created successfully");
+        if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save department"));
+        toast.success(getResponseMessage(res, "Department created successfully"));
       }
       setDeptModalOpen(false);
       setEditingDepartment(null);
@@ -133,8 +134,8 @@ export function DepartmentsPage() {
     setSubmitting(true);
     try {
       const res = await departmentService.deleteDepartment(deletingDepartment.id);
-      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to delete department");
-      toast.success(res?.message || "Department deleted successfully");
+      if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to delete department"));
+      toast.success(getResponseMessage(res, "Department deleted successfully"));
       setDeletingDepartment(null);
       await refreshAll();
     } catch (e) {
@@ -151,8 +152,8 @@ export function DepartmentsPage() {
     setSubmitting(true);
     try {
       const res = await positionService.createDepartmentPosition(deptId, { name: positionPayload });
-      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to create position");
-      toast.success(res?.message || "Position created successfully");
+      if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to create position"));
+      toast.success(getResponseMessage(res, "Position created successfully"));
       await refreshDepartmentPositions(deptId);
     } catch (e) {
       toast.error("Failed to create position");
@@ -168,8 +169,8 @@ export function DepartmentsPage() {
     setSubmitting(true);
     try {
       const res = await positionService.updateDepartmentPosition(deptId, id, { name });
-      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to update position");
-      toast.success(res?.message || "Position updated successfully");
+      if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to update position"));
+      toast.success(getResponseMessage(res, "Position updated successfully"));
       await refreshDepartmentPositions(deptId);
     } catch (e) {
       toast.error("Failed to update position");
@@ -185,8 +186,8 @@ export function DepartmentsPage() {
     setSubmitting(true);
     try {
       const res = await positionService.deleteDepartmentPosition(deptId, id);
-      if (res?.status < 200 || res?.status >= 300) return toast.error(res?.message || "Failed to delete position");
-      toast.success(res?.message || "Position deleted successfully");
+      if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to delete position"));
+      toast.success(getResponseMessage(res, "Position deleted successfully"));
       await refreshDepartmentPositions(deptId);
     } catch (e) {
       toast.error("Failed to delete position");
@@ -213,10 +214,12 @@ export function DepartmentsPage() {
           <span
             className="px-3 py-1 rounded-full"
             style={{
-              backgroundColor: "rgba(139, 92, 246, 0.1)",
+              background:
+                "linear-gradient(135deg, rgba(139, 92, 246, 0.16), rgba(139, 92, 246, 0.08))",
               color: "#8B5CF6",
               fontSize: "13px",
               fontWeight: "600",
+              boxShadow: "inset 0 0 0 1px rgba(139,92,246,0.2)",
             }}
           >
             {departmentCount}
@@ -226,12 +229,13 @@ export function DepartmentsPage() {
         <button
           onClick={openCreateDepartment}
           disabled={loading}
-          className="flex items-center gap-2 px-4 h-9 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
+          className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95 disabled:opacity-60"
           style={{
-            backgroundColor: "#1677FF",
+            background: "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
             color: "#FFFFFF",
             fontSize: "14px",
             fontWeight: "500",
+            boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
           }}
         >
           <Plus className="w-4 h-4" />
@@ -252,8 +256,12 @@ export function DepartmentsPage() {
             return (
               <div
                 key={dept.id}
-                className="rounded-xl p-6 transition-all duration-200 hover:shadow-lg group relative cursor-pointer"
-                style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
+                className="rounded-2xl p-6 transition-all duration-200 hover:-translate-y-0.5 group relative cursor-pointer"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.94)",
+                  boxShadow: "0 12px 28px rgba(15,23,42,0.08)",
+                  border: "1px solid rgba(15,23,42,0.06)",
+                }}
                 onClick={() => setDetailDepartmentId(dept.id)}
               >
                 <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
@@ -371,21 +379,6 @@ export function DepartmentsPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDetailDepartmentId(dept.id);
-                  }}
-                  className="w-full h-9 rounded-lg transition-all duration-150 hover:opacity-90"
-                  style={{
-                    backgroundColor: "rgba(139, 92, 246, 0.1)",
-                    color: "#8B5CF6",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  View details
-                </button>
               </div>
             );
           })}

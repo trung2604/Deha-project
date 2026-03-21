@@ -27,5 +27,10 @@ public class Department {
 
     @OneToMany(mappedBy = "department", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<User> users = new ArrayList<>();
+
+    public void applyDetails(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
 }
 

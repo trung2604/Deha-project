@@ -17,6 +17,7 @@ public class UserResponse {
     private String firstName;
     private String lastName;
     private String email;
+    private String phone;
     private UUID departmentId;
     private String departmentName;
     private UUID positionId;
@@ -31,6 +32,7 @@ public class UserResponse {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),
+                user.getPhone(),
                 user.getDepartment() != null ? user.getDepartment().getId() : null,
                 user.getDepartment() != null ? user.getDepartment().getName() : null,
                 user.getPosition() != null ? user.getPosition().getId() : null,

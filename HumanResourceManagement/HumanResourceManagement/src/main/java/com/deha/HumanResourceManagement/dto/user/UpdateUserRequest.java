@@ -26,6 +26,8 @@ public class UpdateUserRequest {
     @Email(message = "Email is not correct format")
     private String email;
 
+    private String phone;
+
     @NotNull(message = "Department is required")
     private Department department;
 

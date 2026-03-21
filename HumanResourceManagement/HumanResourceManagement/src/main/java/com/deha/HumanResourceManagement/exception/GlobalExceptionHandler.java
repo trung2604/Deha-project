@@ -29,27 +29,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(res);
     }
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<?> handleNotFound(ResourceNotFoundException ex) {
+    @ExceptionHandler(AppException.class)
+    public ResponseEntity<?> handleAppException(AppException ex) {
         ApiResponse res = new ApiResponse();
-        res.setStatus(HttpStatus.NOT_FOUND.value());
+        res.setStatus(ex.getStatus().value());
         res.setMessage(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(res);
+        return ResponseEntity.status(ex.getStatus()).body(res);
     }
 
-    @ExceptionHandler(ResourceAlreadyExistException.class)
-    public ResponseEntity<?> handleAlreadyExists(ResourceAlreadyExistException ex) {
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<?> handleUnexpected(Exception ex) {
         ApiResponse res = new ApiResponse();
-        res.setStatus(HttpStatus.CONFLICT.value());
-        res.setMessage(ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(res);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<?> handleBadRequest(IllegalArgumentException ex) {
-        ApiResponse res = new ApiResponse();
-        res.setStatus(HttpStatus.BAD_REQUEST.value());
-        res.setMessage(ex.getMessage());
-        return ResponseEntity.badRequest().body(res);
+        res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        res.setMessage("Unexpected server error");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
     }
 }
