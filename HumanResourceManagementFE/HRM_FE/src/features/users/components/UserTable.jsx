@@ -159,9 +159,6 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                           {`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
                             "Unknown"}
                         </div>
-                        <div style={{ color: "#595959", fontSize: "13px" }}>
-                          ID: {user.id ? String(user.id).slice(0, 8) : "-"}
-                        </div>
                       </div>
                     </div>
                   </td>

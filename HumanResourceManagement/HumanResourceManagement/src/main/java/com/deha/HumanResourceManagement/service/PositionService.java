@@ -5,9 +5,11 @@ import com.deha.HumanResourceManagement.dto.position.PositionResponse;
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Position;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
+import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
+import com.deha.HumanResourceManagement.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,10 +20,16 @@ import java.util.UUID;
 public class PositionService {
     private final PositionRepository positionRepository;
     private final DepartmentService departmentService;
+    private final UserRepository userRepository;
 
-    public PositionService(PositionRepository positionRepository, DepartmentService departmentService) {
+    public PositionService(
+            PositionRepository positionRepository,
+            DepartmentService departmentService,
+            UserRepository userRepository
+    ) {
         this.departmentService = departmentService;
         this.positionRepository = positionRepository;
+        this.userRepository = userRepository;
     }
 
     public List<PositionResponse> getAllPositionsOfDepartment(UUID departmentId) {
@@ -82,6 +90,7 @@ public class PositionService {
     public void deletePosition(UUID id) {
         Position position = positionRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + id));
+        ensureNoUsersAssignedToPosition(id);
         positionRepository.delete(position);
     }
 
@@ -92,6 +101,15 @@ public class PositionService {
         if (!position.belongsToDepartment(departmentId)) {
             throw new BadRequestException("Position does not belong to the specified department");
         }
+        ensureNoUsersAssignedToPosition(positionId);
         positionRepository.delete(position);
+    }
+
+    private void ensureNoUsersAssignedToPosition(UUID positionId) {
+        long assigned = userRepository.countByPosition_Id(positionId);
+        if (assigned > 0) {
+            throw new ConflictException(
+                    "Cannot delete position while users are assigned to it. Reassign users first.");
+        }
     }
 }
