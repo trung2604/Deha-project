@@ -172,7 +172,6 @@ export function ProfilePersonalTab({ user, onSave, saving }) {
           Work Information
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ReadOnlyField label="User ID" value={user?.id} />
           <ReadOnlyField label="Department" value={user?.departmentName} />
           <ReadOnlyField label="Position" value={user?.positionName} />
           <ReadOnlyField label="Status" value={user?.active ? "Active" : "Inactive"} />

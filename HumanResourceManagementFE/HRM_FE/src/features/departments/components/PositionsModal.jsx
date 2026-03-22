@@ -233,7 +233,6 @@ export function PositionsModal({
                               >
                                 {p.name}
                               </div>
-                              <div style={{ color: "#8C8C8C", fontSize: "12px" }}>{p.id}</div>
                             </div>
                             <button
                               onClick={() => {

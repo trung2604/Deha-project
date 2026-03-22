@@ -161,7 +161,7 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
                   {department?.name ?? "Department detail"}
                 </div>
                 <div style={{ color: "#8C8C8C", fontSize: "13px", marginTop: "2px" }}>
-                  {loading ? "Loading…" : department?.id}
+                  {loading ? "Loading…" : "Positions and users in this department"}
                 </div>
               </div>
             </div>

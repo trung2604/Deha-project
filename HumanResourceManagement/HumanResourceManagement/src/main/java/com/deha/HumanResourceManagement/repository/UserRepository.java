@@ -18,6 +18,10 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByEmail(String email);
 
+    long countByDepartment_Id(UUID departmentId);
+
+    long countByPosition_Id(UUID positionId);
+
     @Query(value = """
     SELECT *
     FROM users u
