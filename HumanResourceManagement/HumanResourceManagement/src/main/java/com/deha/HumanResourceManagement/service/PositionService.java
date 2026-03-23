@@ -4,6 +4,7 @@ import com.deha.HumanResourceManagement.dto.position.PositionRequest;
 import com.deha.HumanResourceManagement.dto.position.PositionResponse;
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Position;
+import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
@@ -21,25 +22,40 @@ public class PositionService {
     private final PositionRepository positionRepository;
     private final DepartmentService departmentService;
     private final UserRepository userRepository;
+    private final AccessScopeService accessScopeService;
 
     public PositionService(
             PositionRepository positionRepository,
             DepartmentService departmentService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            AccessScopeService accessScopeService
     ) {
         this.departmentService = departmentService;
         this.positionRepository = positionRepository;
         this.userRepository = userRepository;
+        this.accessScopeService = accessScopeService;
     }
 
     public List<PositionResponse> getAllPositionsOfDepartment(UUID departmentId) {
+        Department department = departmentService.findDepartmentById(departmentId);
+        accessScopeService.assertCanManageOffice(
+                department.getOffice() != null ? department.getOffice().getId() : null
+        );
         return positionRepository.findAllByDepartmentId(departmentId).stream()
                 .map(PositionResponse::fromEntity)
                 .toList();
     }
 
     public List<PositionResponse> getAllPositions() {
+        User actor = accessScopeService.currentUserOrThrow();
+        UUID scopedOfficeId = accessScopeService.isAdmin(actor)
+                ? null
+                : (actor.getOffice() != null ? actor.getOffice().getId() : null);
         return positionRepository.findAll().stream()
+                .filter(position -> scopedOfficeId == null
+                        || (position.getDepartment() != null
+                        && position.getDepartment().getOffice() != null
+                        && scopedOfficeId.equals(position.getDepartment().getOffice().getId())))
                 .map(PositionResponse::fromEntity)
                 .toList();
     }
@@ -47,6 +63,10 @@ public class PositionService {
     public PositionResponse getPositionById(UUID id) {
         Position position = positionRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + id));
+        UUID officeId = position.getDepartment() != null && position.getDepartment().getOffice() != null
+                ? position.getDepartment().getOffice().getId()
+                : null;
+        accessScopeService.assertCanManageOffice(officeId);
         return PositionResponse.fromEntity(position);
     }
 
@@ -70,6 +90,10 @@ public class PositionService {
     public PositionResponse updatePosition(UUID id, UUID departmentId, PositionRequest request) {
         Position existingPosition = positionRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + id));
+        UUID existingOfficeId = existingPosition.getDepartment() != null && existingPosition.getDepartment().getOffice() != null
+                ? existingPosition.getDepartment().getOffice().getId()
+                : null;
+        accessScopeService.assertCanManageOffice(existingOfficeId);
 
         Department department = departmentService.findDepartmentById(departmentId);
         if (!existingPosition.belongsToDepartment(departmentId)) {
@@ -90,6 +114,10 @@ public class PositionService {
     public void deletePosition(UUID id) {
         Position position = positionRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + id));
+        UUID officeId = position.getDepartment() != null && position.getDepartment().getOffice() != null
+                ? position.getDepartment().getOffice().getId()
+                : null;
+        accessScopeService.assertCanManageOffice(officeId);
         ensureNoUsersAssignedToPosition(id);
         positionRepository.delete(position);
     }
@@ -101,6 +129,10 @@ public class PositionService {
         if (!position.belongsToDepartment(departmentId)) {
             throw new BadRequestException("Position does not belong to the specified department");
         }
+        UUID officeId = position.getDepartment() != null && position.getDepartment().getOffice() != null
+                ? position.getDepartment().getOffice().getId()
+                : null;
+        accessScopeService.assertCanManageOffice(officeId);
         ensureNoUsersAssignedToPosition(positionId);
         positionRepository.delete(position);
     }

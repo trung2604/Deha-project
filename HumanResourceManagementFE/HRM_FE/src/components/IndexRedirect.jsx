@@ -1,11 +1,11 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { isAdminRole } from "@/utils/role";
+import { isAdminRole, isManagerRole } from "@/utils/role";
 
 /** Default landing: admin → users list, employee → profile */
 export function IndexRedirect() {
   const { user } = useAuth();
-  if (isAdminRole(user?.role)) {
+  if (isAdminRole(user?.role) || isManagerRole(user?.role)) {
     return <Navigate to="/users" replace />;
   }
   return <Navigate to="/profile" replace />;

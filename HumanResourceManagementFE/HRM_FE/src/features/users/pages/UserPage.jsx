@@ -8,8 +8,12 @@ import { DeleteUserModal } from "@/features/users/components/DeleteUserModal";
 import UserService from "@/features/users/api/UserService";
 import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
+import officeService from "@/features/offices/api/officeService";
+import { useAuth } from "@/features/auth/context/AuthContext";
+import { isAdminRole } from "@/utils/role";
 import {
   getDepartmentDirectoryPayload,
+  getListData,
   getPageContent,
   getPageMeta,
   getResponseMessage,
@@ -17,6 +21,8 @@ import {
 } from "@/utils/apiResponse";
 
 export function UsersPage() {
+  const { user } = useAuth();
+  const admin = isAdminRole(user?.role);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [users, setUsers] = useState([]);
@@ -26,6 +32,7 @@ export function UsersPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [officeFilter, setOfficeFilter] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [positionFilter, setPositionFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -33,6 +40,7 @@ export function UsersPage() {
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
   const [departments, setDepartments] = useState([]);
+  const [offices, setOffices] = useState([]);
   const [positions, setPositions] = useState([]);
   const prevLoadingRef = useRef(false);
   const [resultAnimVersion, setResultAnimVersion] = useState(0);
@@ -53,13 +61,19 @@ export function UsersPage() {
     let cancelled = false;
     async function loadFilters() {
       try {
-        const [deptRes, posRes] = await Promise.all([
-          departmentService.getDepartments(),
+        const officePromise = admin
+          ? officeService.getOffices()
+          : Promise.resolve({ data: user?.officeId ? [{ id: user.officeId, name: user.officeName }] : [] });
+        const [officeRes, deptRes, posRes] = await Promise.all([
+          officePromise,
+          departmentService.getDepartments({ officeId: (admin ? officeFilter : user?.officeId) || undefined }),
           positionService.getPositions(),
         ]);
         if (!cancelled) {
+          const officeList = getListData(officeRes);
           const { departments: deptList } = getDepartmentDirectoryPayload(deptRes);
           const posList = Array.isArray(posRes?.data) ? posRes.data : [];
+          setOffices(officeList);
           setDepartments(deptList);
           setPositions(posList);
         }
@@ -71,7 +85,7 @@ export function UsersPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [admin, officeFilter, user?.officeId, user?.officeName]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,11 +93,12 @@ export function UsersPage() {
     const fetchUsers = async () => {
       setLoading(true);
       try {
+        const officeId = (admin ? officeFilter : user?.officeId) || undefined;
         const keyword = (debouncedSearchTerm ?? "").trim() || undefined;
         const departmentId = departmentFilter || undefined;
         const positionId = positionFilter || undefined;
         const active = statusFilter === "" ? undefined : statusFilter === "true";
-        const res = await UserService.getUsers({ keyword, departmentId, positionId, active, page, size });
+        const res = await UserService.getUsers({ keyword, officeId, departmentId, positionId, active, page, size });
         if (!isSuccessResponse(res)) throw new Error(getResponseMessage(res));
         const list = getPageContent(res);
         const meta = getPageMeta(res);
@@ -105,16 +120,17 @@ export function UsersPage() {
     return () => {
       cancelled = true;
     };
-  }, [page, size, debouncedSearchTerm, departmentFilter, positionFilter, statusFilter]);
+  }, [page, size, debouncedSearchTerm, admin, user?.officeId, officeFilter, departmentFilter, positionFilter, statusFilter]);
 
   const reloadUsers = useCallback(async () => {
     setLoading(true);
     try {
+      const officeId = (admin ? officeFilter : user?.officeId) || undefined;
       const keyword = (debouncedSearchTerm ?? "").trim() || undefined;
       const departmentId = departmentFilter || undefined;
       const positionId = positionFilter || undefined;
       const active = statusFilter === "" ? undefined : statusFilter === "true";
-      const res = await UserService.getUsers({ keyword, departmentId, positionId, active, page, size });
+      const res = await UserService.getUsers({ keyword, officeId, departmentId, positionId, active, page, size });
       if (!isSuccessResponse(res)) throw new Error(getResponseMessage(res));
       const list = getPageContent(res);
       const meta = getPageMeta(res);
@@ -128,7 +144,7 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchTerm, departmentFilter, page, positionFilter, size, statusFilter]);
+  }, [debouncedSearchTerm, admin, user?.officeId, officeFilter, departmentFilter, page, positionFilter, size, statusFilter]);
 
   // Debounce server-side search to avoid firing request on every keystroke.
   useEffect(() => {
@@ -141,12 +157,16 @@ export function UsersPage() {
 
   const filteredUsers = useMemo(() => users, [users]);
   const filteredPositions = useMemo(() => {
-    if (!departmentFilter) return positions;
-    return positions.filter((p) => p.departmentId === departmentFilter);
-  }, [positions, departmentFilter]);
+    return positions.filter((p) => {
+      if (officeFilter && p.officeId !== officeFilter) return false;
+      if (departmentFilter && p.departmentId !== departmentFilter) return false;
+      return true;
+    });
+  }, [positions, officeFilter, departmentFilter]);
 
   const handleReset = () => {
     setSearchTerm("");
+    setOfficeFilter(admin ? "" : (user?.officeId ?? ""));
     setDepartmentFilter("");
     setPositionFilter("");
     setStatusFilter("");
@@ -198,6 +218,13 @@ export function UsersPage() {
 
   const handleSearchTermChange = (value) => {
     setSearchTerm(value);
+  };
+
+  const handleOfficeFilterChange = (value) => {
+    setOfficeFilter(value);
+    setDepartmentFilter("");
+    setPositionFilter("");
+    setPage(0);
   };
 
   const handleDepartmentFilterChange = (value) => {
@@ -279,6 +306,8 @@ export function UsersPage() {
         searchTerm={searchTerm}
         onSearchTermChange={handleSearchTermChange}
         isSearchPending={isSearchPending}
+        officeFilter={admin ? officeFilter : (user?.officeId ?? "")}
+        onOfficeFilterChange={handleOfficeFilterChange}
         departmentFilter={departmentFilter}
         onDepartmentFilterChange={handleDepartmentFilterChange}
         positionFilter={positionFilter}
@@ -286,6 +315,7 @@ export function UsersPage() {
         statusFilter={statusFilter}
         onStatusFilterChange={handleStatusFilterChange}
         departments={departments}
+        offices={admin ? offices : []}
         positions={filteredPositions}
         onReset={handleReset}
       />

@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Building2, Plus, Settings2, Trash2, Edit, Search } from "lucide-react";
 import { toast } from "sonner";
-import { Input, Spin } from "antd";
+import { Input, Select, Spin } from "antd";
 import { DepartmentDetailModal } from "../components/DepartmentDetailModal";
-import { getDepartmentDirectoryPayload, getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
+import { getDepartmentDirectoryPayload, getListData, getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
+import { useAuth } from "@/features/auth/context/AuthContext";
+import { isAdminRole } from "@/utils/role";
 
 import departmentService from "../api/departmentService";
 import positionService from "../api/positionService";
+import officeService from "@/features/offices/api/officeService";
 import { DepartmentModal } from "../components/DepartmentModal";
 import { DeleteDepartmentModal } from "../components/DeleteDepartmentModal";
 import { PositionsModal } from "../components/PositionsModal";
@@ -42,8 +45,13 @@ function DepartmentGridSkeleton() {
 }
 
 export function DepartmentsPage() {
+  const { user } = useAuth();
+  const isAdmin = isAdminRole(user?.role);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [officesLoading, setOfficesLoading] = useState(true);
+  const [offices, setOffices] = useState([]);
+  const [officeFilter, setOfficeFilter] = useState(undefined);
   const [departments, setDepartments] = useState([]);
   const [deptPositionsLoading, setDeptPositionsLoading] = useState(false);
   const [deptPositions, setDeptPositions] = useState([]);
@@ -73,6 +81,32 @@ export function DepartmentsPage() {
   }, [searchTerm]);
 
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setOfficesLoading(true);
+      try {
+        const res = isAdmin
+          ? await officeService.getOffices()
+          : { data: user?.officeId ? [{ id: user.officeId, name: user.officeName }] : [] };
+        const list = getListData(res);
+        if (!cancelled) {
+          setOffices(list);
+          if (!isAdmin && user?.officeId) {
+            setOfficeFilter(user.officeId);
+          }
+        }
+      } catch {
+        if (!cancelled) toast.error("Failed to load offices");
+      } finally {
+        if (!cancelled) setOfficesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin, user?.officeId, user?.officeName]);
+
+  useEffect(() => {
     if (prevLoadingRef.current && !loading) {
       setResultAnimVersion((v) => v + 1);
     }
@@ -85,7 +119,10 @@ export function DepartmentsPage() {
   const refreshAll = useCallback(async () => {
     setLoading(true);
     try {
-      const params = debouncedSearchTerm ? { keyword: debouncedSearchTerm } : {};
+      const params = {
+        ...(debouncedSearchTerm ? { keyword: debouncedSearchTerm } : {}),
+        ...(officeFilter ? { officeId: officeFilter } : {}),
+      };
       const deptRes = await departmentService.getDepartments(params);
       if (!isSuccessResponse(deptRes)) {
         toast.error(getResponseMessage(deptRes, "Failed to load departments"));
@@ -99,7 +136,7 @@ export function DepartmentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchTerm]);
+  }, [debouncedSearchTerm, officeFilter]);
 
   useEffect(() => {
     refreshAll().catch(() => {});
@@ -166,12 +203,18 @@ export function DepartmentsPage() {
   const handleSubmitDepartment = async (payload) => {
     setSubmitting(true);
     try {
+      const finalOfficeId = payload?.officeId || officeFilter || user?.officeId;
+      if (!finalOfficeId) {
+        toast.error("Please select office");
+        return;
+      }
+      const requestPayload = { ...payload, officeId: finalOfficeId };
       if (editingDepartment?.id) {
-        const res = await departmentService.updateDepartment(editingDepartment.id, payload);
+        const res = await departmentService.updateDepartment(editingDepartment.id, requestPayload);
         if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save department"));
         toast.success(getResponseMessage(res, "Department updated successfully"));
       } else {
-        const res = await departmentService.createDepartment(payload);
+        const res = await departmentService.createDepartment(requestPayload);
         if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save department"));
         toast.success(getResponseMessage(res, "Department created successfully"));
       }
@@ -305,7 +348,19 @@ export function DepartmentsPage() {
           className="rounded-xl p-4"
           style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
         >
-          <div className={`max-w-md ${isSearchPending ? "search-input-pending" : ""}`}>
+          <div className="flex flex-wrap items-center gap-3">
+            {isAdmin && (
+              <Select
+                value={officeFilter}
+                onChange={(value) => setOfficeFilter(value ?? undefined)}
+                placeholder="All Offices"
+                allowClear
+                loading={officesLoading}
+                style={{ minWidth: 220 }}
+                options={offices.map((o) => ({ value: o.id, label: o.name }))}
+              />
+            )}
+            <div className={`flex-1 min-w-[220px] ${isSearchPending ? "search-input-pending" : ""}`}>
             <Input
               placeholder="Search by name or description…"
               value={searchTerm}
@@ -315,6 +370,7 @@ export function DepartmentsPage() {
               suffix={isSearchPending ? <Spin size="small" style={{ color: "#8B5CF6" }} /> : null}
               size="middle"
             />
+            </div>
           </div>
         </div>
       )}
@@ -515,6 +571,9 @@ export function DepartmentsPage() {
       <DepartmentModal
         open={deptModalOpen}
         department={editingDepartment}
+        offices={offices}
+        selectedOfficeId={officeFilter || user?.officeId || editingDepartment?.officeId}
+        allowOfficeChange={isAdmin}
         onClose={() => {
           setDeptModalOpen(false);
           setEditingDepartment(null);

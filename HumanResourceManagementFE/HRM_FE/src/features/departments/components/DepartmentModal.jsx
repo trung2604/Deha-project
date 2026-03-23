@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { Input } from "antd";
+import { Input, Select } from "antd";
 
-export function DepartmentModal({ open, department, onClose, onSubmit, submitting }) {
+export function DepartmentModal({ open, department, offices = [], selectedOfficeId, allowOfficeChange = true, onClose, onSubmit, submitting }) {
   const initial = useMemo(
     () => ({
       name: department?.name ?? "",
       description: department?.description ?? "",
+      officeId: department?.officeId ?? selectedOfficeId ?? "",
     }),
-    [department]
+    [department, selectedOfficeId]
   );
 
   const [form, setForm] = useState(initial);
@@ -26,6 +27,7 @@ export function DepartmentModal({ open, department, onClose, onSubmit, submittin
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!form.officeId) return;
     onSubmit?.(form);
   };
 
@@ -54,6 +56,21 @@ export function DepartmentModal({ open, department, onClose, onSubmit, submittin
 
         <form onSubmit={handleSubmit} className="p-5">
           <div className="space-y-3 mb-4">
+            <div>
+              <label className="block mb-1.5" style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: "500" }}>
+                <span style={{ color: "#FF4D4F" }}>*</span> Office
+              </label>
+              <Select
+                value={form.officeId}
+                onChange={(value) => setForm((p) => ({ ...p, officeId: value ?? "" }))}
+                disabled={!allowOfficeChange || submitting}
+                options={offices.map((o) => ({ value: o.id, label: o.name }))}
+                placeholder="Select office"
+                style={{ width: "100%" }}
+                size="middle"
+              />
+            </div>
+
             <div>
               <label className="block mb-1.5" style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: "500" }}>
                 <span style={{ color: "#FF4D4F" }}>*</span> Department Name

@@ -4,11 +4,14 @@ import { toast } from "sonner";
 import { Input, Select } from "antd";
 import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
-import { getDepartmentDirectoryPayload } from "@/utils/apiResponse";
+import officeService from "@/features/offices/api/officeService";
+import { getDepartmentDirectoryPayload, getListData } from "@/utils/apiResponse";
 
 export function UserModal({ user, onClose, onSave, submitting }) {
   const isEdit = !!user?.id;
 
+  const [officesLoading, setOfficesLoading] = useState(true);
+  const [offices, setOffices] = useState([]);
   const [departmentsLoading, setDepartmentsLoading] = useState(true);
   const [departments, setDepartments] = useState([]);
   const [positionsLoading, setPositionsLoading] = useState(false);
@@ -21,11 +24,13 @@ export function UserModal({ user, onClose, onSave, submitting }) {
     email: nextUser?.email ?? "",
     role: nextUser?.role ?? "",
     password: "",
+    officeId: nextUser?.officeId ?? nextUser?.office?.id ?? undefined,
     departmentId: nextUser?.departmentId ?? nextUser?.department?.id ?? undefined,
     positionId: nextUser?.positionId ?? nextUser?.position?.id ?? undefined,
   });
 
   const [formData, setFormData] = useState(() => toFormData(user));
+  const isManager = formData.role === "ROLE_MANAGER";
 
   useEffect(() => {
     setFormData(toFormData(user));
@@ -33,11 +38,36 @@ export function UserModal({ user, onClose, onSave, submitting }) {
 
   useEffect(() => {
     let cancelled = false;
+    (async () => {
+      setOfficesLoading(true);
+      try {
+        const res = await officeService.getOffices();
+        const list = getListData(res);
+        if (!cancelled) setOffices(list);
+      } catch {
+        if (!cancelled) toast.error("Failed to load offices");
+      } finally {
+        if (!cancelled) setOfficesLoading(false);
+      }
+    })();
 
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const officeId = formData.officeId;
+    if (!officeId) {
+      setDepartments([]);
+      setFormData((p) => ({ ...p, departmentId: undefined, positionId: undefined }));
+      return;
+    }
     (async () => {
       setDepartmentsLoading(true);
       try {
-        const res = await departmentService.getDepartments();
+        const res = await departmentService.getDepartments({ officeId });
         const { departments: list } = getDepartmentDirectoryPayload(res);
         if (!cancelled) setDepartments(list);
       } catch {
@@ -50,7 +80,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [formData.officeId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,10 +116,20 @@ export function UserModal({ user, onClose, onSave, submitting }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.departmentId)
-      return toast.error("Please select a department");
-    if (!formData.positionId) return toast.error("Please select a position");
+    if (!formData.officeId) return toast.error("Please select an office");
     if (!formData.role) return toast.error("Please select a role");
+    const hasDept = !!formData.departmentId;
+    const hasPos = !!formData.positionId;
+
+    if (!isManager) {
+      if (!hasDept) return toast.error("Please select a department");
+      if (!hasPos) return toast.error("Please select a position");
+    } else {
+      // For manager: either pick both department+position, or leave both empty.
+      if (hasDept !== hasPos) {
+        return toast.error("For manager, select both department and position (or leave both empty)");
+      }
+    }
 
     if (!isEdit) {
       if (!formData.password || formData.password.length < 8) {
@@ -103,8 +143,9 @@ export function UserModal({ user, onClose, onSave, submitting }) {
       lastName: formData.lastName.trim(),
       email: formData.email.trim(),
       role: formData.role,
-      department: { id: formData.departmentId },
-      position: { id: formData.positionId },
+      office: { id: formData.officeId },
+      ...(hasDept ? { department: { id: formData.departmentId } } : {}),
+      ...(hasPos ? { position: { id: formData.positionId } } : {}),
       ...(isEdit ? {} : { password: formData.password }),
     };
 
@@ -196,7 +237,35 @@ export function UserModal({ user, onClose, onSave, submitting }) {
 
             <div className="col-span-2">
               <label className="block mb-1.5">
-                <span placeholder="Select department" style={{ color: "#FF4D4F" }}>*</span> Department
+                <span style={{ color: "#FF4D4F" }}>*</span> Office
+              </label>
+              <Select
+                value={formData.officeId}
+                onChange={(value) =>
+                  setFormData((p) => ({
+                    ...p,
+                    officeId: value ?? undefined,
+                    departmentId: undefined,
+                    positionId: undefined,
+                  }))
+                }
+                disabled={officesLoading || submitting}
+                placeholder={officesLoading ? "Loading offices…" : "Select office"}
+                style={{ width: "100%" }}
+                size="middle"
+                options={offices.map((o) => ({ value: o.id, label: o.name }))}
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block mb-1.5">
+                {isManager ? (
+                  <span style={{ color: "#8C8C8C" }}>Department (optional)</span>
+                ) : (
+                  <>
+                    <span placeholder="Select department" style={{ color: "#FF4D4F" }}>*</span> Department
+                  </>
+                )}
               </label>
               <Select
                 value={formData.departmentId}
@@ -207,9 +276,11 @@ export function UserModal({ user, onClose, onSave, submitting }) {
                     positionId: undefined,
                   }))
                 }
-                disabled={departmentsLoading || submitting}
+                disabled={!formData.officeId || departmentsLoading || submitting}
                 placeholder={
-                  departmentsLoading ? "Loading departments…" : "Select department"
+                  !formData.officeId
+                    ? "Select office first"
+                    : departmentsLoading ? "Loading departments…" : "Select department"
                 }
                 style={{ width: "100%" }}
                 size="middle"
@@ -219,7 +290,13 @@ export function UserModal({ user, onClose, onSave, submitting }) {
 
             <div className="col-span-2">
               <label className="block mb-1.5">
-                <span placeholder="Chosse department first" style={{ color: "#FF4D4F" }}>*</span> Position
+                {isManager ? (
+                  <span style={{ color: "#8C8C8C" }}>Position (optional)</span>
+                ) : (
+                  <>
+                    <span placeholder="Chosse department first" style={{ color: "#FF4D4F" }}>*</span> Position
+                  </>
+                )}
               </label>
               <Select
                 value={formData.positionId}
@@ -276,6 +353,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
                 size="middle"
                 options={[
                   { value: "ROLE_ADMIN", label: "ADMIN" },
+                  { value: "ROLE_MANAGER", label: "MANAGER" },
                   { value: "ROLE_EMPLOYEE", label: "EMPLOYEE" },
                 ]}
               />

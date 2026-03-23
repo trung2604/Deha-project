@@ -1,5 +1,5 @@
 /**
- * Backend uses enum Role: ROLE_ADMIN | ROLE_EMPLOYEE (serialized in JSON).
+ * Backend uses enum Role: ROLE_ADMIN | ROLE_MANAGER | ROLE_EMPLOYEE.
  */
 export function normalizeRole(role) {
   if (role == null) return "";
@@ -16,6 +16,11 @@ export function isEmployeeRole(role) {
   return r === "ROLE_EMPLOYEE" || r === "EMPLOYEE";
 }
 
+export function isManagerRole(role) {
+  const r = normalizeRole(role);
+  return r === "ROLE_MANAGER" || r === "MANAGER";
+}
+
 /**
  * @param {string} itemRoles 
  * @param {string|undefined} userRole 
@@ -23,6 +28,7 @@ export function isEmployeeRole(role) {
 export function canAccessNavItem(itemRoles, userRole) {
   if (!itemRoles?.length) return true;
   if (isAdminRole(userRole) && itemRoles.includes("ADMIN")) return true;
+  if (isManagerRole(userRole) && itemRoles.includes("MANAGER")) return true;
   if (isEmployeeRole(userRole) && itemRoles.includes("EMPLOYEE")) return true;
   return false;
 }

@@ -23,8 +23,11 @@ public class DepartmentController {
     }
 
     @GetMapping()
-    public ApiResponse getDepartments(@RequestParam(required = false) String keyword) {
-        return success("Departments retrieved successfully", HttpStatus.OK, departmentService.getDepartmentDirectory(keyword));
+    public ApiResponse getDepartments(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) UUID officeId
+    ) {
+        return success("Departments retrieved successfully", HttpStatus.OK, departmentService.getDepartmentDirectory(keyword, officeId));
     }
 
     @GetMapping("/{id}")

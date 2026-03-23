@@ -4,8 +4,12 @@ import com.deha.HumanResourceManagement.dto.user.UserRequest;
 import com.deha.HumanResourceManagement.dto.user.UserResponse;
 import com.deha.HumanResourceManagement.dto.user.UpdateUserRequest;
 import com.deha.HumanResourceManagement.entity.Department;
+import com.deha.HumanResourceManagement.entity.Office;
+import com.deha.HumanResourceManagement.entity.Role;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.Position;
+import com.deha.HumanResourceManagement.exception.ForbiddenException;
+import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.UserRepository;
@@ -21,14 +25,18 @@ import java.util.UUID;
 public class UserService {
     private final UserRepository userRepository;
     private final DepartmentService departmentService;
+    private final OfficeService officeService;
     private final PositionRepository positionRepository;
+    private final AccessScopeService accessScopeService;
     private final PasswordEncoder passwordEncoder;
 
 
-    public UserService(UserRepository userRepository, DepartmentService departmentService, PositionRepository positionRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, DepartmentService departmentService, OfficeService officeService, PositionRepository positionRepository, AccessScopeService accessScopeService, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.departmentService = departmentService;
+        this.officeService = officeService;
         this.positionRepository = positionRepository;
+        this.accessScopeService = accessScopeService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -36,12 +44,39 @@ public class UserService {
         if(userRepository.existsByEmail(userRequest.getEmail())) {
             throw new ResourceAlreadyExistException("Email already exists");
         }
+        UUID officeId = userRequest.getOffice() != null ? userRequest.getOffice().getId() : null;
         UUID departmentId = userRequest.getDepartment() != null ? userRequest.getDepartment().getId() : null;
         UUID positionId = userRequest.getPosition() != null ? userRequest.getPosition().getId() : null;
+        Office office = officeService.findById(officeId);
+        accessScopeService.assertCanManageOffice(office.getId());
+        guardManagerCannotAssignAdmin(userRequest.getRole());
 
-        Department department = departmentService.findDepartmentById(departmentId);
-        Position position = positionRepository.findById(positionId).orElseThrow(
-                () -> new ResourceNotFoundException("Position not found with id: " + positionId));
+        Role targetRole = userRequest.getRole();
+        boolean deptProvided = departmentId != null;
+        boolean posProvided = positionId != null;
+
+        Department department = null;
+        Position position = null;
+
+        if (targetRole == Role.ROLE_MANAGER) {
+            // Allow manager with only office; department/position can be null.
+            if (deptProvided || posProvided) {
+                if (departmentId == null || positionId == null) {
+                    throw new BadRequestException("Department and Position must be provided together or left empty for manager");
+                }
+                department = departmentService.findDepartmentById(departmentId);
+                position = positionRepository.findById(positionId).orElseThrow(
+                        () -> new ResourceNotFoundException("Position not found with id: " + positionId));
+            }
+        } else {
+            // Non-manager roles require department + position assignment.
+            if (!deptProvided || !posProvided) {
+                throw new BadRequestException("Department and Position are required for this role");
+            }
+            department = departmentService.findDepartmentById(departmentId);
+            position = positionRepository.findById(positionId).orElseThrow(
+                    () -> new ResourceNotFoundException("Position not found with id: " + positionId));
+        }
 
         User user = new User();
         user.applyBasicInfo(
@@ -51,7 +86,7 @@ public class UserService {
                 userRequest.getRole()
         );
         user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-        user.assignDepartmentAndPosition(department, position);
+        user.assignOfficeDepartmentAndPosition(office, department, position);
         user.markCreatedNow();
         user.activate();
         userRepository.save(user);
@@ -61,12 +96,37 @@ public class UserService {
     public UserResponse updateUser(UUID id, UpdateUserRequest UserRequest) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        UUID officeId = UserRequest.getOffice() != null ? UserRequest.getOffice().getId() : null;
         UUID departmentId = UserRequest.getDepartment() != null ? UserRequest.getDepartment().getId() : null;
         UUID positionId = UserRequest.getPosition() != null ? UserRequest.getPosition().getId() : null;
+        Office office = officeService.findById(officeId);
+        accessScopeService.assertCanManageOffice(office.getId());
+        guardManagerCannotAssignAdmin(UserRequest.getRole());
 
-        Department department = departmentService.findDepartmentById(departmentId);
-        Position position = positionRepository.findById(positionId).orElseThrow(
-                () -> new ResourceNotFoundException("Position not found with id: " + positionId));
+        Role targetRole = UserRequest.getRole();
+        boolean deptProvided = departmentId != null;
+        boolean posProvided = positionId != null;
+
+        Department department = null;
+        Position position = null;
+
+        if (targetRole == Role.ROLE_MANAGER) {
+            if (deptProvided || posProvided) {
+                if (departmentId == null || positionId == null) {
+                    throw new BadRequestException("Department and Position must be provided together or left empty for manager");
+                }
+                department = departmentService.findDepartmentById(departmentId);
+                position = positionRepository.findById(positionId).orElseThrow(
+                        () -> new ResourceNotFoundException("Position not found with id: " + positionId));
+            }
+        } else {
+            if (!deptProvided || !posProvided) {
+                throw new BadRequestException("Department and Position are required for this role");
+            }
+            department = departmentService.findDepartmentById(departmentId);
+            position = positionRepository.findById(positionId).orElseThrow(
+                    () -> new ResourceNotFoundException("Position not found with id: " + positionId));
+        }
 
         user.applyBasicInfo(
                 UserRequest.getFirstName(),
@@ -74,37 +134,52 @@ public class UserService {
                 UserRequest.getEmail(),
                 UserRequest.getRole()
         );
-        user.assignDepartmentAndPosition(department, position);
+        user.assignOfficeDepartmentAndPosition(office, department, position);
         userRepository.save(user);
         return UserResponse.fromEntity(user);
     }
 
     public Page<UserResponse> getAllUsers(Pageable pageable) {
-        Page<User> users = userRepository.searchUsers(null, null, null, null, pageable);
+        User actor = accessScopeService.currentUserOrThrow();
+        UUID officeId = accessScopeService.isAdmin(actor) ? null : actor.getOffice().getId();
+        Page<User> users = userRepository.searchUsers(null, officeId, null, null, null, pageable);
         return users.map(UserResponse::fromEntity);
     }
 
     public UserResponse getUserById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        accessScopeService.assertCanManageOffice(user.getOffice() != null ? user.getOffice().getId() : null);
         return UserResponse.fromEntity(user);
     }
 
     public void deleteUser(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        accessScopeService.assertCanManageOffice(user.getOffice() != null ? user.getOffice().getId() : null);
         userRepository.delete(user);
     }
 
     public Page<UserResponse> searchUsers(String keyword, Pageable pageable) {
         String normalizedKeyword = keyword != null && !keyword.isBlank() ? keyword.trim() : null;
-        Page<User> users = userRepository.searchUsers(normalizedKeyword, null, null, null, pageable);
+        User actor = accessScopeService.currentUserOrThrow();
+        UUID officeId = accessScopeService.isAdmin(actor) ? null : actor.getOffice().getId();
+        Page<User> users = userRepository.searchUsers(normalizedKeyword, officeId, null, null, null, pageable);
         return users.map(UserResponse::fromEntity);
     }
 
-    public Page<UserResponse> getUsersWithFilters(String keyword, UUID departmentId, UUID positionId, Boolean active, Pageable pageable) {
+    public Page<UserResponse> getUsersWithFilters(String keyword, UUID officeId, UUID departmentId, UUID positionId, Boolean active, Pageable pageable) {
         String normalizedKeyword = keyword != null && !keyword.isBlank() ? keyword.trim() : null;
-        Page<User> users = userRepository.searchUsers(normalizedKeyword, departmentId, positionId, active, pageable);
+        User actor = accessScopeService.currentUserOrThrow();
+        UUID scopedOfficeId = accessScopeService.isAdmin(actor) ? officeId : actor.getOffice().getId();
+        Page<User> users = userRepository.searchUsers(normalizedKeyword, scopedOfficeId, departmentId, positionId, active, pageable);
         return users.map(UserResponse::fromEntity);
+    }
+
+    private void guardManagerCannotAssignAdmin(Role targetRole) {
+        User actor = accessScopeService.currentUserOrThrow();
+        if (accessScopeService.isManager(actor) && targetRole == Role.ROLE_ADMIN) {
+            throw new ForbiddenException("Manager cannot assign admin role");
+        }
     }
 }

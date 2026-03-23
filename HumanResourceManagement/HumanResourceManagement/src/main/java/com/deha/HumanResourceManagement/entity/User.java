@@ -41,6 +41,10 @@ public class User {
     private boolean isActive;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "office_id", nullable = true)
+    private Office office;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
 
@@ -62,15 +66,30 @@ public class User {
         this.role = role;
     }
 
-    public void assignDepartmentAndPosition(Department department, Position position) {
+    public void assignOfficeDepartmentAndPosition(Office office, Department department, Position position) {
+        if (office == null) {
+            throw new BadRequestException("Office is required");
+        }
+        // Allow manager to be created/updated with only an office (department/position can be null).
+        if (department == null && position == null) {
+            this.office = office;
+            this.department = null;
+            this.position = null;
+            return;
+        }
         if (department == null || position == null) {
-            throw new BadRequestException("Department and Position are required");
+            throw new BadRequestException("Department and Position must be provided together or left empty");
+        }
+        if (department.getOffice() == null || department.getOffice().getId() == null
+                || !department.getOffice().getId().equals(office.getId())) {
+            throw new BadRequestException("Department does not belong to the specified office");
         }
         if (position.getDepartment() == null
                 || position.getDepartment().getId() == null
                 || !position.getDepartment().getId().equals(department.getId())) {
             throw new BadRequestException("Position does not belong to the specified department");
         }
+        this.office = office;
         this.department = department;
         this.position = position;
     }

@@ -15,13 +15,17 @@ public class DepartmentResponse {
     private UUID id;
     private String name;
     private String description;
+    private UUID officeId;
+    private String officeName;
 
     public static DepartmentResponse fromEntity(Department department) {
         if (department == null) return null;
         return new DepartmentResponse(
                 department.getId(),
                 department.getName(),
-                department.getDescription()
+                department.getDescription(),
+                department.getOffice() != null ? department.getOffice().getId() : null,
+                department.getOffice() != null ? department.getOffice().getName() : null
         );
     }
 }

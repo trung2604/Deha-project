@@ -15,6 +15,8 @@ public class DepartmentDetailResponse {
     private UUID id;
     private String name;
     private String description;
+    private UUID officeId;
+    private String officeName;
     private List<DepartmentPositionItem> positions;
     private List<DepartmentUserItem> users;
 
@@ -24,6 +26,8 @@ public class DepartmentDetailResponse {
                 department.getId(),
                 department.getName(),
                 department.getDescription(),
+                department.getOffice() != null ? department.getOffice().getId() : null,
+                department.getOffice() != null ? department.getOffice().getName() : null,
                 department.getPositions().stream()
                         .map(DepartmentPositionItem::fromEntity)
                         .toList(),

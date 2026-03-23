@@ -30,3 +30,7 @@ export function getDepartmentDirectoryPayload(res) {
     totalCount: typeof d?.totalCount === "number" ? d.totalCount : 0,
   };
 }
+
+export function getListData(res) {
+  return Array.isArray(res?.data) ? res.data : [];
+}

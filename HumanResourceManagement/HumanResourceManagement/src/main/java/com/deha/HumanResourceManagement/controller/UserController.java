@@ -37,12 +37,13 @@ public class UserController {
     @GetMapping()
     public ApiResponse getAllUsers(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) UUID officeId,
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false) UUID positionId,
             @RequestParam(required = false) Boolean active,
             @PageableDefault(page = 0, size = 10) Pageable pageable
     ) {
-        Page<UserResponse> results = userService.getUsersWithFilters(keyword, departmentId, positionId, active, pageable);
+        Page<UserResponse> results = userService.getUsersWithFilters(keyword, officeId, departmentId, positionId, active, pageable);
         return success("Users retrieved successfully", HttpStatus.OK, PageResponse.fromPage(results));
     }
 
@@ -60,11 +61,12 @@ public class UserController {
     @GetMapping("/search")
     public ApiResponse searchUsers(
             @RequestParam String keyword,
+            @RequestParam(required = false) UUID officeId,
             @RequestParam(required = false) UUID departmentId,
             @RequestParam(required = false) UUID positionId,
             @RequestParam(required = false) Boolean active,
             @PageableDefault(page = 0, size = 10, sort = "firstName") Pageable pageable) {
-        Page<UserResponse> results = userService.getUsersWithFilters(keyword, departmentId, positionId, active, pageable);
+        Page<UserResponse> results = userService.getUsersWithFilters(keyword, officeId, departmentId, positionId, active, pageable);
         return success("Users retrieved successfully", HttpStatus.OK, PageResponse.fromPage(results));
     }
 

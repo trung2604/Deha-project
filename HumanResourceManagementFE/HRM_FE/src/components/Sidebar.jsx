@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, LayoutDashboard, UserCircle, Users } from 'lucide-react';
+import { Building2, Building, LayoutDashboard, UserCircle, Users } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { canAccessNavItem } from '@/utils/role';
 
@@ -8,10 +8,11 @@ import { canAccessNavItem } from '@/utils/role';
  * (Backend: Users / Departments APIs are ADMIN-only; Profile & auth are for all authenticated users.)
  */
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'EMPLOYEE'] },
-  { path: '/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
-  { path: '/departments', label: 'Departments', icon: Building2, roles: ['ADMIN'] },
-  { path: '/profile', label: 'Profile', icon: UserCircle, roles: ['ADMIN', 'EMPLOYEE'] },
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'] },
+  { path: '/offices', label: 'Offices', icon: Building, roles: ['ADMIN'] },
+  { path: '/users', label: 'Users', icon: Users, roles: ['ADMIN', 'MANAGER'] },
+  { path: '/departments', label: 'Departments', icon: Building2, roles: ['ADMIN', 'MANAGER'] },
+  { path: '/profile', label: 'Profile', icon: UserCircle, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'] },
 ];
 
 export function Sidebar({ isOpen, onClose }) {
@@ -136,6 +137,7 @@ function formatRoleLabel(role) {
   if (!role) return 'Employee';
   const s = String(role);
   if (s.includes('ADMIN')) return 'Administrator';
+  if (s.includes('MANAGER')) return 'Manager';
   if (s.includes('EMPLOYEE')) return 'Employee';
   return s.replace(/^ROLE_/, '');
 }
