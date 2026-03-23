@@ -14,17 +14,22 @@ export function UserModal({ user, onClose, onSave, submitting }) {
   const [positionsLoading, setPositionsLoading] = useState(false);
   const [positions, setPositions] = useState([]);
 
-  // Backend expects { department: {id}, position: {id} }
-  const [formData, setFormData] = useState(() => ({
-    id: user?.id,
-    firstName: user?.firstName ?? "",
-    lastName: user?.lastName ?? "",
-    email: user?.email ?? "",
-    role: user?.role ?? "",
+  const toFormData = (nextUser) => ({
+    id: nextUser?.id,
+    firstName: nextUser?.firstName ?? "",
+    lastName: nextUser?.lastName ?? "",
+    email: nextUser?.email ?? "",
+    role: nextUser?.role ?? "",
     password: "",
-    departmentId: user?.departmentId ?? user?.department?.id ?? undefined,
-    positionId: user?.positionId ?? user?.position?.id ?? undefined,
-  }));
+    departmentId: nextUser?.departmentId ?? nextUser?.department?.id ?? undefined,
+    positionId: nextUser?.positionId ?? nextUser?.position?.id ?? undefined,
+  });
+
+  const [formData, setFormData] = useState(() => toFormData(user));
+
+  useEffect(() => {
+    setFormData(toFormData(user));
+  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,7 +147,9 @@ export function UserModal({ user, onClose, onSave, submitting }) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form onSubmit={handleSubmit} className="p-6" autoComplete="off">
+          <input type="text" name="fake-username" autoComplete="username" className="hidden" tabIndex={-1} />
+          <input type="password" name="fake-password" autoComplete="new-password" className="hidden" tabIndex={-1} />
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
               <label className="block mb-1.5">
@@ -154,6 +161,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
                 onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                 disabled={submitting}
                 size="middle"
+                autoComplete="off"
               />
             </div>
 
@@ -167,6 +175,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                 disabled={submitting}
                 size="middle"
+                autoComplete="off"
               />
             </div>
 
@@ -181,6 +190,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 disabled={submitting}
                 size="middle"
+                autoComplete="new-email"
               />
             </div>
 
@@ -248,6 +258,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
                   }
                   disabled={submitting}
                   size="middle"
+                  autoComplete="new-password"
                 />
               </div>
             )}
