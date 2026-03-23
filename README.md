@@ -35,6 +35,9 @@ Human Resource Management (HRM) System
   - `GET /api/users` supports pagination + optional filters: `keyword`, `departmentId`, `positionId`, `active`
   - `GET /api/users/search?keyword=...` supports keyword search + optional filters + pagination
   - User query refactored to native SQL for stable filtered pagination on PostgreSQL
+- Backend (Departments)
+  - `GET /api/departments?keyword=` optional search on **name** and **description** (case-insensitive, PostgreSQL `ILIKE`)
+  - Response `data`: `{ departments: [...], totalCount }` where `totalCount` is full row count in DB (for UI badges like “matched / total”)
 - Frontend (Users)
   - Users list uses **server-side** search + pagination (with debounce for search keyword)
   - Department/Position/Status filters are now server-side (global on dataset, not page-local)
@@ -43,6 +46,7 @@ Human Resource Management (HRM) System
   - Refresh token retry improved on `401` / `403` (axios interceptor)
   - Auth context/API response handling standardized with shared response helpers
 - Frontend (Departments)
+  - Departments list calls `GET /api/departments` with debounced `keyword`; uses `getDepartmentDirectoryPayload()` for `{ departments, totalCount }`
   - `Department detail` modal: fixed modal size, internal flex layout; **Positions**/**Users** cards grow/shrink with internal scroll
   - `Manage positions` modal: improved fixed-size layout, stable list scroll behavior, open/close transition, loading overlay (`Spin`)
   - Fixed modal state flow so opening a department no longer auto-opens `Manage positions`

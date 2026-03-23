@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Input, Select } from "antd";
 import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
+import { getDepartmentDirectoryPayload } from "@/utils/apiResponse";
 
 export function UserModal({ user, onClose, onSave, submitting }) {
   const isEdit = !!user?.id;
@@ -32,7 +33,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
       setDepartmentsLoading(true);
       try {
         const res = await departmentService.getDepartments();
-        const list = Array.isArray(res?.data) ? res.data : (res?.data ?? []);
+        const { departments: list } = getDepartmentDirectoryPayload(res);
         if (!cancelled) setDepartments(list);
       } catch {
         if (!cancelled) toast.error("Failed to load departments");

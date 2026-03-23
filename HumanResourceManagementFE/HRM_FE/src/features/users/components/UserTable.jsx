@@ -1,13 +1,27 @@
 import { ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
-import { Select } from "antd";
+import { Select, Spin } from "antd";
 
 const statusColors = {
   Active: { bg: "rgba(82, 196, 26, 0.1)", text: "#52C41A" },
   Inactive: { bg: "rgba(255, 77, 79, 0.1)", text: "#FF4D4F" },
 };
 
-export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, totalElements, page, size, onPageChange, onSizeChange }) {
+export function UserTable({
+  loading,
+  resultAnimVersion = 0,
+  users = [],
+  onEdit,
+  onDelete,
+  totalPages,
+  totalElements,
+  page,
+  size,
+  onPageChange,
+  onSizeChange,
+}) {
   const list = Array.isArray(users) ? users : [];
+  const showSkeletonOnly = loading && list.length === 0;
+  const refetchingOverlay = loading && list.length > 0;
 
   const currentPage = Math.max(0, Number(page ?? 0));
   const pageCount = Math.max(0, Number(totalPages ?? 0));
@@ -46,15 +60,43 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
     });
   };
 
+  const fullName = (user) =>
+    `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() || "Unknown";
+
   return (
     <div
-      className="rounded-xl overflow-hidden"
+      className="rounded-xl overflow-hidden relative"
       style={{
         backgroundColor: "#FFFFFF",
         boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
       }}
     >
-      <div className="overflow-x-auto">
+      {refetchingOverlay && (
+        <div
+          className="absolute inset-0 z-20 flex items-start justify-center pt-24 pointer-events-none"
+          style={{
+            background: "linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.5) 40%, transparent 100%)",
+            backdropFilter: "blur(1px)",
+          }}
+        >
+          <div
+            className="pointer-events-none flex items-center gap-2 px-4 py-2 rounded-full border"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.95)",
+              borderColor: "rgba(22,119,255,0.2)",
+              boxShadow: "0 8px 24px rgba(22,119,255,0.12)",
+            }}
+          >
+            <Spin size="small" />
+            <span style={{ color: "#595959", fontSize: "13px", fontWeight: 500 }}>Updating results…</span>
+          </div>
+        </div>
+      )}
+
+      <div
+        className="overflow-x-auto transition-opacity duration-300 ease-out"
+        style={{ opacity: refetchingOverlay ? 0.55 : 1 }}
+      >
         <table className="w-full table-fixed">
           <thead style={{ backgroundColor: "#F5F7FA" }}>
             <tr>
@@ -109,13 +151,9 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {showSkeletonOnly ? (
               Array.from({ length: 8 }).map((_, i) => (
-                <tr
-                  key={i}
-                  className="border-t"
-                  style={{ borderColor: "#E8E8E8" }}
-                >
+                <tr key={i} className="border-t" style={{ borderColor: "#E8E8E8" }}>
                   <td className="px-4 py-4" colSpan={8}>
                     <div className="h-10 rounded shimmer" />
                   </td>
@@ -124,22 +162,29 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
             ) : list.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-16 text-center">
-                  <p style={{ color: "#595959", fontSize: "14px" }}>
+                  <p className="mb-1" style={{ color: "#0A0A0A", fontSize: "15px", fontWeight: 600 }}>
                     No users found
+                  </p>
+                  <p style={{ color: "#8C8C8C", fontSize: "13px" }}>
+                    Try another keyword or change filters
                   </p>
                 </td>
               </tr>
             ) : (
-              list.map((user) => (
+              list.map((user, index) => (
                 <tr
-                  key={user.id}
-                  className="border-t transition-colors duration-150 hover:bg-blue-50/30"
-                  style={{ borderColor: "#E8E8E8", height: "56px" }}
+                  key={`${resultAnimVersion}-${user.id}`}
+                  className="border-t transition-colors duration-150 hover:bg-blue-50/30 user-table-row-enter"
+                  style={{
+                    borderColor: "#E8E8E8",
+                    height: "56px",
+                    animationDelay: `${Math.min(index, 14) * 38}ms`,
+                  }}
                 >
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0"
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0 transition-transform duration-300 hover:scale-105"
                         style={{
                           backgroundColor: "#1677FF",
                           fontSize: "13px",
@@ -156,8 +201,7 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                             fontWeight: "500",
                           }}
                         >
-                          {`${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
-                            "Unknown"}
+                          {fullName(user)}
                         </div>
                       </div>
                     </div>
@@ -168,7 +212,11 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                     </span>
                   </td>
                   <td className="px-4 py-4 truncate">
-                    <span className="block truncate" style={{ color: "#595959", fontSize: "14px" }} title={user.role ?? "-"}>
+                    <span
+                      className="block truncate"
+                      style={{ color: "#595959", fontSize: "14px" }}
+                      title={user.role ?? "-"}
+                    >
                       {formatRole(user.role)}
                     </span>
                   </td>
@@ -218,6 +266,7 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <button
+                        type="button"
                         onClick={() => onEdit(user)}
                         className="p-2 rounded-lg transition-colors duration-150 hover:bg-blue-50"
                         style={{ color: "#1677FF" }}
@@ -225,6 +274,7 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => onDelete(user)}
                         className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50"
                         style={{ color: "#FF4D4F" }}
@@ -240,7 +290,7 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
         </table>
       </div>
 
-      {!loading && (
+      {!showSkeletonOnly && (
         <div
           className="px-6 py-4 border-t flex items-center justify-between gap-4"
           style={{ borderColor: "#E8E8E8" }}
@@ -253,6 +303,7 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
             <Select
               value={currentSize}
               onChange={(value) => safeOnSizeChange(Number(value))}
+              disabled={refetchingOverlay}
               style={{ width: 110 }}
               size="middle"
               options={pageSizeOptions.map((opt) => ({
@@ -262,8 +313,9 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
             />
 
             <button
+              type="button"
               onClick={() => safeOnPageChange(Math.max(0, currentPage - 1))}
-              disabled={!canPrev}
+              disabled={!canPrev || refetchingOverlay}
               className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors duration-150"
               style={{
                 borderColor: "#E8E8E8",
@@ -280,8 +332,9 @@ export function UserTable({ loading, users = [], onEdit, onDelete, totalPages, t
             </span>
 
             <button
+              type="button"
               onClick={() => safeOnPageChange(currentPage + 1)}
-              disabled={!canNext}
+              disabled={!canNext || refetchingOverlay}
               className="w-8 h-8 rounded-lg border flex items-center justify-center transition-colors duration-150"
               style={{
                 borderColor: "#E8E8E8",

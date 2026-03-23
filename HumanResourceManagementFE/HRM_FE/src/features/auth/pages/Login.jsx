@@ -2,40 +2,38 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
-import { Checkbox, Input } from "antd";
+import { isAdminRole } from "@/utils/role";
+import { Checkbox, Form, Input } from "antd";
 
 function defaultHomePath(user) {
-  const role = user?.role;
-  if (role === "ADMIN" || role === "ROLE_ADMIN") return "/users";
+  if (isAdminRole(user?.role)) return "/users";
   return "/profile";
 }
 
 export function Login() {
   const navigate = useNavigate();
   const { isAuthenticated, user, login } = useAuth();
+  const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    remember: false,
-  });
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
     navigate(defaultHomePath(user), { replace: true });
   }, [isAuthenticated, user, navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (values) => {
     setSubmitting(true);
+    form.setFields([{ name: "password", errors: [] }]);
     try {
       const result = await login({
-        email: formData.email.trim(),
-        password: formData.password,
+        email: values.email.trim(),
+        password: values.password,
       });
 
       if (!result?.ok) {
-        toast.error(result?.message || "Login failed");
+        const msg = result?.message || "Invalid email or password";
+        toast.error(msg);
+        form.setFields([{ name: "password", errors: [msg] }]);
         return;
       }
 
@@ -57,7 +55,6 @@ export function Login() {
         className="w-full max-w-md rounded-xl p-8"
         style={{ backgroundColor: "#FFFFFF", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}
       >
-        {/* Logo & Title */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <div
@@ -91,63 +88,60 @@ export function Login() {
           </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label
-              className="block mb-1.5"
-              style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: "500" }}
-            >
-              Email Address
-            </label>
+        <Form
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={handleSubmit}
+          initialValues={{ remember: false }}
+          disabled={submitting}
+          validateMessages={{
+            required: "${label} is required",
+            types: { email: "Please enter a valid email address" },
+          }}
+        >
+          <Form.Item
+            label={<span style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: 500 }}>Email Address</span>}
+            name="email"
+            rules={[
+              { required: true, message: "Please enter your email" },
+              { type: "email", message: "Please enter a valid email address" },
+            ]}
+          >
             <Input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              disabled={submitting}
-              style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
-              size="middle"
               placeholder="you@company.com"
-            />
-          </div>
-
-          <div>
-            <label
-              className="block mb-1.5"
-              style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: "500" }}
-            >
-              Password
-            </label>
-            <Input.Password
-              required
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              disabled={submitting}
+              size="middle"
               style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
+              autoComplete="email"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label={<span style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: 500 }}>Password</span>}
+            name="password"
+            rules={[{ required: true, message: "Please enter your password" }]}
+            validateTrigger={["onSubmit", "onChange"]}
+          >
+            <Input.Password
               placeholder="••••••••"
               size="middle"
+              style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
+              autoComplete="current-password"
+              onChange={() => form.setFields([{ name: "password", errors: [] }])}
             />
-          </div>
+          </Form.Item>
 
-          <div className="flex items-center justify-start">
+          <Form.Item name="remember" valuePropName="checked" style={{ marginBottom: 20 }}>
             <div className="flex items-center gap-2">
-              <Checkbox
-                checked={formData.remember}
-                onChange={(e) =>
-                  setFormData({ ...formData, remember: e.target.checked })
-                }
-                disabled={submitting}
-                style={{ margin: 0 }}
-              />
+              <Checkbox style={{ margin: 0 }} />
               <span style={{ color: "#595959", fontSize: "13px" }}>Remember me</span>
             </div>
-          </div>
+          </Form.Item>
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full h-10 rounded-lg transition-all duration-150 hover:opacity-90"
+            className="w-full h-10 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
             style={{
               backgroundColor: "#1677FF",
               color: "#FFFFFF",
@@ -157,8 +151,7 @@ export function Login() {
           >
             {submitting ? "Signing in..." : "Sign In"}
           </button>
-        </form>
-
+        </Form>
       </div>
     </div>
   );
