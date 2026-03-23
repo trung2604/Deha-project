@@ -1,9 +1,10 @@
 import { Search } from 'lucide-react';
-import { Select, Input, Button } from 'antd';
+import { Select, Input, Button, Spin } from 'antd';
 
 export function UserFilters({
   searchTerm,
   onSearchTermChange,
+  isSearchPending = false,
   departmentFilter,
   onDepartmentFilterChange,
   positionFilter,
@@ -20,12 +21,17 @@ export function UserFilters({
       style={{ backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
     >
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-[200px] relative">
+        <div className={`flex-1 min-w-[200px] relative ${isSearchPending ? 'search-input-pending' : ''}`}>
           <Input
             placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => onSearchTermChange(e.target.value)}
             prefix={<Search className="w-4 h-4" style={{ color: '#595959' }} />}
+            suffix={
+              isSearchPending ? (
+                <Spin size="small" style={{ color: '#1677FF' }} />
+              ) : null
+            }
             allowClear
             style={{ width: '100%' }}
             size="middle"

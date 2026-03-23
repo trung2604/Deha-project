@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { UserFilters } from "../components/UserFilters";
@@ -9,6 +9,7 @@ import UserService from "@/features/users/api/UserService";
 import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
 import {
+  getDepartmentDirectoryPayload,
   getPageContent,
   getPageMeta,
   getResponseMessage,
@@ -16,7 +17,7 @@ import {
 } from "@/utils/apiResponse";
 
 export function UsersPage() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [users, setUsers] = useState([]);
   const [page, setPage] = useState(0);
@@ -33,6 +34,20 @@ export function UsersPage() {
   const [deletingUser, setDeletingUser] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [positions, setPositions] = useState([]);
+  const prevLoadingRef = useRef(false);
+  const [resultAnimVersion, setResultAnimVersion] = useState(0);
+
+  const isSearchPending = useMemo(
+    () => searchTerm.trim() !== debouncedSearchTerm,
+    [searchTerm, debouncedSearchTerm],
+  );
+
+  useEffect(() => {
+    if (prevLoadingRef.current && !loading) {
+      setResultAnimVersion((v) => v + 1);
+    }
+    prevLoadingRef.current = loading;
+  }, [loading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +58,7 @@ export function UsersPage() {
           positionService.getPositions(),
         ]);
         if (!cancelled) {
-          const deptList = Array.isArray(deptRes?.data) ? deptRes.data : [];
+          const { departments: deptList } = getDepartmentDirectoryPayload(deptRes);
           const posList = Array.isArray(posRes?.data) ? posRes.data : [];
           setDepartments(deptList);
           setPositions(posList);
@@ -119,8 +134,8 @@ export function UsersPage() {
   useEffect(() => {
     const t = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm.trim());
-      setPage(0); // Reset to first page when keyword actually updates (debounced).
-    }, 300);
+      setPage(0); 
+    }, 500);
     return () => clearTimeout(t);
   }, [searchTerm]);
 
@@ -260,6 +275,7 @@ export function UsersPage() {
       <UserFilters
         searchTerm={searchTerm}
         onSearchTermChange={handleSearchTermChange}
+        isSearchPending={isSearchPending}
         departmentFilter={departmentFilter}
         onDepartmentFilterChange={handleDepartmentFilterChange}
         positionFilter={positionFilter}
@@ -273,6 +289,7 @@ export function UsersPage() {
 
       <UserTable
         loading={loading}
+        resultAnimVersion={resultAnimVersion}
         users={filteredUsers}
         onEdit={setEditingUser}
         onDelete={setDeletingUser}

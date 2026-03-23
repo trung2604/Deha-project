@@ -1,15 +1,17 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Activity, Building2, CalendarCheck, DollarSign, FileText, LayoutDashboard, Users } from 'lucide-react';
+import { Building2, LayoutDashboard, UserCircle, Users } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { canAccessNavItem } from '@/utils/role';
 
+/**
+ * roles: ADMIN | EMPLOYEE — who sees this item in the sidebar
+ * (Backend: Users / Departments APIs are ADMIN-only; Profile & auth are for all authenticated users.)
+ */
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/users', label: 'Users', icon: Users },
-  { path: '/departments', label: 'Departments', icon: Building2 },
-  { path: '/attendance', label: 'Attendance', icon: CalendarCheck },
-  { path: '/leave-requests', label: 'Leave Requests', icon: FileText },
-  { path: '/salary', label: 'Salary', icon: DollarSign },
-  { path: '/activity-logs', label: 'Activity Logs', icon: Activity },
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'EMPLOYEE'] },
+  { path: '/users', label: 'Users', icon: Users, roles: ['ADMIN'] },
+  { path: '/departments', label: 'Departments', icon: Building2, roles: ['ADMIN'] },
+  { path: '/profile', label: 'Profile', icon: UserCircle, roles: ['ADMIN', 'EMPLOYEE'] },
 ];
 
 export function Sidebar({ isOpen, onClose }) {
@@ -48,7 +50,9 @@ export function Sidebar({ isOpen, onClose }) {
 function SidebarContent({ location, onClose, user }) {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
   const initials = ((user?.firstName?.[0] || '') + (user?.lastName?.[0] || '') || 'U').toUpperCase();
-  const role = user?.role || 'Employee';
+  const roleLabel = formatRoleLabel(user?.role);
+
+  const visibleItems = navItems.filter((item) => canAccessNavItem(item.roles, user?.role));
 
   return (
     <>
@@ -65,8 +69,12 @@ function SidebarContent({ location, onClose, user }) {
       </div>
 
       <nav className="flex-1 py-6 px-3 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+        {visibleItems.map((item) => {
+          const isActive =
+            item.path === '/'
+              ? location.pathname === '/'
+              : location.pathname === item.path ||
+                (item.path === '/departments' && location.pathname.startsWith('/departments'));
           const Icon = item.icon;
 
           return (
@@ -115,7 +123,7 @@ function SidebarContent({ location, onClose, user }) {
               {fullName}
             </div>
             <div className="text-white/50 truncate" style={{ fontSize: '12px' }}>
-              {role}
+              {roleLabel}
             </div>
           </div>
         </div>
@@ -124,3 +132,10 @@ function SidebarContent({ location, onClose, user }) {
   );
 }
 
+function formatRoleLabel(role) {
+  if (!role) return 'Employee';
+  const s = String(role);
+  if (s.includes('ADMIN')) return 'Administrator';
+  if (s.includes('EMPLOYEE')) return 'Employee';
+  return s.replace(/^ROLE_/, '');
+}

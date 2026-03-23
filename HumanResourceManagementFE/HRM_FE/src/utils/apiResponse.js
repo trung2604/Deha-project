@@ -18,3 +18,15 @@ export function getPageMeta(res) {
     totalElements: typeof res?.data?.totalElements === "number" ? res.data.totalElements : 0,
   };
 }
+
+/** GET /departments returns { departments, totalCount }; legacy array-only data is still supported */
+export function getDepartmentDirectoryPayload(res) {
+  const d = res?.data;
+  if (Array.isArray(d)) {
+    return { departments: d, totalCount: d.length };
+  }
+  return {
+    departments: Array.isArray(d?.departments) ? d.departments : [],
+    totalCount: typeof d?.totalCount === "number" ? d.totalCount : 0,
+  };
+}

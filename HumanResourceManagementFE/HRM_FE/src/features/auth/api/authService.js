@@ -2,7 +2,8 @@ import axios from "@/utils/axios";
 
 const authService = {
   login: async (credentials) => {
-    return await axios.post("/auth/login", credentials);
+    // 401 on login must NOT trigger refresh-token flow + redirect (would hide the error toast)
+    return await axios.post("/auth/login", credentials, { _skipAuthRefresh: true });
   },
 
   getMe: async () => {

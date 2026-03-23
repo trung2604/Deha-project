@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
       setUser(profile);
       localStorage.setItem(USER_KEY, JSON.stringify(profile));
       return { ok: true, data: profile, message: res.message };
-    } catch (e) {
+    } catch {
       clearAuth();
       return { ok: false, message: "Unable to refresh profile" };
     }
@@ -67,25 +67,33 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(
     async (credentials) => {
-      const res = await authService.login(credentials);
-      if (!isSuccessResponse(res)) {
-        return { ok: false, message: getResponseMessage(res, "Login failed") };
+      try {
+        const res = await authService.login(credentials);
+        if (!isSuccessResponse(res)) {
+          return { ok: false, message: getResponseMessage(res, "Login failed") };
+        }
+
+        const nextToken = res.data?.token;
+        if (!nextToken) {
+          return { ok: false, message: "Token is missing in response" };
+        }
+
+        localStorage.setItem(TOKEN_KEY, nextToken);
+        setToken(nextToken);
+
+        const profileResult = await refreshProfile();
+        if (!profileResult.ok) {
+          return profileResult;
+        }
+
+        return { ok: true, data: profileResult.data, message: res.message || "Login successful" };
+      } catch (e) {
+        const msg =
+          e?.response?.data?.message ||
+          e?.message ||
+          "Unable to reach the server. Please check your connection.";
+        return { ok: false, message: msg };
       }
-
-      const nextToken = res.data?.token;
-      if (!nextToken) {
-        return { ok: false, message: "Token is missing in response" };
-      }
-
-      localStorage.setItem(TOKEN_KEY, nextToken);
-      setToken(nextToken);
-
-      const profileResult = await refreshProfile();
-      if (!profileResult.ok) {
-        return profileResult;
-      }
-
-      return { ok: true, data: profileResult.data, message: res.message || "Login successful" };
     },
     [refreshProfile],
   );

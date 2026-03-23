@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.service;
 
+import com.deha.HumanResourceManagement.dto.department.DepartmentDirectoryResponse;
 import com.deha.HumanResourceManagement.dto.department.DepartmentRequest;
 import com.deha.HumanResourceManagement.dto.department.DepartmentDetailResponse;
 import com.deha.HumanResourceManagement.dto.department.DepartmentResponse;
@@ -77,10 +78,19 @@ public class DepartmentService {
         return DepartmentDetailResponse.fromEntity(department);
     }
 
-    public List<DepartmentResponse> getAllDepartments(){
-        return departmentRepository.findAll().stream()
+    /**
+     * Lists departments, optionally filtered by keyword (name or description, case-insensitive).
+     * {@code totalCount} is always the full row count in DB for UI badges.
+     */
+    @Transactional(readOnly = true)
+    public DepartmentDirectoryResponse getDepartmentDirectory(String keyword) {
+        long totalCount = departmentRepository.count();
+        String normalized = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        List<Department> rows = departmentRepository.searchDepartments(normalized);
+        List<DepartmentResponse> list = rows.stream()
                 .map(DepartmentResponse::fromEntity)
                 .toList();
+        return new DepartmentDirectoryResponse(list, totalCount);
     }
 
     public Department findDepartmentById(UUID id) {

@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import { Layout } from "./components/Layout";
-// import { Dashboard } from "./pages/Dashboard";
+import { IndexRedirect } from "./components/IndexRedirect";
+import { RequireAdmin } from "./components/RequireAdmin";
 import { UsersPage } from "@/features/users/pages/UserPage";
 import { DepartmentsPage } from "@/features/departments/pages/DepartmentsPage";
 import { DepartmentDetailPage } from "@/features/departments/pages/DepartmentDetailPage";
@@ -29,10 +30,31 @@ export const router = createBrowserRouter([
     path: "/",
     Component: Layout,
     children: [
-    //   { index: true, Component: Dashboard },
-      { path: "users", Component: UsersPage },
-      { path: "departments", Component: DepartmentsPage },
-      { path: "departments/:departmentId", Component: DepartmentDetailPage },
+      { index: true, Component: IndexRedirect },
+      {
+        path: "users",
+        element: (
+          <RequireAdmin>
+            <UsersPage />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: "departments",
+        element: (
+          <RequireAdmin>
+            <DepartmentsPage />
+          </RequireAdmin>
+        ),
+      },
+      {
+        path: "departments/:departmentId",
+        element: (
+          <RequireAdmin>
+            <DepartmentDetailPage />
+          </RequireAdmin>
+        ),
+      },
     //   { path: "attendance", Component: Attendance },
     //   { path: "leave-requests", Component: LeaveRequests },
     //   { path: "salary", Component: Salary },

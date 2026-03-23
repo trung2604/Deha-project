@@ -181,3 +181,39 @@
   background: linear-gradient(to right, #f0f0f0 4%, #e8e8e8 25%, #f0f0f0 36%);
   background-size: 1000px 100%;
 }
+
+/* User table: staggered enter after search / filter */
+@keyframes user-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.user-table-row-enter {
+  animation: user-row-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dept-card-enter {
+  animation: user-row-enter 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes search-input-pending {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 119, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.12);
+  }
+}
+
+.search-input-pending .ant-input-affix-wrapper {
+  animation: search-input-pending 1.2s ease-in-out infinite;
+  border-color: rgba(22, 119, 255, 0.35) !important;
+  transition: border-color 0.2s ease;
+}
