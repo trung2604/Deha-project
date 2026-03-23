@@ -21,6 +21,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     long countByDepartment_Id(UUID departmentId);
 
     long countByPosition_Id(UUID positionId);
+    long countByOffice_Id(UUID officeId);
 
     @Query(value = """
     SELECT *
@@ -32,6 +33,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             OR u.last_name ILIKE CONCAT('%', :keyword, '%')
             OR u.email ILIKE CONCAT('%', :keyword, '%')
         )
+        AND (:officeId IS NULL OR u.office_id = :officeId)
         AND (:departmentId IS NULL OR u.department_id = :departmentId)
         AND (:positionId IS NULL OR u.position_id = :positionId)
         AND (:active IS NULL OR u.is_active = :active)
@@ -46,6 +48,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             OR u.last_name ILIKE CONCAT('%', :keyword, '%')
             OR u.email ILIKE CONCAT('%', :keyword, '%')
         )
+        AND (:officeId IS NULL OR u.office_id = :officeId)
         AND (:departmentId IS NULL OR u.department_id = :departmentId)
         AND (:positionId IS NULL OR u.position_id = :positionId)
         AND (:active IS NULL OR u.is_active = :active)
@@ -53,6 +56,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             nativeQuery = true)
     Page<User> searchUsers(
             @Param("keyword") String keyword,
+            @Param("officeId") UUID officeId,
             @Param("departmentId") UUID departmentId,
             @Param("positionId") UUID positionId,
             @Param("active") Boolean active,

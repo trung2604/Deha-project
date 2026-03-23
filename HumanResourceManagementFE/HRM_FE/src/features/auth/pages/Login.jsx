@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
-import { isAdminRole } from "@/utils/role";
+import { isAdminRole, isManagerRole } from "@/utils/role";
 import { Checkbox, Form, Input } from "antd";
 
 function defaultHomePath(user) {
-  if (isAdminRole(user?.role)) return "/users";
+  if (isAdminRole(user?.role) || isManagerRole(user?.role)) return "/users";
   return "/profile";
 }
 

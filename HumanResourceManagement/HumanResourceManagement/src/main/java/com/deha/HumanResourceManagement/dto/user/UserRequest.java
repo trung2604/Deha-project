@@ -1,6 +1,7 @@
 package com.deha.HumanResourceManagement.dto.user;
 
 import com.deha.HumanResourceManagement.entity.Department;
+import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.Position;
 import com.deha.HumanResourceManagement.entity.Role;
 import jakarta.validation.constraints.Email;
@@ -27,11 +28,12 @@ public class UserRequest {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
-    @NotNull(message = "Department is required")
     private Department department;
 
-    @NotNull(message = "Position is required")
     private Position position;
+
+    @NotNull(message = "Office is required")
+    private Office office;
 
     @NotNull(message = "Role cannot be blank")
     private Role role;

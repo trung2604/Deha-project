@@ -2,9 +2,11 @@ import { createBrowserRouter } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { IndexRedirect } from "./components/IndexRedirect";
 import { RequireAdmin } from "./components/RequireAdmin";
+import { RequireManagerOrAdmin } from "./components/RequireManagerOrAdmin";
 import { UsersPage } from "@/features/users/pages/UserPage";
 import { DepartmentsPage } from "@/features/departments/pages/DepartmentsPage";
 import { DepartmentDetailPage } from "@/features/departments/pages/DepartmentDetailPage";
+import { OfficesPage } from "@/features/offices/pages/OfficesPage";
 import { Login } from "@/features/auth/pages/Login";
 import Profile from "@/features/profile/pages/Profile";
 // import { Attendance } from "./pages/Attendance";
@@ -32,27 +34,35 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: IndexRedirect },
       {
-        path: "users",
+        path: "offices",
         element: (
           <RequireAdmin>
-            <UsersPage />
+            <OfficesPage />
           </RequireAdmin>
+        ),
+      },
+      {
+        path: "users",
+        element: (
+          <RequireManagerOrAdmin>
+            <UsersPage />
+          </RequireManagerOrAdmin>
         ),
       },
       {
         path: "departments",
         element: (
-          <RequireAdmin>
+          <RequireManagerOrAdmin>
             <DepartmentsPage />
-          </RequireAdmin>
+          </RequireManagerOrAdmin>
         ),
       },
       {
         path: "departments/:departmentId",
         element: (
-          <RequireAdmin>
+          <RequireManagerOrAdmin>
             <DepartmentDetailPage />
-          </RequireAdmin>
+          </RequireManagerOrAdmin>
         ),
       },
     //   { path: "attendance", Component: Attendance },

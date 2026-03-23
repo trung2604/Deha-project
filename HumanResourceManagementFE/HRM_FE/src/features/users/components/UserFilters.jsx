@@ -5,6 +5,8 @@ export function UserFilters({
   searchTerm,
   onSearchTermChange,
   isSearchPending = false,
+  officeFilter,
+  onOfficeFilterChange,
   departmentFilter,
   onDepartmentFilterChange,
   positionFilter,
@@ -12,6 +14,7 @@ export function UserFilters({
   statusFilter,
   onStatusFilterChange,
   departments,
+  offices,
   positions,
   onReset,
 }) {
@@ -37,6 +40,21 @@ export function UserFilters({
             size="middle"
           />
         </div>
+
+        {Array.isArray(offices) && offices.length > 0 ? (
+          <Select
+            value={officeFilter}
+            onChange={(value) => onOfficeFilterChange(value ?? "")}
+            style={{ minWidth: '140px' }}
+            placeholder="All Offices"
+            size="middle"
+            allowClear
+            options={[
+              { value: '', label: 'All Offices' },
+              ...(offices ?? []).map((office) => ({ value: office.id, label: office.name })),
+            ]}
+          />
+        ) : null}
 
         <Select
           value={departmentFilter}

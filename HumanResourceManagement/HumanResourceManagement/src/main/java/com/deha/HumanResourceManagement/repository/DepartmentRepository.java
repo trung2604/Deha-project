@@ -11,7 +11,8 @@ import java.util.UUID;
 
 @Repository
 public interface DepartmentRepository extends JpaRepository<Department, UUID> {
-    boolean existsByName(String name);
+    boolean existsByNameIgnoreCaseAndOffice_Id(String name, UUID officeId);
+    long countByOffice_Id(UUID officeId);
 
     @Query(value = """
             SELECT *
@@ -21,8 +22,9 @@ public interface DepartmentRepository extends JpaRepository<Department, UUID> {
                 OR d.name ILIKE CONCAT('%', :keyword, '%')
                 OR (d.description IS NOT NULL AND d.description ILIKE CONCAT('%', :keyword, '%'))
             )
+            AND (:officeId IS NULL OR d.office_id = :officeId)
             ORDER BY d.name ASC
             """,
             nativeQuery = true)
-    List<Department> searchDepartments(@Param("keyword") String keyword);
+    List<Department> searchDepartments(@Param("keyword") String keyword, @Param("officeId") UUID officeId);
 }

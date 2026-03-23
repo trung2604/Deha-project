@@ -41,4 +41,10 @@ public class Position {
     public boolean isNameChanged(String newName) {
         return newName != null && !newName.equalsIgnoreCase(this.name);
     }
+
+    public UUID getOfficeId() {
+        return this.department != null && this.department.getOffice() != null
+                ? this.department.getOffice().getId()
+                : null;
+    }
 }

@@ -22,6 +22,7 @@ import { Input } from 'antd';
 const breadcrumbMap = {
   '/': ['Dashboard'],
   '/users': ['Users'],
+  '/offices': ['Offices'],
   '/departments': ['Departments'],
   '/attendance': ['Attendance'],
   '/leave-requests': ['Leave Requests'],
