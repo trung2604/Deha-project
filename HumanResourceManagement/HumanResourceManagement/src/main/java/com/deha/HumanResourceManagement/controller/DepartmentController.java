@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/departments")
-public class DepartmentController {
+public class DepartmentController extends ApiControllerSupport {
     private final DepartmentService departmentService;
     private final PositionService positionService;
 
@@ -74,14 +74,6 @@ public class DepartmentController {
     public ApiResponse deleteDepartmentPosition(@PathVariable UUID departmentId, @PathVariable UUID positionId) {
         positionService.deletePositionInDepartment(departmentId, positionId);
         return success("Position deleted successfully", HttpStatus.OK, null);
-    }
-
-    private ApiResponse success(String message, HttpStatus status, Object data) {
-        ApiResponse response = new ApiResponse();
-        response.setMessage(message);
-        response.setStatus(status.value());
-        response.setData(data);
-        return response;
     }
 
 }

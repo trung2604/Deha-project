@@ -10,7 +10,7 @@ import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
 import officeService from "@/features/offices/api/officeService";
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { isAdminRole } from "@/utils/role";
+import { isAdminRole, isDepartmentManagerRole, isOfficeManagerRole } from "@/utils/role";
 import {
   getDepartmentDirectoryPayload,
   getListData,
@@ -23,6 +23,10 @@ import {
 export function UsersPage() {
   const { user } = useAuth();
   const admin = isAdminRole(user?.role);
+  const officeManager = isOfficeManagerRole(user?.role);
+  const departmentManager = isDepartmentManagerRole(user?.role);
+  const canEditUsers = admin || officeManager;
+  const readOnly = !canEditUsers;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [users, setUsers] = useState([]);
@@ -282,24 +286,26 @@ export function UsersPage() {
             {totalElements}
           </span>
         </div>
-        <button
-          onClick={() => {
-            setEditingUser(null);
-            setShowAddModal(true);
-          }}
-          className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95"
-          style={{
-            background:
-              "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
-            color: "#FFFFFF",
-            boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
-          }}
-        >
-          <Plus className="w-4 h-4" />
-          <span style={{ fontSize: "14px", fontWeight: "500" }}>
-            Add User
-          </span>
-        </button>
+        {canEditUsers && (
+          <button
+            onClick={() => {
+              setEditingUser(null);
+              setShowAddModal(true);
+            }}
+            className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95"
+            style={{
+              background:
+                "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
+              color: "#FFFFFF",
+              boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            <span style={{ fontSize: "14px", fontWeight: "500" }}>
+              Add User
+            </span>
+          </button>
+        )}
       </div>
 
       <UserFilters
@@ -326,6 +332,7 @@ export function UsersPage() {
         users={filteredUsers}
         onEdit={setEditingUser}
         onDelete={setDeletingUser}
+        readOnly={readOnly}
         totalPages={totalPages}
         totalElements={totalElements}
         page={page}

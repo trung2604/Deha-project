@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.entity;
 
+import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -70,19 +71,26 @@ public class User {
         if (office == null) {
             throw new BadRequestException("Office is required");
         }
-        // Allow manager to be created/updated with only an office (department/position can be null).
+        // Allow office-only assignment (used for office managers / admin seed).
         if (department == null && position == null) {
             this.office = office;
             this.department = null;
             this.position = null;
             return;
         }
-        if (department == null || position == null) {
-            throw new BadRequestException("Department and Position must be provided together or left empty");
+        if (department == null && position != null) {
+            throw new BadRequestException("Department is required when position is provided");
         }
         if (department.getOffice() == null || department.getOffice().getId() == null
                 || !department.getOffice().getId().equals(office.getId())) {
             throw new BadRequestException("Department does not belong to the specified office");
+        }
+        if (position == null) {
+            // Allow department without position (used for department managers).
+            this.office = office;
+            this.department = department;
+            this.position = null;
+            return;
         }
         if (position.getDepartment() == null
                 || position.getDepartment().getId() == null

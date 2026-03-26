@@ -4,16 +4,19 @@ package com.deha.HumanResourceManagement.repository;
 import com.deha.HumanResourceManagement.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
     boolean existsByEmail(String email);
 
     Optional<User> findByEmail(String email);
@@ -22,46 +25,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     long countByPosition_Id(UUID positionId);
     long countByOffice_Id(UUID officeId);
-
-    @Query(value = """
-    SELECT *
-    FROM users u
-    WHERE
-        (
-            :keyword IS NULL
-            OR u.first_name ILIKE CONCAT('%', :keyword, '%')
-            OR u.last_name ILIKE CONCAT('%', :keyword, '%')
-            OR u.email ILIKE CONCAT('%', :keyword, '%')
-        )
-        AND (:officeId IS NULL OR u.office_id = :officeId)
-        AND (:departmentId IS NULL OR u.department_id = :departmentId)
-        AND (:positionId IS NULL OR u.position_id = :positionId)
-        AND (:active IS NULL OR u.is_active = :active)
-    """,
-            countQuery = """
-    SELECT COUNT(*)
-    FROM users u
-    WHERE
-        (
-            :keyword IS NULL
-            OR u.first_name ILIKE CONCAT('%', :keyword, '%')
-            OR u.last_name ILIKE CONCAT('%', :keyword, '%')
-            OR u.email ILIKE CONCAT('%', :keyword, '%')
-        )
-        AND (:officeId IS NULL OR u.office_id = :officeId)
-        AND (:departmentId IS NULL OR u.department_id = :departmentId)
-        AND (:positionId IS NULL OR u.position_id = :positionId)
-        AND (:active IS NULL OR u.is_active = :active)
-    """,
-            nativeQuery = true)
-    Page<User> searchUsers(
-            @Param("keyword") String keyword,
-            @Param("officeId") UUID officeId,
-            @Param("departmentId") UUID departmentId,
-            @Param("positionId") UUID positionId,
-            @Param("active") Boolean active,
-            Pageable pageable
-    );
-
-    Page<User> findAll(Pageable pageable);
+    List<User> findByOffice_Id(UUID officeId);
 }

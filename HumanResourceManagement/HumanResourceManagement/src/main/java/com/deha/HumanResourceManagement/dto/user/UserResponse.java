@@ -1,7 +1,7 @@
 package com.deha.HumanResourceManagement.dto.user;
 
 import com.deha.HumanResourceManagement.entity.User;
-import com.deha.HumanResourceManagement.entity.Role;
+import com.deha.HumanResourceManagement.entity.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

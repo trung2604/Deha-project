@@ -7,12 +7,16 @@ import com.deha.HumanResourceManagement.dto.department.DepartmentResponse;
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.User;
+import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.DepartmentRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
+import com.deha.HumanResourceManagement.repository.specification.DepartmentSpecification;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -98,30 +102,68 @@ public class DepartmentService {
     public DepartmentDetailResponse getDepartmentDetailById(UUID id) {
         Department department = departmentRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Department not found with id: " + id));
-        accessScopeService.assertCanManageOffice(
-                department.getOffice() != null ? department.getOffice().getId() : null
-        );
+        User actor = accessScopeService.currentUserOrThrow();
+        if (accessScopeService.isDepartmentManager(actor)) {
+            accessScopeService.assertCanManageDepartment(id);
+        } else {
+            accessScopeService.assertCanManageOffice(
+                    department.getOffice() != null ? department.getOffice().getId() : null
+            );
+        }
+
         return DepartmentDetailResponse.fromEntity(department);
     }
 
-    /**
-     * Lists departments, optionally filtered by keyword (name or description, case-insensitive).
-     * {@code totalCount} is always the full row count in DB for UI badges.
-     */
     @Transactional(readOnly = true)
     public DepartmentDirectoryResponse getDepartmentDirectory(String keyword, UUID officeId) {
+
         User actor = accessScopeService.currentUserOrThrow();
+        if (accessScopeService.isDepartmentManager(actor)) {
+            UUID scopedDepartmentId = actor.getDepartment() != null ? actor.getDepartment().getId() : null;
+
+            if (scopedDepartmentId == null) {
+                throw new ForbiddenException("Department manager must be assigned to a department");
+            }
+
+            Department dept = departmentRepository.findById(scopedDepartmentId).orElseThrow(
+                    () -> new ResourceNotFoundException("Department not found with id: " + scopedDepartmentId)
+            );
+
+            String normalized = (keyword != null && !keyword.isBlank()) ? keyword.trim().toLowerCase() : null;
+
+            boolean matches = normalized == null
+                    || (dept.getName() != null && dept.getName().toLowerCase().contains(normalized))
+                    || (dept.getDescription() != null && dept.getDescription().toLowerCase().contains(normalized));
+
+            List<DepartmentResponse> list = matches
+                    ? List.of(DepartmentResponse.fromEntity(dept))
+                    : List.of();
+
+            long totalCount = matches ? 1 : 0;
+
+            return new DepartmentDirectoryResponse(list, totalCount);
+        }
+
         UUID scopedOfficeId = accessScopeService.isAdmin(actor)
                 ? officeId
                 : (actor.getOffice() != null ? actor.getOffice().getId() : null);
-        long totalCount = scopedOfficeId == null
-                ? departmentRepository.count()
-                : departmentRepository.countByOffice_Id(scopedOfficeId);
+
         String normalized = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        List<Department> rows = departmentRepository.searchDepartments(normalized, scopedOfficeId);
+
+        Specification<Department> spec = Specification
+                .where(DepartmentSpecification.search(normalized))
+                .and(DepartmentSpecification.hasOffice(scopedOfficeId));
+
+        List<Department> rows = departmentRepository.findAll(
+                spec,
+                Sort.by(Sort.Direction.ASC, "name")
+        );
+
+        long totalCount = departmentRepository.count(spec);
         List<DepartmentResponse> list = rows.stream()
                 .map(DepartmentResponse::fromEntity)
                 .toList();
+
         return new DepartmentDirectoryResponse(list, totalCount);
     }
 

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-public class AuthController {
+public class AuthController extends ApiControllerSupport {
     private final AuthService authService;
 
     private static final String REFRESH_COOKIE_NAME = "refresh_token";
@@ -55,12 +55,6 @@ public class AuthController {
         return success("Profile updated successfully", HttpStatus.OK, authService.updateProfile(authorization, request));
     }
 
-    private ApiResponse success(String message, HttpStatus status, Object data) {
-        ApiResponse response = new ApiResponse();
-        response.setMessage(message);
-        response.setStatus(status.value());
-        response.setData(data);
-        return response;
-    }
+    
 }
 
