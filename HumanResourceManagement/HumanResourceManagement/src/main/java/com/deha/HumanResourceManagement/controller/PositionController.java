@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/positions")
-public class PositionController {
+public class PositionController extends ApiControllerSupport {
     private final PositionService positionService;
 
     public PositionController(PositionService positionService) {
@@ -37,14 +37,6 @@ public class PositionController {
     public ApiResponse deletePosition(@PathVariable UUID id) {
         positionService.deletePosition(id);
         return success("Position deleted successfully", HttpStatus.OK, null);
-    }
-
-    private ApiResponse success(String message, HttpStatus status, Object data) {
-        ApiResponse response = new ApiResponse();
-        response.setMessage(message);
-        response.setStatus(status.value());
-        response.setData(data);
-        return response;
     }
 
 }

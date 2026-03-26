@@ -30,7 +30,9 @@ export function UserModal({ user, onClose, onSave, submitting }) {
   });
 
   const [formData, setFormData] = useState(() => toFormData(user));
-  const isManager = formData.role === "ROLE_MANAGER";
+  const isOfficeManager = formData.role === "ROLE_MANAGER_OFFICE";
+  const isDepartmentManager = formData.role === "ROLE_MANAGER_DEPARTMENT";
+  const isManager = isOfficeManager || isDepartmentManager; // used for optional department/position UI in this component
 
   useEffect(() => {
     setFormData(toFormData(user));
@@ -121,14 +123,18 @@ export function UserModal({ user, onClose, onSave, submitting }) {
     const hasDept = !!formData.departmentId;
     const hasPos = !!formData.positionId;
 
-    if (!isManager) {
+    if (isOfficeManager) {
+      // For office manager: either pick both department+position, or leave both empty.
+      if (hasDept !== hasPos) {
+        return toast.error("For office manager, select both department and position (or leave both empty)");
+      }
+    } else if (isDepartmentManager) {
+      // For department manager: department is required; position is optional.
+      if (!hasDept) return toast.error("Please select a department for department manager");
+    } else {
+      // For employee (and legacy admin creation paths): require department + position.
       if (!hasDept) return toast.error("Please select a department");
       if (!hasPos) return toast.error("Please select a position");
-    } else {
-      // For manager: either pick both department+position, or leave both empty.
-      if (hasDept !== hasPos) {
-        return toast.error("For manager, select both department and position (or leave both empty)");
-      }
     }
 
     if (!isEdit) {
@@ -259,7 +265,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
 
             <div className="col-span-2">
               <label className="block mb-1.5">
-                {isManager ? (
+                {isOfficeManager ? (
                   <span style={{ color: "#8C8C8C" }}>Department (optional)</span>
                 ) : (
                   <>
@@ -353,7 +359,8 @@ export function UserModal({ user, onClose, onSave, submitting }) {
                 size="middle"
                 options={[
                   { value: "ROLE_ADMIN", label: "ADMIN" },
-                  { value: "ROLE_MANAGER", label: "MANAGER" },
+                  { value: "ROLE_MANAGER_OFFICE", label: "OFFICE MANAGER" },
+                  { value: "ROLE_MANAGER_DEPARTMENT", label: "DEPARTMENT MANAGER" },
                   { value: "ROLE_EMPLOYEE", label: "EMPLOYEE" },
                 ]}
               />

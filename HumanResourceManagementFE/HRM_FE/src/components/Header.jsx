@@ -25,6 +25,7 @@ const breadcrumbMap = {
   '/offices': ['Offices'],
   '/departments': ['Departments'],
   '/attendance': ['Attendance'],
+  '/payroll': ['Payroll'],
   '/leave-requests': ['Leave Requests'],
   '/salary': ['Salary'],
   '/activity-logs': ['Activity Logs'],

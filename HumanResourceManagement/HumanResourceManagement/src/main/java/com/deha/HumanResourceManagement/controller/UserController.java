@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/users")
-public class UserController {
+public class UserController extends ApiControllerSupport {
     private final UserService userService;
 
     public UserController(UserService userService) {
@@ -68,14 +68,6 @@ public class UserController {
             @PageableDefault(page = 0, size = 10, sort = "firstName") Pageable pageable) {
         Page<UserResponse> results = userService.getUsersWithFilters(keyword, officeId, departmentId, positionId, active, pageable);
         return success("Users retrieved successfully", HttpStatus.OK, PageResponse.fromPage(results));
-    }
-
-    private ApiResponse success(String message, HttpStatus status, Object data) {
-        ApiResponse response = new ApiResponse();
-        response.setMessage(message);
-        response.setStatus(status.value());
-        response.setData(data);
-        return response;
     }
 
 }

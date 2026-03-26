@@ -1,6 +1,6 @@
 package com.deha.HumanResourceManagement.config;
 
-import com.deha.HumanResourceManagement.entity.Role;
+import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

@@ -5,7 +5,7 @@ import { Input, Select, Spin } from "antd";
 import { DepartmentDetailModal } from "../components/DepartmentDetailModal";
 import { getDepartmentDirectoryPayload, getListData, getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { isAdminRole } from "@/utils/role";
+import { isAdminRole, isOfficeManagerRole } from "@/utils/role";
 
 import departmentService from "../api/departmentService";
 import positionService from "../api/positionService";
@@ -47,6 +47,8 @@ function DepartmentGridSkeleton() {
 export function DepartmentsPage() {
   const { user } = useAuth();
   const isAdmin = isAdminRole(user?.role);
+  const officeManager = isOfficeManagerRole(user?.role);
+  const canManageDepartments = isAdmin || officeManager; // Department manager is view-only
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [officesLoading, setOfficesLoading] = useState(true);
@@ -326,21 +328,23 @@ export function DepartmentsPage() {
           </span>
         </div>
 
-        <button
-          onClick={openCreateDepartment}
-          disabled={showSkeletonOnly}
-          className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95 disabled:opacity-60"
-          style={{
-            background: "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
-            color: "#FFFFFF",
-            fontSize: "14px",
-            fontWeight: "500",
-            boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
-          }}
-        >
-          <Plus className="w-4 h-4" />
-          Add Department
-        </button>
+        {canManageDepartments && (
+          <button
+            onClick={openCreateDepartment}
+            disabled={showSkeletonOnly}
+            className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95 disabled:opacity-60"
+            style={{
+              background: "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
+              color: "#FFFFFF",
+              fontSize: "14px",
+              fontWeight: "500",
+              boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            Add Department
+          </button>
+        )}
       </div>
 
       {!showSkeletonOnly && (
@@ -440,48 +444,62 @@ export function DepartmentsPage() {
                     }}
                     onClick={() => !refetchingOverlay && setDetailDepartmentId(dept.id)}
                   >
-                    <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPositionsDepartment(dept);
-                          refreshDepartmentPositions(dept.id).catch(() => {});
-                        }}
-                        disabled={refetchingOverlay}
-                        className="p-2 rounded-lg transition-colors duration-150 hover:bg-purple-50 disabled:opacity-50"
-                        style={{ color: "#8B5CF6", backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
-                        title="Manage positions"
-                      >
-                        <Settings2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditDepartment(dept);
-                        }}
-                        disabled={refetchingOverlay}
-                        className="p-2 rounded-lg transition-colors duration-150 hover:bg-blue-50 disabled:opacity-50"
-                        style={{ color: "#1677FF", backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
-                        title="Edit department"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeletingDepartment(dept);
-                        }}
-                        disabled={refetchingOverlay}
-                        className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50 disabled:opacity-50"
-                        style={{ color: "#FF4D4F", backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
-                        title="Delete department"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {canManageDepartments && (
+                      <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPositionsDepartment(dept);
+                            refreshDepartmentPositions(dept.id).catch(() => {});
+                          }}
+                          disabled={refetchingOverlay}
+                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-purple-50 disabled:opacity-50"
+                          style={{
+                            color: "#8B5CF6",
+                            backgroundColor: "#FFFFFF",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                          }}
+                          title="Manage positions"
+                        >
+                          <Settings2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditDepartment(dept);
+                          }}
+                          disabled={refetchingOverlay}
+                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-blue-50 disabled:opacity-50"
+                          style={{
+                            color: "#1677FF",
+                            backgroundColor: "#FFFFFF",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                          }}
+                          title="Edit department"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingDepartment(dept);
+                          }}
+                          disabled={refetchingOverlay}
+                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50 disabled:opacity-50"
+                          style={{
+                            color: "#FF4D4F",
+                            backgroundColor: "#FFFFFF",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                          }}
+                          title="Delete department"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
 
                     <div className="flex items-start justify-between mb-4">
                       <div
@@ -605,6 +623,7 @@ export function DepartmentsPage() {
         open={!!detailDepartmentId}
         departmentId={detailDepartmentId}
         onClose={() => setDetailDepartmentId(null)}
+        canManagePositions={canManageDepartments}
         onPositionsChanged={(deptId, posNames) => {
           if (!deptId) return;
           setPositionPreviewByDeptId((p) => ({ ...p, [deptId]: posNames ?? [] }));

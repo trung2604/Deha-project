@@ -9,6 +9,7 @@ import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.repository.DepartmentRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -21,26 +22,43 @@ import java.util.UUID;
 public class PositionService {
     private final PositionRepository positionRepository;
     private final DepartmentService departmentService;
+    private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
     private final AccessScopeService accessScopeService;
 
     public PositionService(
             PositionRepository positionRepository,
             DepartmentService departmentService,
+            DepartmentRepository departmentRepository,
             UserRepository userRepository,
             AccessScopeService accessScopeService
     ) {
         this.departmentService = departmentService;
+        this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.userRepository = userRepository;
         this.accessScopeService = accessScopeService;
     }
 
     public List<PositionResponse> getAllPositionsOfDepartment(UUID departmentId) {
-        Department department = departmentService.findDepartmentById(departmentId);
-        accessScopeService.assertCanManageOffice(
-                department.getOffice() != null ? department.getOffice().getId() : null
-        );
+        Department department = departmentRepository.findById(departmentId).orElseThrow(
+                () -> new ResourceNotFoundException("Department not found with id: " + departmentId));
+        // Read-only permission:
+        // - ADMIN can view any department positions
+        // - OFFICE manager can view positions for departments in their office
+        // - DEPARTMENT manager can view positions only for their own department
+        User actor = accessScopeService.currentUserOrThrow();
+        if (accessScopeService.isAdmin(actor)) {
+            // no-op
+        } else if (accessScopeService.isOfficeManager(actor)) {
+            UUID officeId = department.getOffice() != null ? department.getOffice().getId() : null;
+            accessScopeService.assertCanManageOffice(officeId);
+        } else if (accessScopeService.isDepartmentManager(actor)) {
+            accessScopeService.assertCanManageDepartment(departmentId);
+        } else {
+            // Employees (and any unexpected roles) are not allowed to read department positions.
+            accessScopeService.assertCanManageDepartment(departmentId);
+        }
         return positionRepository.findAllByDepartmentId(departmentId).stream()
                 .map(PositionResponse::fromEntity)
                 .toList();

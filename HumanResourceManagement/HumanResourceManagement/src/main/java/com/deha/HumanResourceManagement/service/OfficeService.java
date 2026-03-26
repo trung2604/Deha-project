@@ -12,8 +12,10 @@ import com.deha.HumanResourceManagement.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -53,6 +55,7 @@ public class OfficeService {
 
         Office office = new Office();
         office.applyDetails(request.getName().trim(), request.getDescription());
+        applyPolicy(office, request);
         for (String ip : normalizedIps) {
             OfficeWifiIp wifi = new OfficeWifiIp();
             wifi.applyDetails(office, ip);
@@ -77,11 +80,29 @@ public class OfficeService {
         }
 
         office.applyDetails(nextName, request.getDescription());
-        office.getWifiIps().clear();
+        applyPolicy(office, request);
+
+        // Sync by diff to avoid transient unique-key conflicts on (office_id, ip_wifi)
+        // that can happen with clear()+re-add in the same persistence context.
+        Set<String> targetIpKeys = normalizedIps.stream()
+                .map(this::normalizeIpKey)
+                .collect(Collectors.toSet());
+
+        office.getWifiIps().removeIf(w -> !targetIpKeys.contains(normalizeIpKey(w.getIpWifi())));
+
+        Set<String> existingIpKeys = office.getWifiIps().stream()
+                .map(w -> normalizeIpKey(w.getIpWifi()))
+                .collect(Collectors.toCollection(HashSet::new));
+
         for (String ip : normalizedIps) {
+            String ipKey = normalizeIpKey(ip);
+            if (existingIpKeys.contains(ipKey)) {
+                continue;
+            }
             OfficeWifiIp wifi = new OfficeWifiIp();
             wifi.applyDetails(office, ip);
             office.getWifiIps().add(wifi);
+            existingIpKeys.add(ipKey);
         }
 
         officeRepository.save(office);
@@ -115,5 +136,17 @@ public class OfficeService {
                 .values()
                 .stream()
                 .toList();
+    }
+
+    private String normalizeIpKey(String ip) {
+        return ip == null ? "" : ip.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private void applyPolicy(Office office, OfficeRequest request) {
+        office.setStandardWorkHours(request.getBaseWorkHoursPerDay());
+        office.setOtWeekdayMultiplier(request.getOtWeekdayMultiplier());
+        office.setOtWeekendMultiplier(request.getOtWeekendMultiplier());
+        office.setOtHolidayMultiplier(request.getOtHolidayMultiplier());
+        office.setOtNightBonusMultiplier(request.getOtNightBonusMultiplier());
     }
 }

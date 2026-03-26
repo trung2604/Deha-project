@@ -11,7 +11,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/offices")
-public class OfficeController {
+public class OfficeController extends ApiControllerSupport {
     private final OfficeService officeService;
 
     public OfficeController(OfficeService officeService) {
@@ -39,11 +39,5 @@ public class OfficeController {
         return success("Office deleted successfully", HttpStatus.OK, null);
     }
 
-    private ApiResponse success(String message, HttpStatus status, Object data) {
-        ApiResponse response = new ApiResponse();
-        response.setMessage(message);
-        response.setStatus(status.value());
-        response.setData(data);
-        return response;
-    }
+    
 }

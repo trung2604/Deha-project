@@ -3,7 +3,7 @@ package com.deha.HumanResourceManagement.dto.user;
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.Position;
-import com.deha.HumanResourceManagement.entity.Role;
+import com.deha.HumanResourceManagement.entity.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

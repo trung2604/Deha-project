@@ -12,6 +12,7 @@ export function UserTable({
   users = [],
   onEdit,
   onDelete,
+  readOnly = false,
   totalPages,
   totalElements,
   page,
@@ -44,7 +45,11 @@ export function UserTable({
 
   const formatRole = (role) => {
     if (!role) return "-";
-    return String(role).replace(/^ROLE_/, "");
+    const r = String(role).replace(/^ROLE_/, "");
+    if (r === "MANAGER_OFFICE") return "Office Manager";
+    if (r === "MANAGER_DEPARTMENT") return "Department Manager";
+    if (r === "MANAGER") return "Manager"; // legacy
+    return r;
   };
 
   const formatCreatedAt = (value) => {
@@ -264,24 +269,28 @@ export function UserTable({
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onEdit(user)}
-                        className="p-2 rounded-lg transition-colors duration-150 hover:bg-blue-50"
-                        style={{ color: "#1677FF" }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDelete(user)}
-                        className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50"
-                        style={{ color: "#FF4D4F" }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {readOnly ? (
+                      <span style={{ color: "#A0A0A0", fontSize: "13px" }}>-</span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(user)}
+                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-blue-50"
+                          style={{ color: "#1677FF" }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDelete(user)}
+                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50"
+                          style={{ color: "#FF4D4F" }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))

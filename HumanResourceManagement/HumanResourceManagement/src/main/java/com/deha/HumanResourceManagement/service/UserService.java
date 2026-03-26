@@ -5,7 +5,7 @@ import com.deha.HumanResourceManagement.dto.user.UserResponse;
 import com.deha.HumanResourceManagement.dto.user.UpdateUserRequest;
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Office;
-import com.deha.HumanResourceManagement.entity.Role;
+import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.Position;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
@@ -14,8 +14,10 @@ import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
+import com.deha.HumanResourceManagement.repository.specification.UserSpecification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -58,13 +60,24 @@ public class UserService {
         Department department = null;
         Position position = null;
 
-        if (targetRole == Role.ROLE_MANAGER) {
-            // Allow manager with only office; department/position can be null.
+        if (targetRole == Role.ROLE_MANAGER_OFFICE) {
+            // Office managers can be created/updated with only an office.
+            // If department/position is provided, it must be provided together.
             if (deptProvided || posProvided) {
                 if (departmentId == null || positionId == null) {
-                    throw new BadRequestException("Department and Position must be provided together or left empty for manager");
+                    throw new BadRequestException("Department and Position must be provided together or left empty for office manager");
                 }
                 department = departmentService.findDepartmentById(departmentId);
+                position = positionRepository.findById(positionId).orElseThrow(
+                        () -> new ResourceNotFoundException("Position not found with id: " + positionId));
+            }
+        } else if (targetRole == Role.ROLE_MANAGER_DEPARTMENT) {
+            // Department managers must belong to a department; position is optional.
+            if (!deptProvided) {
+                throw new BadRequestException("Department is required for department manager");
+            }
+            department = departmentService.findDepartmentById(departmentId);
+            if (posProvided) {
                 position = positionRepository.findById(positionId).orElseThrow(
                         () -> new ResourceNotFoundException("Position not found with id: " + positionId));
             }
@@ -110,12 +123,24 @@ public class UserService {
         Department department = null;
         Position position = null;
 
-        if (targetRole == Role.ROLE_MANAGER) {
+        if (targetRole == Role.ROLE_MANAGER_OFFICE) {
+            // Office managers can be created/updated with only an office.
+            // If department/position is provided, it must be provided together.
             if (deptProvided || posProvided) {
                 if (departmentId == null || positionId == null) {
-                    throw new BadRequestException("Department and Position must be provided together or left empty for manager");
+                    throw new BadRequestException("Department and Position must be provided together or left empty for office manager");
                 }
                 department = departmentService.findDepartmentById(departmentId);
+                position = positionRepository.findById(positionId).orElseThrow(
+                        () -> new ResourceNotFoundException("Position not found with id: " + positionId));
+            }
+        } else if (targetRole == Role.ROLE_MANAGER_DEPARTMENT) {
+            // Department managers must belong to a department; position is optional.
+            if (!deptProvided) {
+                throw new BadRequestException("Department is required for department manager");
+            }
+            department = departmentService.findDepartmentById(departmentId);
+            if (posProvided) {
                 position = positionRepository.findById(positionId).orElseThrow(
                         () -> new ResourceNotFoundException("Position not found with id: " + positionId));
             }
@@ -139,17 +164,20 @@ public class UserService {
         return UserResponse.fromEntity(user);
     }
 
-    public Page<UserResponse> getAllUsers(Pageable pageable) {
-        User actor = accessScopeService.currentUserOrThrow();
-        UUID officeId = accessScopeService.isAdmin(actor) ? null : actor.getOffice().getId();
-        Page<User> users = userRepository.searchUsers(null, officeId, null, null, null, pageable);
-        return users.map(UserResponse::fromEntity);
-    }
+//    public Page<UserResponse> getAllUsers(Pageable pageable) {
+//        User actor = accessScopeService.currentUserOrThrow();
+//        UUID scopedOfficeId = accessScopeService.isAdmin(actor) ? null : actor.getOffice().getId();
+//        UUID scopedDepartmentId = accessScopeService.isDepartmentManager(actor)
+//                ? (actor.getDepartment() != null ? actor.getDepartment().getId() : null)
+//                : null;
+//        Page<User> users = userRepository.searchUsers(null, scopedOfficeId, scopedDepartmentId, null, null, pageable);
+//        return users.map(UserResponse::fromEntity);
+//    }
 
     public UserResponse getUserById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        accessScopeService.assertCanManageOffice(user.getOffice() != null ? user.getOffice().getId() : null);
+        accessScopeService.assertCanAccessUser(user);
         return UserResponse.fromEntity(user);
     }
 
@@ -160,22 +188,58 @@ public class UserService {
         userRepository.delete(user);
     }
 
-    public Page<UserResponse> searchUsers(String keyword, Pageable pageable) {
+//    public Page<UserResponse> searchUsers(String keyword, Pageable pageable) {
+//        String normalizedKeyword = keyword != null && !keyword.isBlank() ? keyword.trim() : null;
+//        User actor = accessScopeService.currentUserOrThrow();
+//        UUID officeId = accessScopeService.isAdmin(actor) ? null : actor.getOffice().getId();
+//        Page<User> users = userRepository.searchUsers(normalizedKeyword, officeId, null, null, null, pageable);
+//        return users.map(UserResponse::fromEntity);
+//    }
+
+    public Page<UserResponse> getUsersWithFilters(
+            String keyword,
+            UUID officeId,
+            UUID departmentId,
+            UUID positionId,
+            Boolean active,
+            Pageable pageable
+    ) {
         String normalizedKeyword = keyword != null && !keyword.isBlank() ? keyword.trim() : null;
+
         User actor = accessScopeService.currentUserOrThrow();
-        UUID officeId = accessScopeService.isAdmin(actor) ? null : actor.getOffice().getId();
-        Page<User> users = userRepository.searchUsers(normalizedKeyword, officeId, null, null, null, pageable);
+
+        UUID scopedOfficeId;
+        UUID scopedDepartmentId;
+
+        if (accessScopeService.isAdmin(actor)) {
+            scopedOfficeId = officeId;
+            scopedDepartmentId = departmentId;
+
+        } else if (accessScopeService.isDepartmentManager(actor)) {
+
+            scopedOfficeId = actor.getOffice() != null ? actor.getOffice().getId() : null;
+            scopedDepartmentId = actor.getDepartment() != null ? actor.getDepartment().getId() : null;
+
+            if (scopedDepartmentId == null) {
+                throw new ForbiddenException("Department manager must be assigned to a department");
+            }
+
+        } else {
+            scopedOfficeId = actor.getOffice().getId();
+            scopedDepartmentId = departmentId;
+        }
+
+        Specification<User> spec = Specification
+                .where(UserSpecification.search(normalizedKeyword))
+                .and(UserSpecification.hasOffice(scopedOfficeId))
+                .and(UserSpecification.hasDepartment(scopedDepartmentId))
+                .and(UserSpecification.hasPosition(positionId))
+                .and(UserSpecification.isActive(active));
+
+        Page<User> users = userRepository.findAll(spec, pageable);
+
         return users.map(UserResponse::fromEntity);
     }
-
-    public Page<UserResponse> getUsersWithFilters(String keyword, UUID officeId, UUID departmentId, UUID positionId, Boolean active, Pageable pageable) {
-        String normalizedKeyword = keyword != null && !keyword.isBlank() ? keyword.trim() : null;
-        User actor = accessScopeService.currentUserOrThrow();
-        UUID scopedOfficeId = accessScopeService.isAdmin(actor) ? officeId : actor.getOffice().getId();
-        Page<User> users = userRepository.searchUsers(normalizedKeyword, scopedOfficeId, departmentId, positionId, active, pageable);
-        return users.map(UserResponse::fromEntity);
-    }
-
     private void guardManagerCannotAssignAdmin(Role targetRole) {
         User actor = accessScopeService.currentUserOrThrow();
         if (accessScopeService.isManager(actor) && targetRole == Role.ROLE_ADMIN) {

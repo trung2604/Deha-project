@@ -17,6 +17,11 @@ public class OfficeResponse {
     private String name;
     private String description;
     private List<String> ipWifiIps;
+    private Integer baseWorkHoursPerDay;
+    private Double otWeekdayMultiplier;
+    private Double otWeekendMultiplier;
+    private Double otHolidayMultiplier;
+    private Double otNightBonusMultiplier;
 
     public static OfficeResponse fromEntity(Office office) {
         if (office == null) return null;
@@ -28,7 +33,12 @@ public class OfficeResponse {
                         ? List.of()
                         : office.getWifiIps().stream()
                         .map(OfficeWifiIp::getIpWifi)
-                        .toList()
+                        .toList(),
+                office.getStandardWorkHours(),
+                office.getOtWeekdayMultiplier(),
+                office.getOtWeekendMultiplier(),
+                office.getOtHolidayMultiplier(),
+                office.getOtNightBonusMultiplier()
         );
     }
 }

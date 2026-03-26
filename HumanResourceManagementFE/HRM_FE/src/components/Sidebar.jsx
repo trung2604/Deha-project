@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, Building, LayoutDashboard, UserCircle, Users } from 'lucide-react';
+import { Building2, Building, Clock, LayoutDashboard, ReceiptText, UserCircle, Users } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { canAccessNavItem } from '@/utils/role';
 
@@ -8,11 +8,13 @@ import { canAccessNavItem } from '@/utils/role';
  * (Backend: Users / Departments APIs are ADMIN-only; Profile & auth are for all authenticated users.)
  */
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'] },
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/attendance', label: 'Attendance', icon: Clock, roles: ['MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/payroll', label: 'Payroll', icon: ReceiptText, roles: ['ADMIN', 'MANAGER_OFFICE'] },
   { path: '/offices', label: 'Offices', icon: Building, roles: ['ADMIN'] },
-  { path: '/users', label: 'Users', icon: Users, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/departments', label: 'Departments', icon: Building2, roles: ['ADMIN', 'MANAGER'] },
-  { path: '/profile', label: 'Profile', icon: UserCircle, roles: ['ADMIN', 'MANAGER', 'EMPLOYEE'] },
+  { path: '/users', label: 'Users', icon: Users, roles: ['ADMIN', 'MANAGER_OFFICE'] },
+  { path: '/departments', label: 'Departments', icon: Building2, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT'] },
+  { path: '/profile', label: 'Profile', icon: UserCircle, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
 ];
 
 export function Sidebar({ isOpen, onClose }) {
@@ -137,7 +139,9 @@ function formatRoleLabel(role) {
   if (!role) return 'Employee';
   const s = String(role);
   if (s.includes('ADMIN')) return 'Administrator';
-  if (s.includes('MANAGER')) return 'Manager';
+  if (s.includes('MANAGER_DEPARTMENT')) return 'Department Manager';
+  if (s.includes('MANAGER_OFFICE')) return 'Office Manager';
+  if (s.includes('MANAGER')) return 'Manager'; // legacy
   if (s.includes('EMPLOYEE')) return 'Employee';
   return s.replace(/^ROLE_/, '');
 }

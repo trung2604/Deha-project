@@ -8,7 +8,13 @@ import departmentService from "../api/departmentService";
 import positionService from "../api/positionService";
 import { PositionsModal } from "./PositionsModal";
 
-export function DepartmentDetailModal({ open, departmentId, onClose, onPositionsChanged }) {
+export function DepartmentDetailModal({
+  open,
+  departmentId,
+  onClose,
+  onPositionsChanged,
+  canManagePositions = false,
+}) {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [department, setDepartment] = useState(null);
@@ -167,20 +173,22 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setPositionsModalOpen(true)}
-                disabled={loading}
-                className="flex items-center gap-2 px-3 h-9 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
-                style={{
-                  backgroundColor: "rgba(139, 92, 246, 0.12)",
-                  color: "#8B5CF6",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                }}
-              >
-                <Settings2 className="w-4 h-4" />
-                Manage positions
-              </button>
+              {canManagePositions && (
+                <button
+                  onClick={() => setPositionsModalOpen(true)}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-3 h-9 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
+                  style={{
+                    backgroundColor: "rgba(139, 92, 246, 0.12)",
+                    color: "#8B5CF6",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                  }}
+                >
+                  <Settings2 className="w-4 h-4" />
+                  Manage positions
+                </button>
+              )}
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -339,16 +347,18 @@ export function DepartmentDetailModal({ open, departmentId, onClose, onPositions
             </div>
           </div>
 
-          <PositionsModal
-            open={positionsModalOpen}
-            department={department}
-            positions={positions}
-            onClose={() => setPositionsModalOpen(false)}
-            onCreate={handleCreatePosition}
-            onUpdate={handleUpdatePosition}
-            onDelete={handleDeletePosition}
-            submitting={submitting || loading}
-          />
+          {canManagePositions && (
+            <PositionsModal
+              open={positionsModalOpen}
+              department={department}
+              positions={positions}
+              onClose={() => setPositionsModalOpen(false)}
+              onCreate={handleCreatePosition}
+              onUpdate={handleUpdatePosition}
+              onDelete={handleDeletePosition}
+              submitting={submitting || loading}
+            />
+          )}
         </div>
       </div>
     </>
