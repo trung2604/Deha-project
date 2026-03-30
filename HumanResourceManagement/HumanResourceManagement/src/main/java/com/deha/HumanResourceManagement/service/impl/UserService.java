@@ -19,6 +19,8 @@ import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IOfficeService;
 import com.deha.HumanResourceManagement.service.IUserService;
 import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -35,6 +37,8 @@ public class UserService implements IUserService {
     private final PositionRepository positionRepository;
     private final AccessScopeService accessScopeService;
     private final PasswordEncoder passwordEncoder;
+    @PersistenceContext
+    private EntityManager entityManager;
 
 
     public UserService(UserRepository userRepository, IDepartmentService departmentService, IOfficeService officeService, PositionRepository positionRepository, AccessScopeService accessScopeService, PasswordEncoder passwordEncoder) {
@@ -66,8 +70,6 @@ public class UserService implements IUserService {
         Position position = null;
 
         if (targetRole == Role.ROLE_MANAGER_OFFICE) {
-            // Office managers can be created/updated with only an office.
-            // If department/position is provided, it must be provided together.
             if (deptProvided || posProvided) {
                 if (departmentId == null || positionId == null) {
                     throw new BadRequestException("Department and Position must be provided together or left empty for office manager");
@@ -77,7 +79,6 @@ public class UserService implements IUserService {
                         () -> new ResourceNotFoundException("Position not found with id: " + positionId));
             }
         } else if (targetRole == Role.ROLE_MANAGER_DEPARTMENT) {
-            // Department managers must belong to a department; position is optional.
             if (!deptProvided) {
                 throw new BadRequestException("Department is required for department manager");
             }
@@ -87,7 +88,6 @@ public class UserService implements IUserService {
                         () -> new ResourceNotFoundException("Position not found with id: " + positionId));
             }
         } else {
-            // Non-manager roles require department + position assignment.
             if (!deptProvided || !posProvided) {
                 throw new BadRequestException("Department and Position are required for this role");
             }
@@ -113,8 +113,12 @@ public class UserService implements IUserService {
 
     @Override
     public UserResponse updateUser(UUID id, UpdateUserRequest UserRequest) {
-        User user = userRepository.findById(id)
+        User current = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+//        assertExpectedVersion(UserRequest.getExpectedVersion(), user.getVersion(), "User");
+        if (UserRequest.getExpectedVersion() == null) {
+            throw new BadRequestException("Expected version is required");
+        }
         UUID officeId = UserRequest.getOffice() != null ? UserRequest.getOffice().getId() : null;
         UUID departmentId = UserRequest.getDepartment() != null ? UserRequest.getDepartment().getId() : null;
         UUID positionId = UserRequest.getPosition() != null ? UserRequest.getPosition().getId() : null;
@@ -130,8 +134,6 @@ public class UserService implements IUserService {
         Position position = null;
 
         if (targetRole == Role.ROLE_MANAGER_OFFICE) {
-            // Office managers can be created/updated with only an office.
-            // If department/position is provided, it must be provided together.
             if (deptProvided || posProvided) {
                 if (departmentId == null || positionId == null) {
                     throw new BadRequestException("Department and Position must be provided together or left empty for office manager");
@@ -141,7 +143,6 @@ public class UserService implements IUserService {
                         () -> new ResourceNotFoundException("Position not found with id: " + positionId));
             }
         } else if (targetRole == Role.ROLE_MANAGER_DEPARTMENT) {
-            // Department managers must belong to a department; position is optional.
             if (!deptProvided) {
                 throw new BadRequestException("Department is required for department manager");
             }
@@ -159,6 +160,14 @@ public class UserService implements IUserService {
                     () -> new ResourceNotFoundException("Position not found with id: " + positionId));
         }
 
+        User user = new User();
+        user.setId(current.getId());
+        user.setVersion(UserRequest.getExpectedVersion());
+        user.setPassword(current.getPassword());
+        user.setActive(current.isActive());
+        user.setCreatedAt(current.getCreatedAt());
+        user.setPhone(current.getPhone());
+
         user.applyBasicInfo(
                 UserRequest.getFirstName(),
                 UserRequest.getLastName(),
@@ -166,8 +175,8 @@ public class UserService implements IUserService {
                 UserRequest.getRole()
         );
         user.assignOfficeDepartmentAndPosition(office, department, position);
-        userRepository.save(user);
-        return UserResponse.fromEntity(user);
+        User merged = mergeAndFlush(user);
+        return UserResponse.fromEntity(merged);
     }
 
 //    public Page<UserResponse> getAllUsers(Pageable pageable) {
@@ -254,6 +263,24 @@ public class UserService implements IUserService {
         if (accessScopeService.isManager(actor) && targetRole == Role.ROLE_ADMIN) {
             throw new ForbiddenException("Manager cannot assign admin role");
         }
+    }
+
+//    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
+//        if (expectedVersion == null) {
+//            throw new BadRequestException("Expected version is required");
+//        }
+//        if (!Objects.equals(expectedVersion, currentVersion)) {
+//            throw new ConflictException(resourceName + " was modified by another user. Please refresh and retry.");
+//        }
+//    }
+
+    private User mergeAndFlush(User user) {
+        if (entityManager != null) {
+            User merged = entityManager.merge(user);
+            entityManager.flush();
+            return merged;
+        }
+        return userRepository.saveAndFlush(user);
     }
 }
 

@@ -9,6 +9,8 @@ import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.SalaryContractRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,8 @@ public class SalaryContractService {
     private final SalaryContractRepository salaryContractRepository;
     private final UserRepository userRepository;
     private final AccessScopeService accessScopeService;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public SalaryContractService(
             SalaryContractRepository salaryContractRepository,
@@ -50,21 +54,37 @@ public class SalaryContractService {
 
     @Transactional
     public SalaryContractResponse update(UUID id, SalaryContractRequest request) {
-        SalaryContract contract = salaryContractRepository.findById(id)
+        SalaryContract current = salaryContractRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Salary contract not found"));
+//        assertExpectedVersion(request.getExpectedVersion(), contract.getVersion(), "Salary contract");
+        if (request.getExpectedVersion() == null) {
+            throw new BadRequestException("Expected version is required");
+        }
 
         User user = userOrThrow(request.getUserId());
         assertScope(user);
         validateDateRange(request.getStartDate(), request.getEndDate());
-        ensureNoOverlap(user, request.getStartDate(), request.getEndDate(), contract.getId());
+        ensureNoOverlap(user, request.getStartDate(), request.getEndDate(), current.getId());
 
+        SalaryContract contract = new SalaryContract();
+        contract.setId(current.getId());
+        contract.setVersion(request.getExpectedVersion());
         contract.setUser(user);
         contract.setBaseSalary(request.getBaseSalary());
         contract.setStartDate(request.getStartDate());
         contract.setEndDate(request.getEndDate());
-        salaryContractRepository.save(contract);
-        return SalaryContractResponse.fromEntity(contract);
+        SalaryContract merged = mergeAndFlush(contract);
+        return SalaryContractResponse.fromEntity(merged);
     }
+
+//    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
+//        if (expectedVersion == null) {
+//            throw new BadRequestException("Expected version is required");
+//        }
+//        if (!Objects.equals(expectedVersion, currentVersion)) {
+//            throw new ConflictException(resourceName + " was modified by another user. Please refresh and retry.");
+//        }
+//    }
 
     @Transactional(readOnly = true)
     public List<SalaryContractResponse> getByUser(UUID userId) {
@@ -117,6 +137,15 @@ public class SalaryContractService {
         if (overlapped) {
             throw new BadRequestException("Salary contract date range overlaps with an existing contract");
         }
+    }
+
+    private SalaryContract mergeAndFlush(SalaryContract contract) {
+        if (entityManager != null) {
+            SalaryContract merged = entityManager.merge(contract);
+            entityManager.flush();
+            return merged;
+        }
+        return salaryContractRepository.saveAndFlush(contract);
     }
 }
 

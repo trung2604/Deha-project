@@ -16,6 +16,9 @@ public class Position {
     @UuidGenerator
     private UUID id;
 
+    @Version
+    private Long version;
+
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 

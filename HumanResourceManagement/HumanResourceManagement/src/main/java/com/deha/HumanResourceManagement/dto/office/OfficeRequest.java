@@ -16,4 +16,6 @@ public class OfficeRequest {
     @NotNull(message = "WiFi IP list is required")
     @Size(min = 1, message = "Office must have at least 1 WiFi IP")
     private List<String> ipWifiIps;
+
+    private Long expectedVersion;
 }

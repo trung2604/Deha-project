@@ -17,6 +17,9 @@ public class Office {
     @UuidGenerator
     private UUID id;
 
+    @Version
+    private Long version;
+
     @Column(name = "name", nullable = false, length = 120, unique = true)
     private String name;
 
@@ -43,6 +46,12 @@ public class Office {
 
     @Column(name = "latest_checkout_time", nullable = false)
     private LocalTime latestCheckoutTime = LocalTime.of(22, 0);
+
+    @Column(name = "night_start_time", nullable = false)
+    private LocalTime nightStartTime = LocalTime.of(22, 0);
+
+    @Column(name = "night_end_time", nullable = false)
+    private LocalTime nightEndTime = LocalTime.of(6, 0);
 
     @OneToMany(mappedBy = "office", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OfficeWifiIp> wifiIps = new ArrayList<>();

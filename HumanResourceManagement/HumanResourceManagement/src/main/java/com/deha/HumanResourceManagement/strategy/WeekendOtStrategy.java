@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.strategy;
 
+import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.enums.OtType;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +12,11 @@ import java.util.Set;
 
 @Component
 public class WeekendOtStrategy implements OtTypeStrategy {
+    private final NightHelper nightHelper;
+
+    public WeekendOtStrategy(NightHelper nightHelper) {
+        this.nightHelper = nightHelper;
+    }
 
     private static final Set<DayOfWeek> WEEKEND = EnumSet.of(
             DayOfWeek.SATURDAY, DayOfWeek.SUNDAY
@@ -21,8 +27,8 @@ public class WeekendOtStrategy implements OtTypeStrategy {
     }
 
     @Override
-    public OtType resolve(LocalDate date, LocalTime checkOutTime) {
-        return NightHelper.isNight(checkOutTime)
+    public OtType resolve(LocalDate date, LocalTime checkOutTime, Office office) {
+        return nightHelper.isNight(office, checkOutTime)
                 ? OtType.NIGHT_WEEKEND
                 : OtType.WEEKEND;
     }

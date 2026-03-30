@@ -1,18 +1,27 @@
 package com.deha.HumanResourceManagement.service.payroll;
 
 import com.deha.HumanResourceManagement.entity.AttendanceLog;
+import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.OtReport;
 import com.deha.HumanResourceManagement.entity.enums.OtType;
+import com.deha.HumanResourceManagement.strategy.OtTypeResolver;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Component
 public class PayrollCalculator {
+    private final OtTypeResolver otTypeResolver;
+
+    public PayrollCalculator(OtTypeResolver otTypeResolver) {
+        this.otTypeResolver = otTypeResolver;
+    }
+
     public int countWorkingDays(LocalDate fromDate, LocalDate toDate) {
         int count = 0;
         for (LocalDate d = fromDate; !d.isAfter(toDate); d = d.plusDays(1)) {
@@ -107,7 +116,6 @@ public class PayrollCalculator {
         if (reports == null || reports.isEmpty() || baseSalary == null || workingDaysInMonth <= 0 || standardWorkHours <= 0) {
             return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
         }
-
         BigDecimal hourlyRate = baseSalary
                 .divide(BigDecimal.valueOf((long) workingDaysInMonth * standardWorkHours), 6, RoundingMode.HALF_UP);
 
@@ -115,7 +123,7 @@ public class PayrollCalculator {
         for (OtReport report : reports) {
             int otHours = report.getReportedOtHours() == null ? 0 : report.getReportedOtHours();
             if (otHours <= 0) continue;
-            OtType otType = report.getAttendanceLog() != null ? report.getAttendanceLog().getOtType() : null;
+            OtType otType = resolveOtTypeForReport(report);
             BigDecimal multiplier = BigDecimal.valueOf(resolveMultiplier(
                     otType,
                     weekdayMultiplier,
@@ -126,6 +134,41 @@ public class PayrollCalculator {
             otPay = otPay.add(hourlyRate.multiply(BigDecimal.valueOf(otHours)).multiply(multiplier));
         }
         return otPay.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private OtType resolveOtTypeForReport(OtReport report) {
+        if (report == null) return OtType.WEEKDAY;
+
+        if (report.getAttendanceLog() != null && report.getAttendanceLog().getOtType() != null) {
+            return report.getAttendanceLog().getOtType();
+        }
+
+        LocalDate logDate = null;
+        LocalTime checkOutTime = null;
+        Office office = null;
+
+        if (report.getOtSession() != null) {
+            logDate = report.getOtSession().getLogDate();
+            office = report.getOtSession().getOffice();
+            if (report.getOtSession().getCheckOutTime() != null) {
+                checkOutTime = report.getOtSession().getCheckOutTime().toLocalTime();
+            }
+        }
+
+        if (logDate == null && report.getAttendanceLog() != null) {
+            logDate = report.getAttendanceLog().getLogDate();
+        }
+        if (office == null && report.getAttendanceLog() != null) {
+            office = report.getAttendanceLog().getOffice();
+        }
+        if (checkOutTime == null && report.getAttendanceLog() != null && report.getAttendanceLog().getCheckOutTime() != null) {
+            checkOutTime = report.getAttendanceLog().getCheckOutTime().toLocalTime();
+        }
+
+        if (logDate == null) {
+            return OtType.WEEKDAY;
+        }
+        return otTypeResolver.resolve(logDate, checkOutTime != null ? checkOutTime : LocalTime.NOON, office);
     }
 
     private double resolveMultiplier(

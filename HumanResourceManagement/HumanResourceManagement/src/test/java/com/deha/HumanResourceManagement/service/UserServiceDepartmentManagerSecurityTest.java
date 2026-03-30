@@ -1,12 +1,15 @@
 package com.deha.HumanResourceManagement.service;
 
 import com.deha.HumanResourceManagement.dto.user.UserRequest;
+import com.deha.HumanResourceManagement.dto.user.UpdateUserRequest;
 import com.deha.HumanResourceManagement.dto.user.UserResponse;
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
+import com.deha.HumanResourceManagement.exception.BadRequestException;
+import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.impl.UserService;
@@ -27,6 +30,83 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class UserServiceDepartmentManagerSecurityTest {
+
+    @Test
+    void updateUser_withoutExpectedVersion_shouldThrowBadRequest() {
+        User actor = new User();
+        actor.setId(UUID.randomUUID());
+        actor.setRole(Role.ROLE_ADMIN);
+
+        AccessScopeService accessScopeService = new AccessScopeService(null) {
+            @Override
+            public User currentUserOrThrow() {
+                return actor;
+            }
+        };
+
+        User existing = new User();
+        existing.setId(UUID.randomUUID());
+        existing.setVersion(3L);
+
+        UserRepository userRepository = mock(UserRepository.class);
+        when(userRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
+
+        UserService userService = new UserService(
+                userRepository,
+                mock(IDepartmentService.class),
+                mock(IOfficeService.class),
+                mock(PositionRepository.class),
+                accessScopeService,
+                mock(PasswordEncoder.class)
+        );
+
+        UpdateUserRequest payload = new UpdateUserRequest();
+        payload.setFirstName("A");
+        payload.setLastName("B");
+        payload.setEmail("a@b.com");
+        payload.setRole(Role.ROLE_EMPLOYEE);
+
+        assertThrows(BadRequestException.class, () -> userService.updateUser(existing.getId(), payload));
+    }
+
+    @Test
+    void updateUser_withStaleExpectedVersion_shouldThrowConflict() {
+        User actor = new User();
+        actor.setId(UUID.randomUUID());
+        actor.setRole(Role.ROLE_ADMIN);
+
+        AccessScopeService accessScopeService = new AccessScopeService(null) {
+            @Override
+            public User currentUserOrThrow() {
+                return actor;
+            }
+        };
+
+        User existing = new User();
+        existing.setId(UUID.randomUUID());
+        existing.setVersion(3L);
+
+        UserRepository userRepository = mock(UserRepository.class);
+        when(userRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
+
+        UserService userService = new UserService(
+                userRepository,
+                mock(IDepartmentService.class),
+                mock(IOfficeService.class),
+                mock(PositionRepository.class),
+                accessScopeService,
+                mock(PasswordEncoder.class)
+        );
+
+        UpdateUserRequest payload = new UpdateUserRequest();
+        payload.setFirstName("A");
+        payload.setLastName("B");
+        payload.setEmail("a@b.com");
+        payload.setRole(Role.ROLE_EMPLOYEE);
+        payload.setExpectedVersion(2L);
+
+        assertThrows(ConflictException.class, () -> userService.updateUser(existing.getId(), payload));
+    }
 
     @Test
     void departmentManager_shouldBeForbiddenToCreateUser() {

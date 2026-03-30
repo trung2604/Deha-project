@@ -20,4 +20,6 @@ public class DepartmentRequest {
 
     @NotNull(message = "Office is required")
     private UUID officeId;
+
+    private Long expectedVersion;
 }

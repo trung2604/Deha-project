@@ -20,6 +20,14 @@ export function OvertimeSection({
   loading,
   isOvertimeSessionCheckedIn,
   isOvertimeSessionCheckedOut,
+  otElapsedTimeText,
+  otCheckInTimeText,
+  otCheckOutTimeText,
+  minimumOtHours,
+  hasReachedMinimumOtDuration,
+  remainingOtTimeText,
+  canCheckOutOvertimeSession,
+  hasInvalidOtTimeline,
   hasApprovedOvertimeRequestForToday,
   hasTodayAttendanceLog,
   myOvertimeRequests,
@@ -64,6 +72,8 @@ export function OvertimeSection({
     ? "You need an approved OT request before OT check-in."
     : isOvertimeSessionCheckedOut
       ? "Session completed. You can submit OT report."
+      : isOvertimeSessionCheckedIn && !hasReachedMinimumOtDuration
+        ? `Session is active. Minimum OT is ${minimumOtHours}h (remaining ${remainingOtTimeText}).`
       : isOvertimeSessionCheckedIn
         ? "Session is active. Complete your work then check-out."
         : "Ready for OT check-in.";
@@ -105,6 +115,14 @@ export function OvertimeSection({
           {/* OT Session Controls */}
           <div className="rounded-xl p-5" style={{ backgroundColor: "rgba(250, 140, 22, 0.04)", border: "1px solid rgba(250, 140, 22, 0.2)" }}>
             <div style={{ color: "#8C8C8C", fontSize: "12px", fontWeight: 700, marginBottom: 10, textTransform: "uppercase" }}>Session Control</div>
+            {hasInvalidOtTimeline && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="OT session time data looks invalid. Please refresh or contact admin."
+              />
+            )}
             <div className="flex items-center gap-3 flex-wrap">
             <div style={{ flex: 1 }}>
               <span style={{ fontSize: "14px", fontWeight: "600", color: "#0a0a0a" }}>
@@ -125,7 +143,7 @@ export function OvertimeSection({
               </Button>
               <Button
                 onClick={onCheckOut}
-                disabled={!isOvertimeSessionCheckedIn}
+                disabled={!canCheckOutOvertimeSession}
                 loading={isSubmittingOvertimeAction && isOvertimeSessionCheckedIn}
                 size="middle"
                 style={{ height: 36 }}
@@ -146,6 +164,40 @@ export function OvertimeSection({
               )}
             </div>
             </div>
+            {(isOvertimeSessionCheckedIn || isOvertimeSessionCheckedOut) && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                <div className="rounded-lg p-3" style={{ border: "1px solid rgba(22,119,255,0.25)", backgroundColor: "rgba(22,119,255,0.06)" }}>
+                  <div style={{ color: "#595959", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
+                    OT Stopwatch
+                  </div>
+                  <div style={{ fontSize: "24px", fontWeight: 700, color: "#0a0a0a", letterSpacing: 0.5, fontFamily: "monospace" }}>
+                    {otElapsedTimeText}
+                  </div>
+                  <div style={{ color: "#8C8C8C", fontSize: "12px", marginTop: 4 }}>
+                    {isOvertimeSessionCheckedIn ? "Running" : "Final duration"}
+                  </div>
+                  <div style={{ color: "#595959", fontSize: "12px", marginTop: 2 }}>
+                    Minimum required: {minimumOtHours}h
+                  </div>
+                </div>
+
+                <div className="rounded-lg p-3" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
+                  <div style={{ color: "#595959", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
+                    Check-in Time
+                  </div>
+                  <div style={{ fontSize: "20px", fontWeight: 600, color: "#0a0a0a", fontFamily: "monospace" }}>{otCheckInTimeText}</div>
+                </div>
+
+                <div className="rounded-lg p-3" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
+                  <div style={{ color: "#595959", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
+                    Check-out Time
+                  </div>
+                  <div style={{ fontSize: "20px", fontWeight: 600, color: "#0a0a0a", fontFamily: "monospace" }}>
+                    {isOvertimeSessionCheckedOut ? otCheckOutTimeText : "--:--:--"}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* My OT Requests */}
@@ -197,6 +249,7 @@ export function OvertimeSection({
                 size="middle"
                 pagination={{ pageSize: 5 }}
                 columns={[
+                  { title: "Date", dataIndex: "logDate", key: "logDate", width: 110 },
                   { title: "OT Hours", dataIndex: "reportedOtHours", key: "reportedOtHours", width: 100, render: (v) => `${v ?? 0}h` },
                   { title: "Note", dataIndex: "reportNote", key: "reportNote", ellipsis: true },
                   { title: "Status", key: "status", width: 120, render: (_, r) => renderOvertimeStatusTag(r.status) },
@@ -242,10 +295,10 @@ export function OvertimeSection({
                         if (!canDecide) return <span style={{ color: "#8C8C8C" }}>—</span>;
                         return (
                           <div className="flex gap-2">
-                            <Button size="small" type="primary" onClick={() => onApproveRequest(r.id)}>
+                            <Button size="small" type="primary" onClick={() => onApproveRequest(r)}>
                               Approve
                             </Button>
-                            <Button size="small" danger onClick={() => onRejectRequest(r.id)}>
+                            <Button size="small" danger onClick={() => onRejectRequest(r)}>
                               Reject
                             </Button>
                           </div>
@@ -276,6 +329,7 @@ export function OvertimeSection({
                   pagination={{ pageSize: 5 }}
                   columns={[
                     { title: "User", dataIndex: "userName", key: "userName" },
+                      { title: "Date", dataIndex: "logDate", key: "logDate", width: 110 },
                     { title: "OT Hours", dataIndex: "reportedOtHours", key: "reportedOtHours", width: 100, render: (v) => `${v ?? 0}h` },
                     { title: "Note", dataIndex: "reportNote", key: "reportNote", ellipsis: true },
                     { title: "Status", key: "status", width: 120, render: (_, r) => renderOvertimeStatusTag(r.status) },
@@ -290,10 +344,10 @@ export function OvertimeSection({
                         if (!canDecide) return <span style={{ color: "#8C8C8C" }}>—</span>;
                         return (
                           <div className="flex gap-2">
-                            <Button size="small" type="primary" onClick={() => onApproveReport(r.id)}>
+                            <Button size="small" type="primary" onClick={() => onApproveReport(r)}>
                               Approve
                             </Button>
-                            <Button size="small" danger onClick={() => onRejectReport(r.id)}>
+                            <Button size="small" danger onClick={() => onRejectReport(r)}>
                               Reject
                             </Button>
                           </div>

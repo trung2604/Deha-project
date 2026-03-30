@@ -3,7 +3,14 @@ import { Building2, Plus, Settings2, Trash2, Edit, Search, BriefcaseBusiness, Us
 import { toast } from "sonner";
 import { Input, Select, Spin } from "antd";
 import { DepartmentDetailModal } from "../components/DepartmentDetailModal";
-import { getDepartmentDirectoryPayload, getListData, getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
+import {
+  getDepartmentDirectoryPayload,
+  getListData,
+  getOptimisticConflictMessage,
+  getResponseMessage,
+  isOptimisticConflictResponse,
+  isSuccessResponse,
+} from "@/utils/apiResponse";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { isAdminRole, isDepartmentManagerRole, isOfficeManagerRole } from "@/utils/role";
 
@@ -236,8 +243,18 @@ export function DepartmentsPage() {
       }
       const requestPayload = { ...payload, officeId: finalOfficeId };
       if (editingDepartment?.id) {
+        if (requestPayload?.expectedVersion == null) {
+          toast.error(getOptimisticConflictMessage());
+          return;
+        }
         const res = await departmentService.updateDepartment(editingDepartment.id, requestPayload);
-        if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save department"));
+        if (!isSuccessResponse(res)) {
+          return toast.error(
+            isOptimisticConflictResponse(res)
+              ? getOptimisticConflictMessage(res)
+              : getResponseMessage(res, "Failed to save department"),
+          );
+        }
         toast.success(getResponseMessage(res, "Department updated successfully"));
       } else {
         const res = await departmentService.createDepartment(requestPayload);
@@ -289,13 +306,27 @@ export function DepartmentsPage() {
     }
   };
 
-  const handleUpdatePosition = async (id, name) => {
+  const handleUpdatePosition = async (position, name) => {
     const deptId = positionsDepartment?.id;
     if (!deptId) return;
+    if (!position?.id) return;
+    if (position?.version == null) {
+      toast.error(getOptimisticConflictMessage());
+      return;
+    }
     setSubmitting(true);
     try {
-      const res = await positionService.updateDepartmentPosition(deptId, id, { name });
-      if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to update position"));
+      const res = await positionService.updateDepartmentPosition(deptId, position.id, {
+        name,
+        expectedVersion: position.version,
+      });
+      if (!isSuccessResponse(res)) {
+        return toast.error(
+          isOptimisticConflictResponse(res)
+            ? getOptimisticConflictMessage(res)
+            : getResponseMessage(res, "Failed to update position"),
+        );
+      }
       toast.success(getResponseMessage(res, "Position updated successfully"));
       await refreshDepartmentPositions(deptId);
     } catch (e) {

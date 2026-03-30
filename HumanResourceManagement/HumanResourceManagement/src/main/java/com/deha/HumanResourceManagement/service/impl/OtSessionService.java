@@ -17,6 +17,7 @@ import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -76,7 +77,8 @@ public class OtSessionService implements IOtSessionService {
         session.setSource(MANUAL_SOURCE);
         session.setStatus(OtSessionStatus.CHECKED_IN);
         otSessionRepository.save(session);
-        return OtSessionResponse.fromEntity(session);
+        int minimumOtHours = officePolicyService.otMinHours(actor.getOffice());
+        return OtSessionResponse.fromEntity(session, minimumOtHours);
     }
 
     @Override
@@ -95,18 +97,27 @@ public class OtSessionService implements IOtSessionService {
         if (!effectiveCheckout.isAfter(session.getCheckInTime())) {
             throw new BadRequestException("Invalid OT checkout time by office OT policy");
         }
+
+        int minimumOtHours = officePolicyService.otMinHours(session.getOffice());
+        long workedMinutes = Duration.between(session.getCheckInTime(), effectiveCheckout).toMinutes();
+        long minimumMinutesRequired = minimumOtHours * 60L;
+        if (workedMinutes < minimumMinutesRequired) {
+            throw new BadRequestException("Minimum OT time is " + minimumOtHours + " hour(s). Please complete minimum OT duration before checkout");
+        }
+
         session.setCheckOutTime(effectiveCheckout);
         session.setStatus(OtSessionStatus.CHECKED_OUT);
         otSessionRepository.save(session);
-        return OtSessionResponse.fromEntity(session);
+        return OtSessionResponse.fromEntity(session, minimumOtHours);
     }
 
     @Override
     @Transactional(readOnly = true)
     public OtSessionResponse today() {
         User actor = currentOtActorOrThrow("view personal OT session");
+        int minimumOtHours = officePolicyService.otMinHours(actor.getOffice());
         return otSessionRepository.findByUserAndLogDate(actor, LocalDate.now())
-                .map(OtSessionResponse::fromEntity)
+                .map(session -> OtSessionResponse.fromEntity(session, minimumOtHours))
                 .orElse(null);
     }
 

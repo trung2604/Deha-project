@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { getOptimisticConflictMessage } from "@/utils/apiResponse";
 import { ProfileHeader } from "../components/ProfileHeader";
 import { ProfilePersonalTab } from "../components/ProfilePersonalTab";
 import { ProfileSecurityTab } from "../components/ProfileSecurityTab";
@@ -13,6 +14,10 @@ export default function Profile() {
   const { user, updateProfile } = useAuth();
 
   const handleSaveProfile = async (payload) => {
+    if (payload?.expectedVersion == null) {
+      toast.error(getOptimisticConflictMessage());
+      return false;
+    }
     setSavingProfile(true);
     try {
       const res = await updateProfile(payload);

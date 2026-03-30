@@ -13,6 +13,8 @@ import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.service.IOtRequestService;
 import com.deha.HumanResourceManagement.service.support.AccessScopeService;
 import com.deha.HumanResourceManagement.service.ot.workflow.OtRequestWorkflowService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,8 @@ public class OtRequestService implements IOtRequestService {
     private final OtRequestRepository otRequestRepository;
     private final AccessScopeService accessScopeService;
     private final OtRequestWorkflowService otRequestWorkflowService;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public OtRequestService(
             OtRequestRepository otRequestRepository,
@@ -74,38 +78,66 @@ public class OtRequestService implements IOtRequestService {
     @Override
     @Transactional
     public OtRequestResponse decide(UUID id, OtDecisionRequest request) {
-        OtRequest entity = otRequestRepository.findById(id)
+        OtRequest current = otRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("OT request not found"));
+//        assertExpectedVersion(request.getExpectedVersion(), entity.getVersion(), "OT request");
+        if (request.getExpectedVersion() == null) {
+            throw new BadRequestException("Expected version is required");
+        }
         User manager = accessScopeService.currentUserOrThrow();
         boolean approved = Boolean.TRUE.equals(request.getApproved());
 
-        boolean isSelfRequest = entity.getUser() != null
-                && entity.getUser().getId() != null
-                && entity.getUser().getId().equals(manager.getId());
+        boolean isSelfRequest = current.getUser() != null
+                && current.getUser().getId() != null
+                && current.getUser().getId().equals(manager.getId());
 
         if (isSelfRequest && !accessScopeService.isOfficeManager(manager)) {
             throw new ForbiddenException("You cannot approve your own OT request");
         }
 
         if (accessScopeService.isDepartmentManager(manager)) {
-            UUID departmentId = entity.getUser() != null && entity.getUser().getDepartment() != null
-                    ? entity.getUser().getDepartment().getId()
+            UUID departmentId = current.getUser() != null && current.getUser().getDepartment() != null
+                    ? current.getUser().getDepartment().getId()
                     : null;
             accessScopeService.assertCanManageDepartment(departmentId);
         } else if (accessScopeService.isOfficeManager(manager)) {
-            UUID officeId = entity.getOffice() != null ? entity.getOffice().getId() : null;
+            UUID officeId = current.getOffice() != null ? current.getOffice().getId() : null;
             accessScopeService.assertCanManageOffice(officeId);
         } else {
             throw new ForbiddenException("You do not have permission to decide OT requests");
         }
 
-        entity.setStatus(otRequestWorkflowService.nextStatus(manager.getRole(), entity.getStatus(), approved));
-
+        OtRequest entity = new OtRequest();
+        entity.setId(current.getId());
+        entity.setVersion(request.getExpectedVersion());
+        entity.setUser(current.getUser());
+        entity.setOffice(current.getOffice());
+        entity.setLogDate(current.getLogDate());
+        entity.setReason(current.getReason());
+        entity.setStatus(otRequestWorkflowService.nextStatus(manager.getRole(), current.getStatus(), approved));
         entity.setApprovedBy(manager);
         entity.setApprovedAt(LocalDateTime.now());
         entity.setDecisionNote(request.getDecisionNote());
-        otRequestRepository.save(entity);
-        return OtRequestResponse.fromEntity(entity);
+        OtRequest merged = mergeAndFlush(entity);
+        return OtRequestResponse.fromEntity(merged);
+    }
+
+//    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
+//        if (expectedVersion == null) {
+//            throw new BadRequestException("Expected version is required");
+//        }
+//        if (!Objects.equals(expectedVersion, currentVersion)) {
+//            throw new ConflictException(resourceName + " was modified by another user. Please refresh and retry.");
+//        }
+//    }
+
+    private OtRequest mergeAndFlush(OtRequest request) {
+        if (entityManager != null) {
+            OtRequest merged = entityManager.merge(request);
+            entityManager.flush();
+            return merged;
+        }
+        return otRequestRepository.saveAndFlush(request);
     }
 
     @Override
@@ -120,14 +152,14 @@ public class OtRequestService implements IOtRequestService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<OtRequestResponse> listPendingForApproverScope() {
+    public List<OtRequestResponse> listPendingForScope() {
         User currentApprover = accessScopeService.currentUserOrThrow();
 
         if (accessScopeService.isDepartmentManager(currentApprover)) {
             UUID approverDepartmentId = currentApprover.getDepartment() != null ? currentApprover.getDepartment().getId() : null;
             accessScopeService.assertCanManageDepartment(approverDepartmentId);
             List<OtRequest> pendingRequests = new ArrayList<>();
-            for (OtRequestStatus status : otRequestWorkflowService.pendingStatusesForDepartmentManager()) {
+            for (OtRequestStatus status : otRequestWorkflowService.pendingForDeptMgr()) {
                 pendingRequests.addAll(otRequestRepository.findByUser_Department_IdAndStatusOrderByLogDateDesc(approverDepartmentId, status));
             }
             pendingRequests.sort(Comparator.comparing(OtRequest::getLogDate).reversed());
@@ -138,7 +170,7 @@ public class OtRequestService implements IOtRequestService {
             UUID approverOfficeId = currentApprover.getOffice() != null ? currentApprover.getOffice().getId() : null;
             accessScopeService.assertCanManageOffice(approverOfficeId);
             List<OtRequest> pendingRequests = new ArrayList<>();
-            for (OtRequestStatus status : otRequestWorkflowService.pendingStatusesForOfficeManager()) {
+            for (OtRequestStatus status : otRequestWorkflowService.pendingForOfficeMgr()) {
                 pendingRequests.addAll(otRequestRepository.findByOffice_IdAndStatusOrderByLogDateDesc(approverOfficeId, status));
             }
             pendingRequests.sort(Comparator.comparing(OtRequest::getLogDate).reversed());

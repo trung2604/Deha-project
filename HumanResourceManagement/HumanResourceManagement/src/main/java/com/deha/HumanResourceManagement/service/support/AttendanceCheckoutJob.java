@@ -7,16 +7,17 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 
 @Component
-public class AttendanceAutoCheckoutJob {
+public class AttendanceCheckoutJob {
     private final IAttendanceService attendanceService;
 
-    public AttendanceAutoCheckoutJob(IAttendanceService attendanceService) {
+    public AttendanceCheckoutJob(IAttendanceService attendanceService) {
         this.attendanceService = attendanceService;
     }
 
     @Scheduled(cron = "0 */5 * * * *")
-    public void autoCheckoutByOfficePolicy() {
-        attendanceService.autoCheckoutOpenLogs(LocalDate.now());
+    public void run() {
+        attendanceService.autoCheckout(LocalDate.now());
     }
 }
+
 

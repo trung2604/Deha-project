@@ -38,4 +38,6 @@ public class UpdateUserRequest {
 
     @NotNull(message = "Role cannot be blank")
     private Role role;
+
+    private Long expectedVersion;
 }

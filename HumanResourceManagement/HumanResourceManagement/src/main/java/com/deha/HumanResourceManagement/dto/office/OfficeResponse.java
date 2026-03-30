@@ -15,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OfficeResponse {
     private UUID id;
+    private Long version;
     private String name;
     private String description;
     private List<String> ipWifiIps;
@@ -30,6 +31,7 @@ public class OfficeResponse {
         if (office == null) return null;
         return new OfficeResponse(
                 office.getId(),
+                office.getVersion(),
                 office.getName(),
                 office.getDescription(),
                 office.getWifiIps() == null

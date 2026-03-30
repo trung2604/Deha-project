@@ -2,6 +2,8 @@ package com.deha.HumanResourceManagement.service.payroll;
 
 import com.deha.HumanResourceManagement.entity.AttendanceLog;
 import com.deha.HumanResourceManagement.entity.enums.OtType;
+import com.deha.HumanResourceManagement.strategy.OtTypeResolver;
+import com.deha.HumanResourceManagement.strategy.OtTypeStrategy;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -13,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PayrollCalculatorTest {
 
-    private final PayrollCalculator calculator = new PayrollCalculator();
+    private final PayrollCalculator calculator = new PayrollCalculator(new OtTypeResolver(List.<OtTypeStrategy>of()));
 
     @Test
     void countWorkingDays_shouldExcludeWeekends() {

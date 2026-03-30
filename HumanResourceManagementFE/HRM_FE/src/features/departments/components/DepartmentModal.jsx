@@ -5,6 +5,7 @@ import { Input, Select } from "antd";
 export function DepartmentModal({ open, department, offices = [], selectedOfficeId, allowOfficeChange = true, onClose, onSubmit, submitting }) {
   const initial = useMemo(
     () => ({
+      version: department?.version,
       name: department?.name ?? "",
       description: department?.description ?? "",
       officeId: department?.officeId ?? selectedOfficeId ?? "",
@@ -28,7 +29,12 @@ export function DepartmentModal({ open, department, offices = [], selectedOffice
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.officeId) return;
-    onSubmit?.(form);
+    onSubmit?.({
+      name: form.name,
+      description: form.description,
+      officeId: form.officeId,
+      expectedVersion: form.version,
+    });
   };
 
   return (

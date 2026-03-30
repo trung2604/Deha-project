@@ -24,6 +24,9 @@ public class OtReport {
     @UuidGenerator
     private UUID id;
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "attendance_log_id", nullable = false)
     private AttendanceLog attendanceLog;

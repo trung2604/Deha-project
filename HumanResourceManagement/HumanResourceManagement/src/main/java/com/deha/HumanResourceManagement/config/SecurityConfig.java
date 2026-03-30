@@ -56,9 +56,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/departments/**")
                         .hasAnyRole("ADMIN", "MANAGER_OFFICE")
                         // POSITIONS
-                        .requestMatchers("/api/positions/**")
-                        .hasAnyRole("ADMIN", "MANAGER_OFFICE")
-                        .requestMatchers("/api/positions").hasRole("MANAGER_DEPARTMENT")
+                        .requestMatchers(HttpMethod.GET, "/api/positions")
+                        .hasAnyRole("ADMIN", "MANAGER_OFFICE", "MANAGER_DEPARTMENT")
+                        .requestMatchers("/api/positions/**").hasAnyRole("ADMIN", "MANAGER_OFFICE")
                         // SALARY & PAYROLL
                         .requestMatchers("/api/salary-contracts/**", "/api/payrolls/**")
                         .hasAnyRole("ADMIN", "MANAGER_OFFICE")

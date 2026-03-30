@@ -13,10 +13,13 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OfficePolicyResponse {
     private UUID officeId;
+    private Long version;
     private String officeName;
     private Integer baseWorkHoursPerDay;
     private Integer otMinHours;
     private LocalTime latestCheckoutTime;
+    private LocalTime nightStartTime;
+    private LocalTime nightEndTime;
     private Double otWeekdayMultiplier;
     private Double otWeekendMultiplier;
     private Double otHolidayMultiplier;
@@ -26,10 +29,13 @@ public class OfficePolicyResponse {
         if (office == null) return null;
         return new OfficePolicyResponse(
                 office.getId(),
+                office.getVersion(),
                 office.getName(),
                 office.getStandardWorkHours(),
                 office.getOtMinHours(),
                 office.getLatestCheckoutTime(),
+                office.getNightStartTime(),
+                office.getNightEndTime(),
                 office.getOtWeekdayMultiplier(),
                 office.getOtWeekendMultiplier(),
                 office.getOtHolidayMultiplier(),

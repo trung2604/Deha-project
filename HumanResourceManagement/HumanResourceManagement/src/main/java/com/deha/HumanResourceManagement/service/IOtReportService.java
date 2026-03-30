@@ -14,7 +14,7 @@ public interface IOtReportService {
 
     List<OtReportResponse> listByApprovalScope();
 
-    List<OtReportResponse> listPendingForApproverScope();
+    List<OtReportResponse> listPendingForScope();
 
     List<OtReportResponse> listMy();
 }

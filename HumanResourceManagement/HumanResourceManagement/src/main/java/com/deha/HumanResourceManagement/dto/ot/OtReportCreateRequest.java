@@ -2,7 +2,7 @@ package com.deha.HumanResourceManagement.dto.ot;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.UUID;
@@ -12,11 +12,9 @@ public class OtReportCreateRequest {
     @NotNull(message = "OT session id is required")
     private UUID otSessionId;
 
-    @NotNull(message = "Reported OT hours is required")
-    @Positive(message = "Reported OT hours must be greater than 0")
-    private Integer reportedOtHours;
 
     @NotBlank(message = "Report note (evidence) is required")
+    @Size(min = 10, max = 500, message = "Report note must be between 10 and 500 characters")
     private String reportNote;
 }
 

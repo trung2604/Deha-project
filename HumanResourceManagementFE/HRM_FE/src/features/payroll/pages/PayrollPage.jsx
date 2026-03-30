@@ -7,7 +7,14 @@ import officeService from "@/features/offices/api/officeService";
 import userService from "@/features/users/api/UserService";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { isAdminRole } from "@/utils/role";
-import { getListData, getPageContent, getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
+import {
+  getListData,
+  getOptimisticConflictMessage,
+  getPageContent,
+  getResponseMessage,
+  isOptimisticConflictResponse,
+  isSuccessResponse,
+} from "@/utils/apiResponse";
 import { PayrollFilters } from "../components/PayrollFilters";
 import { GeneratePayrollPanel } from "../components/GeneratePayrollPanel";
 import { PayrollTable } from "../components/PayrollTable";
@@ -210,13 +217,26 @@ export function PayrollPage() {
   };
 
   const handleSubmitSalaryContract = async (payload) => {
+    if (editingSalaryContract?.id && editingSalaryContract?.version == null) {
+      toast.error(getOptimisticConflictMessage());
+      return;
+    }
+
+    const normalizedPayload = editingSalaryContract?.id
+      ? { ...payload, expectedVersion: editingSalaryContract.version }
+      : payload;
+
     setIsSubmittingPayrollAction(true);
     try {
       const res = editingSalaryContract?.id
-        ? await salaryContractService.update(editingSalaryContract.id, payload)
-        : await salaryContractService.create(payload);
+        ? await salaryContractService.update(editingSalaryContract.id, normalizedPayload)
+        : await salaryContractService.create(normalizedPayload);
       if (!isSuccessResponse(res)) {
-        return toast.error(getResponseMessage(res, "Failed to save salary contract"));
+        return toast.error(
+          isOptimisticConflictResponse(res)
+            ? getOptimisticConflictMessage(res)
+            : getResponseMessage(res, "Failed to save salary contract"),
+        );
       }
       toast.success(getResponseMessage(res, "Salary contract saved successfully"));
       setIsSalaryContractModalOpen(false);

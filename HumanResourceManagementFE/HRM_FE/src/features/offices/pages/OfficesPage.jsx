@@ -3,7 +3,12 @@ import { Edit, Plus, Trash2 } from "lucide-react";
 import { Modal, Input, Form } from "antd";
 import { toast } from "sonner";
 import officeService from "@/features/offices/api/officeService";
-import { getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
+import {
+  getOptimisticConflictMessage,
+  getResponseMessage,
+  isOptimisticConflictResponse,
+  isSuccessResponse,
+} from "@/utils/apiResponse";
 
 export function OfficesPage() {
   const [loading, setLoading] = useState(true);
@@ -64,6 +69,9 @@ export function OfficesPage() {
 
   const save = async () => {
     if (!form.name.trim()) return toast.error("Office name is required");
+    if (editing?.id && editing?.version == null) {
+      return toast.error(getOptimisticConflictMessage());
+    }
     const ipWifiIps = parseIpList(form.ipWifiText);
     if (ipWifiIps.length === 0)
       return toast.error("Office must have at least 1 WiFi IP");
@@ -74,12 +82,18 @@ export function OfficesPage() {
         name: form.name.trim(),
         description: form.description?.trim() || null,
         ipWifiIps,
+        ...(editing?.id ? { expectedVersion: editing.version } : {}),
       };
       const res = editing?.id
         ? await officeService.updateOffice(editing.id, payload)
         : await officeService.createOffice(payload);
-      if (!isSuccessResponse(res))
-        return toast.error(getResponseMessage(res, "Failed to save office"));
+      if (!isSuccessResponse(res)) {
+        return toast.error(
+          isOptimisticConflictResponse(res)
+            ? getOptimisticConflictMessage(res)
+            : getResponseMessage(res, "Failed to save office"),
+        );
+      }
       toast.success(
         getResponseMessage(
           res,

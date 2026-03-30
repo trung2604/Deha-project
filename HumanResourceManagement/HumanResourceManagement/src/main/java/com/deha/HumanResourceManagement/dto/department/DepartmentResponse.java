@@ -13,6 +13,7 @@ import java.util.UUID;
 public class DepartmentResponse {
 
     private UUID id;
+    private Long version;
     private String name;
     private String description;
     private UUID officeId;
@@ -22,6 +23,7 @@ public class DepartmentResponse {
         if (department == null) return null;
         return new DepartmentResponse(
                 department.getId(),
+                department.getVersion(),
                 department.getName(),
                 department.getDescription(),
                 department.getOffice() != null ? department.getOffice().getId() : null,

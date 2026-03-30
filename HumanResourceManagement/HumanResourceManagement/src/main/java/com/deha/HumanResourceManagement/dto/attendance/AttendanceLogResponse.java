@@ -16,6 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AttendanceLogResponse {
     private UUID id;
+    private Long version;
     private UUID userId;
     private String userName;
     private UUID officeId;
@@ -33,6 +34,7 @@ public class AttendanceLogResponse {
         if (log == null) return null;
         return new AttendanceLogResponse(
                 log.getId(),
+                log.getVersion(),
                 log.getUser() != null ? log.getUser().getId() : null,
                 log.getUser() != null ? (log.getUser().getFirstName() + " " + log.getUser().getLastName()).trim() : null,
                 log.getOffice() != null ? log.getOffice().getId() : null,

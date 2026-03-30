@@ -42,11 +42,11 @@ public class OtRequestWorkflowService {
         throw new ForbiddenException("You do not have permission to decide OT requests");
     }
 
-    public List<OtRequestStatus> pendingStatusesForDepartmentManager() {
+    public List<OtRequestStatus> pendingForDeptMgr() {
         return List.of(OtRequestStatus.PENDING_DEPARTMENT, OtRequestStatus.PENDING);
     }
 
-    public List<OtRequestStatus> pendingStatusesForOfficeManager() {
+    public List<OtRequestStatus> pendingForOfficeMgr() {
         return List.of(OtRequestStatus.PENDING_OFFICE);
     }
 

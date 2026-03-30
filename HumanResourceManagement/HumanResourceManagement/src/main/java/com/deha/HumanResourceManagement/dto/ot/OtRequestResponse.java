@@ -15,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OtRequestResponse {
     private UUID id;
+    private Long version;
     private UUID userId;
     private String userName;
     private UUID officeId;
@@ -30,6 +31,7 @@ public class OtRequestResponse {
         if (request == null) return null;
         return new OtRequestResponse(
                 request.getId(),
+                request.getVersion(),
                 request.getUser() != null ? request.getUser().getId() : null,
                 request.getUser() != null ? (request.getUser().getFirstName() + " " + request.getUser().getLastName()).trim() : null,
                 request.getOffice() != null ? request.getOffice().getId() : null,

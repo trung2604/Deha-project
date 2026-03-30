@@ -39,6 +39,7 @@ export function ProfilePersonalTab({ user, onSave, saving }) {
         firstName: values.firstName.trim(),
         lastName: values.lastName.trim(),
         phone: (values.phone ?? "").trim(),
+        expectedVersion: user?.version,
       });
       if (ok) setEditing(false);
     } catch {

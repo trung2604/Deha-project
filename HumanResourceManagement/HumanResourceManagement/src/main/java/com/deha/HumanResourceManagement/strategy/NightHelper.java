@@ -1,15 +1,33 @@
 package com.deha.HumanResourceManagement.strategy;
 
+import com.deha.HumanResourceManagement.entity.Office;
+import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
+import org.springframework.stereotype.Component;
+
 import java.time.LocalTime;
 
-public final class NightHelper {
+@Component
+public class NightHelper {
+    private final OfficePolicyService officePolicyService;
 
-    private static final LocalTime NIGHT_START = LocalTime.of(22, 0);
-    private static final LocalTime NIGHT_END   = LocalTime.of(6,  0);
+    public NightHelper(OfficePolicyService officePolicyService) {
+        this.officePolicyService = officePolicyService;
+    }
 
-    private NightHelper() {}
+    public boolean isNight(Office office, LocalTime time) {
+        if (time == null) {
+            return false;
+        }
 
-    public static boolean isNight(LocalTime time) {
-        return time.isAfter(NIGHT_START) || time.isBefore(NIGHT_END);
+        LocalTime nightStart = officePolicyService.nightStartTime(office);
+        LocalTime nightEnd = officePolicyService.nightEndTime(office);
+        if (nightStart.equals(nightEnd)) {
+            return true;
+        }
+
+        if (nightStart.isBefore(nightEnd)) {
+            return !time.isBefore(nightStart) && time.isBefore(nightEnd);
+        }
+        return !time.isBefore(nightStart) || time.isBefore(nightEnd);
     }
 }

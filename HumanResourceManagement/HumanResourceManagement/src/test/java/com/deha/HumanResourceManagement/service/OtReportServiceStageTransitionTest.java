@@ -10,6 +10,8 @@ import com.deha.HumanResourceManagement.entity.OtRequest;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.OtReportStatus;
 import com.deha.HumanResourceManagement.entity.enums.Role;
+import com.deha.HumanResourceManagement.exception.BadRequestException;
+import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
 import com.deha.HumanResourceManagement.repository.OtReportRepository;
@@ -32,6 +34,132 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class OtReportServiceStageTransitionTest {
+
+    @Test
+    void decide_withoutExpectedVersion_shouldThrowBadRequest() {
+        UUID reportId = UUID.randomUUID();
+
+        Office office = new Office();
+        office.setId(UUID.randomUUID());
+
+        Department department = new Department();
+        department.setId(UUID.randomUUID());
+        department.setOffice(office);
+
+        User reportCreator = new User();
+        reportCreator.setId(UUID.randomUUID());
+        reportCreator.setRole(Role.ROLE_EMPLOYEE);
+        reportCreator.setOffice(office);
+        reportCreator.setDepartment(department);
+
+        AttendanceLog attendanceLog = new AttendanceLog();
+        attendanceLog.setId(UUID.randomUUID());
+        attendanceLog.setUser(reportCreator);
+        attendanceLog.setOffice(office);
+        attendanceLog.setLogDate(LocalDate.now());
+
+        OtReport report = new OtReport();
+        report.setId(reportId);
+        report.setVersion(2L);
+        report.setAttendanceLog(attendanceLog);
+        report.setStatus(OtReportStatus.PENDING_DEPARTMENT);
+
+        User departmentManager = new User();
+        departmentManager.setId(UUID.randomUUID());
+        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setOffice(office);
+        departmentManager.setDepartment(department);
+
+        OtReportRepository otReportRepository = mock(OtReportRepository.class);
+        when(otReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        AccessScopeService accessScopeService = new AccessScopeService(null) {
+            @Override
+            public User currentUserOrThrow() {
+                return departmentManager;
+            }
+        };
+
+        OtReportService service = new OtReportService(
+                otReportRepository,
+                mock(OtRequestRepository.class),
+                mock(AttendanceLogRepository.class),
+                mock(OtSessionRepository.class),
+                accessScopeService,
+                new OfficePolicyService(),
+                new OtReportWorkflowService()
+        );
+
+        OtDecisionRequest decision = new OtDecisionRequest();
+        decision.setApproved(true);
+
+        assertThrows(BadRequestException.class, () -> service.decide(reportId, decision));
+        verify(otReportRepository, never()).save(any(OtReport.class));
+    }
+
+    @Test
+    void decide_withStaleExpectedVersion_shouldThrowConflict() {
+        UUID reportId = UUID.randomUUID();
+
+        Office office = new Office();
+        office.setId(UUID.randomUUID());
+
+        Department department = new Department();
+        department.setId(UUID.randomUUID());
+        department.setOffice(office);
+
+        User reportCreator = new User();
+        reportCreator.setId(UUID.randomUUID());
+        reportCreator.setRole(Role.ROLE_EMPLOYEE);
+        reportCreator.setOffice(office);
+        reportCreator.setDepartment(department);
+
+        AttendanceLog attendanceLog = new AttendanceLog();
+        attendanceLog.setId(UUID.randomUUID());
+        attendanceLog.setUser(reportCreator);
+        attendanceLog.setOffice(office);
+        attendanceLog.setLogDate(LocalDate.now());
+
+        OtReport report = new OtReport();
+        report.setId(reportId);
+        report.setVersion(7L);
+        report.setAttendanceLog(attendanceLog);
+        report.setStatus(OtReportStatus.PENDING_DEPARTMENT);
+
+        User departmentManager = new User();
+        departmentManager.setId(UUID.randomUUID());
+        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setOffice(office);
+        departmentManager.setDepartment(department);
+
+        OtReportRepository otReportRepository = mock(OtReportRepository.class);
+        when(otReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+
+        AccessScopeService accessScopeService = new AccessScopeService(null) {
+            @Override
+            public User currentUserOrThrow() {
+                return departmentManager;
+            }
+        };
+
+        OtReportService service = new OtReportService(
+                otReportRepository,
+                mock(OtRequestRepository.class),
+                mock(AttendanceLogRepository.class),
+                mock(OtSessionRepository.class),
+                accessScopeService,
+                new OfficePolicyService(),
+                new OtReportWorkflowService()
+        );
+
+        OtDecisionRequest decision = new OtDecisionRequest();
+        decision.setApproved(true);
+        decision.setExpectedVersion(6L);
+        decision.setExpectedVersion(6L);
+
+        assertThrows(ConflictException.class, () -> service.decide(reportId, decision));
+        verify(otReportRepository, never()).save(any(OtReport.class));
+    }
 
     @Test
     void departmentManager_approvesPendingDepartmentReport_toPendingOfficeReport() {
@@ -66,6 +194,7 @@ class OtReportServiceStageTransitionTest {
 
         OtReport report = new OtReport();
         report.setId(reportId);
+        report.setVersion(1L);
         report.setAttendanceLog(attendanceLog);
         report.setOtRequest(approvedRequest);
         report.setReportedOtHours(1);
@@ -102,6 +231,7 @@ class OtReportServiceStageTransitionTest {
         OtDecisionRequest decision = new OtDecisionRequest();
         decision.setApproved(true);
         decision.setDecisionNote("ok");
+        decision.setExpectedVersion(1L);
 
         OtReportResponse response = service.decide(reportId, decision);
 
@@ -135,6 +265,7 @@ class OtReportServiceStageTransitionTest {
 
         OtReport report = new OtReport();
         report.setId(reportId);
+        report.setVersion(1L);
         report.setAttendanceLog(attendanceLog);
         report.setStatus(OtReportStatus.PENDING_OFFICE);
 
@@ -167,6 +298,7 @@ class OtReportServiceStageTransitionTest {
         OtDecisionRequest decision = new OtDecisionRequest();
         decision.setApproved(true);
         decision.setDecisionNote("ok");
+        decision.setExpectedVersion(1L);
 
         OtReportResponse response = service.decide(reportId, decision);
         assertEquals(OtReportStatus.APPROVED, response.getStatus());
@@ -205,6 +337,7 @@ class OtReportServiceStageTransitionTest {
 
         OtReport report = new OtReport();
         report.setId(reportId);
+        report.setVersion(1L);
         report.setAttendanceLog(attendanceLog);
         report.setStatus(OtReportStatus.PENDING_DEPARTMENT);
 
@@ -237,6 +370,7 @@ class OtReportServiceStageTransitionTest {
         OtDecisionRequest decision = new OtDecisionRequest();
         decision.setApproved(true);
         decision.setDecisionNote("ok");
+        decision.setExpectedVersion(1L);
 
         Executable action = () -> service.decide(reportId, decision);
         assertThrows(ForbiddenException.class, action);
@@ -271,6 +405,7 @@ class OtReportServiceStageTransitionTest {
 
         OtReport report = new OtReport();
         report.setId(reportId);
+        report.setVersion(1L);
         report.setAttendanceLog(attendanceLog);
         report.setStatus(OtReportStatus.PENDING_DEPARTMENT);
 
@@ -303,6 +438,7 @@ class OtReportServiceStageTransitionTest {
         OtDecisionRequest decision = new OtDecisionRequest();
         decision.setApproved(true);
         decision.setDecisionNote("ok");
+        decision.setExpectedVersion(1L);
 
         Executable action = () -> service.decide(reportId, decision);
         assertThrows(ForbiddenException.class, action);

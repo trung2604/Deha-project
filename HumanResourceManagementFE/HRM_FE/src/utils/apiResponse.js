@@ -2,6 +2,25 @@ export function isSuccessResponse(res) {
   return Boolean(res && typeof res.status === "number" && res.status >= 200 && res.status < 300);
 }
 
+export function getResponseStatus(res) {
+  const status = res?.status ?? res?.statusCode;
+  return typeof status === "number" ? status : null;
+}
+
+export function isConflictResponse(res) {
+  return getResponseStatus(res) === 409;
+}
+
+export function isOptimisticConflictResponse(res) {
+  if (!isConflictResponse(res)) return false;
+  const message = String(res?.message ?? "").toLowerCase();
+  return message.includes("modified by another user") || message.includes("refresh and retry");
+}
+
+export function getOptimisticConflictMessage(res, fallback = "Data is outdated. Please refresh and try again.") {
+  return isOptimisticConflictResponse(res) ? getResponseMessage(res, fallback) : fallback;
+}
+
 export function getResponseMessage(res, fallback = "Request failed") {
   return res?.message || fallback;
 }
@@ -19,7 +38,6 @@ export function getPageMeta(res) {
   };
 }
 
-/** GET /departments returns { departments, totalCount }; legacy array-only data is still supported */
 export function getDepartmentDirectoryPayload(res) {
   const d = res?.data;
   if (Array.isArray(d)) {

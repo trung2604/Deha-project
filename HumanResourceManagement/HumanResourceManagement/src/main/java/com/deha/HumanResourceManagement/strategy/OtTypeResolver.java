@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.strategy;
 
+import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.enums.OtType;
 import org.springframework.stereotype.Component;
 
@@ -20,10 +21,15 @@ public class OtTypeResolver {
     }
 
     public OtType resolve(LocalDate date, LocalTime checkOutTime) {
+        return resolve(date, checkOutTime, null);
+    }
+
+    public OtType resolve(LocalDate date, LocalTime checkOutTime, Office office) {
+        LocalTime safeTime = checkOutTime != null ? checkOutTime : LocalTime.NOON;
         return strategies.stream()
                 .filter(s -> s.supports(date))
                 .findFirst()
-                .map(s -> s.resolve(date, checkOutTime))
+                .map(s -> s.resolve(date, safeTime, office))
                 .orElse(OtType.WEEKDAY);
     }
 }

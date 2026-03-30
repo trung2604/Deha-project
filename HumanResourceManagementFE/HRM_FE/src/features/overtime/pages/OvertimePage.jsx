@@ -1,14 +1,43 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Form, Input, InputNumber, Modal } from "antd";
+import { Alert, Form, Input, Modal } from "antd";
 import { CheckCircle2, ClipboardList, Clock3, FileCheck2 } from "lucide-react";
 import { toast } from "sonner";
 import overtimeService from "../api/overtimeService";
 import attendanceService from "@/features/attendance/api/attendanceService";
-import { isSuccessResponse, getResponseMessage } from "@/utils/apiResponse";
+import {
+  getOptimisticConflictMessage,
+  getResponseMessage,
+  isOptimisticConflictResponse,
+  isSuccessResponse,
+} from "@/utils/apiResponse";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { isAdminRole, isEmployeeRole, isDepartmentManagerRole, isManagerRole, isOfficeManagerRole } from "@/utils/role";
 import { OvertimeSection } from "../components/OvertimeSection";
 import { isPendingStatus, OT_FILTER_ALL, OT_STATUS } from "../constants/overtimeStatus.constants";
+
+function parseApiDateTime(dateTimeText) {
+  if (!dateTimeText) return null;
+  const parsed = new Date(dateTimeText);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatDurationFromSeconds(totalSeconds) {
+  const safeSeconds = Math.max(0, Number(totalSeconds) || 0);
+  const hours = String(Math.floor(safeSeconds / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((safeSeconds % 3600) / 60)).padStart(2, "0");
+  const seconds = String(safeSeconds % 60).padStart(2, "0");
+  return `${hours}:${minutes}:${seconds}`;
+}
+
+function formatClockDate(dateValue) {
+  if (!(dateValue instanceof Date)) return "--:--:--";
+  return dateValue.toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+}
 
 export function OvertimePage() {
   const { user } = useAuth();
@@ -145,6 +174,38 @@ export function OvertimePage() {
   const isOvertimeSessionCheckedOut = Boolean(todayOvertimeSession?.checkOutTime);
   const isOvertimeSessionCheckedIn = Boolean(todayOvertimeSession?.checkInTime) && !todayOvertimeSession?.checkOutTime;
 
+  const otCheckInDate = useMemo(
+    () => parseApiDateTime(todayOvertimeSession?.checkInTime),
+    [todayOvertimeSession?.checkInTime],
+  );
+  const otCheckOutDate = useMemo(
+    () => parseApiDateTime(todayOvertimeSession?.checkOutTime),
+    [todayOvertimeSession?.checkOutTime],
+  );
+  const hasInvalidOtTimeline = Boolean(otCheckInDate && otCheckOutDate && otCheckOutDate.getTime() < otCheckInDate.getTime());
+
+  const otElapsedSeconds = useMemo(() => {
+    if (!otCheckInDate || hasInvalidOtTimeline) return 0;
+    const endDate = otCheckOutDate ?? currentTime;
+    const diffMs = endDate.getTime() - otCheckInDate.getTime();
+    return Math.max(0, Math.floor(diffMs / 1000));
+  }, [currentTime, hasInvalidOtTimeline, otCheckInDate, otCheckOutDate]);
+
+  const otElapsedTimeText = useMemo(() => formatDurationFromSeconds(otElapsedSeconds), [otElapsedSeconds]);
+  const otCheckInTimeText = useMemo(() => formatClockDate(otCheckInDate), [otCheckInDate]);
+  const otCheckOutTimeText = useMemo(() => formatClockDate(otCheckOutDate), [otCheckOutDate]);
+  const minimumOtHours = useMemo(() => {
+    const rawMinimum = Number(todayOvertimeSession?.minimumOtHours);
+    return Number.isFinite(rawMinimum) && rawMinimum > 0 ? rawMinimum : 1;
+  }, [todayOvertimeSession?.minimumOtHours]);
+  const minimumOtSeconds = minimumOtHours * 3600;
+  const hasReachedMinimumOtDuration = otElapsedSeconds >= minimumOtSeconds;
+  const remainingOtSeconds = Math.max(0, minimumOtSeconds - otElapsedSeconds);
+  const remainingOtTimeText = useMemo(() => formatDurationFromSeconds(remainingOtSeconds), [remainingOtSeconds]);
+  const eligibleOtHours = useMemo(() => Math.max(0, Math.floor(otElapsedSeconds / 3600)), [otElapsedSeconds]);
+  const autoReportedOtHours = eligibleOtHours;
+  const canCheckOutOvertimeSession = isOvertimeSessionCheckedIn && hasReachedMinimumOtDuration && !hasInvalidOtTimeline;
+
   const myPendingRequestCount = useMemo(
     () => overtimeRequests.filter((r) => isPendingStatus(r?.status)).length,
     [overtimeRequests],
@@ -206,6 +267,14 @@ export function OvertimePage() {
   };
 
   const handleOvertimeCheckOut = async () => {
+    if (!canCheckOutOvertimeSession) {
+      toast.error(
+        hasInvalidOtTimeline
+          ? "OT session timeline is invalid. Please refresh and try again"
+          : `Minimum OT duration is ${minimumOtHours}h. Remaining time: ${remainingOtTimeText}`,
+      );
+      return;
+    }
     if (isSubmittingOvertimeAction) return;
     setIsSubmittingOvertimeAction(true);
     try {
@@ -236,7 +305,6 @@ export function OvertimePage() {
       setIsSubmittingOvertimeAction(true);
       const res = await overtimeService.createOvertimeReport({
         otSessionId: todayOvertimeSession.id,
-        reportedOtHours: values.reportedOtHours,
         reportNote: values.reportNote,
       });
       if (!isSuccessResponse(res)) {
@@ -254,16 +322,25 @@ export function OvertimePage() {
     }
   };
 
-  const handleDecision = async (targetType, targetId, isApprovedDecision) => {
+  const handleDecision = async (targetType, targetItem, isApprovedDecision) => {
+    if (targetItem?.version == null) {
+      toast.error(getOptimisticConflictMessage());
+      return;
+    }
     try {
       const serviceCall =
         targetType === "request" ? overtimeService.decideOvertimeRequest : overtimeService.decideOvertimeReport;
-      const res = await serviceCall(targetId, {
+      const res = await serviceCall(targetItem?.id, {
         approved: isApprovedDecision,
         decisionNote: isApprovedDecision ? "Approved" : "Rejected",
+        expectedVersion: targetItem?.version,
       });
       if (!isSuccessResponse(res)) {
-        return toast.error(getResponseMessage(res, "Decision failed"));
+        return toast.error(
+          isOptimisticConflictResponse(res)
+            ? getOptimisticConflictMessage(res)
+            : getResponseMessage(res, "Decision failed"),
+        );
       }
       toast.success(getResponseMessage(res, "Decision updated"));
       await loadOvertimeData();
@@ -340,6 +417,14 @@ export function OvertimePage() {
         loading={isOvertimeLoading}
         isOvertimeSessionCheckedIn={isOvertimeSessionCheckedIn}
         isOvertimeSessionCheckedOut={isOvertimeSessionCheckedOut}
+        otElapsedTimeText={otElapsedTimeText}
+        otCheckInTimeText={otCheckInTimeText}
+        otCheckOutTimeText={otCheckOutTimeText}
+        minimumOtHours={minimumOtHours}
+        hasReachedMinimumOtDuration={hasReachedMinimumOtDuration}
+        remainingOtTimeText={remainingOtTimeText}
+        canCheckOutOvertimeSession={canCheckOutOvertimeSession}
+        hasInvalidOtTimeline={hasInvalidOtTimeline}
         hasApprovedOvertimeRequestForToday={hasApprovedOvertimeRequestForToday}
         hasTodayAttendanceLog={hasTodayAttendanceLog}
         myOvertimeRequests={overtimeRequests}
@@ -359,10 +444,10 @@ export function OvertimePage() {
         onReportNew={() => setIsOvertimeReportModalOpen(true)}
         onCheckIn={handleOvertimeCheckIn}
         onCheckOut={handleOvertimeCheckOut}
-        onApproveRequest={(id) => handleDecision("request", id, true)}
-        onRejectRequest={(id) => handleDecision("request", id, false)}
-        onApproveReport={(id) => handleDecision("report", id, true)}
-        onRejectReport={(id) => handleDecision("report", id, false)}
+        onApproveRequest={(item) => handleDecision("request", item, true)}
+        onRejectRequest={(item) => handleDecision("request", item, false)}
+        onApproveReport={(item) => handleDecision("report", item, true)}
+        onRejectReport={(item) => handleDecision("report", item, false)}
       />
 
       <Modal
@@ -399,19 +484,38 @@ export function OvertimePage() {
         okButtonProps={{ loading: isSubmittingOvertimeAction }}
       >
         <Form form={overtimeReportForm} layout="vertical">
-          <Form.Item
-            name="reportedOtHours"
-            label="Reported OT Hours"
-            rules={[{ required: true, message: "Reported OT hours is required" }]}
-          >
-            <InputNumber min={1} style={{ width: "100%" }} />
+          <Form.Item label="Calculated OT Hours">
+            <div
+              className="rounded-lg px-3 py-2"
+              style={{ border: "1px solid #E8E8E8", backgroundColor: "#FAFAFA", color: "#0A0A0A", fontWeight: 600 }}
+            >
+              {autoReportedOtHours}h (auto-calculated from OT check-in/check-out)
+            </div>
           </Form.Item>
           <Form.Item
             name="reportNote"
             label="Report Note"
-            rules={[{ required: true, message: "Report note (evidence) is required" }]}
+            extra="Provide specific OT work summary/evidence in 10-500 characters."
+            rules={[
+              { required: true, message: "Report note (evidence) is required" },
+              {
+                validator: (_, value) => {
+                  const trimmedValue = typeof value === "string" ? value.trim() : "";
+                  if (!trimmedValue) {
+                    return Promise.reject(new Error("Report note (evidence) is required"));
+                  }
+                  if (trimmedValue.length < 10) {
+                    return Promise.reject(new Error("Report note must be at least 10 characters"));
+                  }
+                  if (trimmedValue.length > 500) {
+                    return Promise.reject(new Error("Report note cannot exceed 500 characters"));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
           >
-            <Input.TextArea rows={3} />
+            <Input.TextArea rows={3} maxLength={500} showCount />
           </Form.Item>
         </Form>
       </Modal>

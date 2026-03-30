@@ -19,6 +19,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
 
   const toFormData = (nextUser) => ({
     id: nextUser?.id,
+    version: nextUser?.version,
     firstName: nextUser?.firstName ?? "",
     lastName: nextUser?.lastName ?? "",
     email: nextUser?.email ?? "",
@@ -145,6 +146,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
 
     const payload = {
       ...(isEdit ? { id: formData.id } : {}),
+      ...(isEdit ? { expectedVersion: formData.version } : {}),
       firstName: formData.firstName.trim(),
       lastName: formData.lastName.trim(),
       email: formData.email.trim(),

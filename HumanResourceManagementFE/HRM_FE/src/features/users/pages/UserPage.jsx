@@ -12,6 +12,8 @@ import officeService from "@/features/offices/api/officeService";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { isAdminRole, isOfficeManagerRole } from "@/utils/role";
 import {
+  getOptimisticConflictMessage,
+  isOptimisticConflictResponse,
   getDepartmentDirectoryPayload,
   getListData,
   getPageContent,
@@ -196,11 +198,21 @@ export function UsersPage() {
   };
 
   const handleSave = async (userPayload) => {
+    if (editingUser?.id && userPayload?.expectedVersion == null) {
+      toast.error(getOptimisticConflictMessage());
+      return;
+    }
     setSaving(true);
     try {
       if (editingUser) {
         const res = await UserService.updateUser(userPayload.id, userPayload);
-        if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save User"));
+        if (!isSuccessResponse(res)) {
+          return toast.error(
+            isOptimisticConflictResponse(res)
+              ? getOptimisticConflictMessage(res)
+              : getResponseMessage(res, "Failed to save User"),
+          );
+        }
         await reloadUsers();
         toast.success(getResponseMessage(res, "User updated successfully"));
       } else {

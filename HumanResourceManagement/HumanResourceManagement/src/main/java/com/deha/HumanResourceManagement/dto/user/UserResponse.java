@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.UUID;
 
 @Data
@@ -15,6 +14,7 @@ import java.util.UUID;
 @NoArgsConstructor  
 public class UserResponse {
     private UUID id;
+    private Long version;
     private String firstName;
     private String lastName;
     private String email;
@@ -32,6 +32,7 @@ public class UserResponse {
     public static UserResponse fromEntity(User user) {
         return new UserResponse(
                 user.getId(),
+                user.getVersion(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),

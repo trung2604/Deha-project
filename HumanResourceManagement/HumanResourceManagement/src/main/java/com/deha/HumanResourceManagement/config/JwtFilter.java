@@ -66,7 +66,6 @@ public class JwtFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             } catch (Exception e) {
-                // invalid/expired token: skip authentication
                 log.debug("JWT authentication skipped due to invalid token: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
             }

@@ -7,6 +7,7 @@ import com.deha.HumanResourceManagement.dto.office.OfficeResponse;
 import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.OfficeWifiIp;
 import com.deha.HumanResourceManagement.entity.User;
+import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
@@ -16,12 +17,15 @@ import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.IOfficeService;
 import com.deha.HumanResourceManagement.service.support.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -33,6 +37,8 @@ public class OfficeService implements IOfficeService {
     private final UserRepository userRepository;
     private final AccessScopeService accessScopeService;
     private final OfficePolicyService officePolicyService;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public OfficeService(
             OfficeRepository officeRepository,
@@ -78,6 +84,8 @@ public class OfficeService implements IOfficeService {
         office.setStandardWorkHours(officePolicyService.standardWorkHours(null));
         office.setOtMinHours(officePolicyService.otMinHours(null));
         office.setLatestCheckoutTime(officePolicyService.latestCheckoutTime(null));
+        office.setNightStartTime(officePolicyService.nightStartTime(null));
+        office.setNightEndTime(officePolicyService.nightEndTime(null));
         office.setOtWeekdayMultiplier(officePolicyService.otWeekdayMultiplier(null));
         office.setOtWeekendMultiplier(officePolicyService.otWeekendMultiplier(null));
         office.setOtHolidayMultiplier(officePolicyService.otHolidayMultiplier(null));
@@ -95,9 +103,13 @@ public class OfficeService implements IOfficeService {
     @Override
     @Transactional
     public OfficeResponse update(UUID id, OfficeRequest request) {
-        Office office = findById(id);
+        Office current = findById(id);
+//        assertExpectedVersion(request.getExpectedVersion(), office.getVersion(), "Office");
+        if (request.getExpectedVersion() == null) {
+            throw new BadRequestException("Expected version is required");
+        }
         String nextName = request.getName().trim();
-        if (!nextName.equalsIgnoreCase(office.getName()) && officeRepository.existsByNameIgnoreCase(nextName)) {
+        if (!nextName.equalsIgnoreCase(current.getName()) && officeRepository.existsByNameIgnoreCase(nextName)) {
             throw new ConflictException("Office with the same name already exists");
         }
 
@@ -106,33 +118,31 @@ public class OfficeService implements IOfficeService {
             throw new ConflictException("Office must have at least 1 WiFi IP");
         }
 
+        Office office = buildDetachedOffice(current, request.getExpectedVersion());
         office.applyDetails(nextName, request.getDescription());
 
-        // Sync by diff to avoid transient unique-key conflicts on (office_id, ip_wifi)
-        // that can happen with clear()+re-add in the same persistence context.
-        Set<String> targetIpKeys = normalizedIps.stream()
-                .map(this::normalizeIpKey)
-                .collect(Collectors.toSet());
+        Map<String, UUID> existingWifiIdByIp = current.getWifiIps().stream()
+                .collect(Collectors.toMap(
+                        w -> normalizeIpKey(w.getIpWifi()),
+                        OfficeWifiIp::getId,
+                        (a, b) -> a
+                ));
 
-        office.getWifiIps().removeIf(w -> !targetIpKeys.contains(normalizeIpKey(w.getIpWifi())));
-
-        Set<String> existingIpKeys = office.getWifiIps().stream()
-                .map(w -> normalizeIpKey(w.getIpWifi()))
-                .collect(Collectors.toCollection(HashSet::new));
-
+        office.getWifiIps().clear();
+        Set<String> existingIpKeys = new HashSet<>();
         for (String ip : normalizedIps) {
             String ipKey = normalizeIpKey(ip);
-            if (existingIpKeys.contains(ipKey)) {
+            if (!existingIpKeys.add(ipKey)) {
                 continue;
             }
             OfficeWifiIp wifi = new OfficeWifiIp();
+            wifi.setId(existingWifiIdByIp.get(ipKey));
             wifi.applyDetails(office, ip);
             office.getWifiIps().add(wifi);
-            existingIpKeys.add(ipKey);
         }
 
-        officeRepository.save(office);
-        return OfficeResponse.fromEntity(office);
+        Office merged = mergeAndFlush(office);
+        return OfficeResponse.fromEntity(merged);
     }
 
     @Override
@@ -174,16 +184,66 @@ public class OfficeService implements IOfficeService {
         if (actor.getOffice() == null || actor.getOffice().getId() == null) {
             throw new ResourceNotFoundException("Office policy not found for current user");
         }
-        Office office = findById(actor.getOffice().getId());
+        Office current = findById(actor.getOffice().getId());
+//        assertExpectedVersion(request.getExpectedVersion(), office.getVersion(), "Office policy");
+        if (request.getExpectedVersion() == null) {
+            throw new BadRequestException("Expected version is required");
+        }
+        Office office = buildDetachedOffice(current, request.getExpectedVersion());
         office.setStandardWorkHours(request.getBaseWorkHoursPerDay());
         office.setOtMinHours(request.getOtMinHours());
         office.setLatestCheckoutTime(request.getLatestCheckoutTime());
+        office.setNightStartTime(request.getNightStartTime());
+        office.setNightEndTime(request.getNightEndTime());
         office.setOtWeekdayMultiplier(request.getOtWeekdayMultiplier());
         office.setOtWeekendMultiplier(request.getOtWeekendMultiplier());
         office.setOtHolidayMultiplier(request.getOtHolidayMultiplier());
         office.setOtNightBonusMultiplier(request.getOtNightBonusMultiplier());
-        officeRepository.save(office);
-        return OfficePolicyResponse.fromEntity(office);
+        Office merged = mergeAndFlush(office);
+        return OfficePolicyResponse.fromEntity(merged);
+    }
+
+//    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
+//        if (expectedVersion == null) {
+//            throw new BadRequestException("Expected version is required");
+//        }
+//        if (!Objects.equals(expectedVersion, currentVersion)) {
+//            throw new ConflictException(resourceName + " was modified by another user. Please refresh and retry.");
+//        }
+//    }
+
+    private Office buildDetachedOffice(Office current, Long expectedVersion) {
+        Office office = new Office();
+        office.setId(current.getId());
+        office.setVersion(expectedVersion);
+        office.setName(current.getName());
+        office.setDescription(current.getDescription());
+        office.setStandardWorkHours(current.getStandardWorkHours());
+        office.setOtMinHours(current.getOtMinHours());
+        office.setLatestCheckoutTime(current.getLatestCheckoutTime());
+        office.setNightStartTime(current.getNightStartTime());
+        office.setNightEndTime(current.getNightEndTime());
+        office.setOtWeekdayMultiplier(current.getOtWeekdayMultiplier());
+        office.setOtWeekendMultiplier(current.getOtWeekendMultiplier());
+        office.setOtHolidayMultiplier(current.getOtHolidayMultiplier());
+        office.setOtNightBonusMultiplier(current.getOtNightBonusMultiplier());
+
+        for (OfficeWifiIp existing : current.getWifiIps()) {
+            OfficeWifiIp wifi = new OfficeWifiIp();
+            wifi.setId(existing.getId());
+            wifi.applyDetails(office, existing.getIpWifi());
+            office.getWifiIps().add(wifi);
+        }
+        return office;
+    }
+
+    private Office mergeAndFlush(Office office) {
+        if (entityManager != null) {
+            Office merged = entityManager.merge(office);
+            entityManager.flush();
+            return merged;
+        }
+        return officeRepository.saveAndFlush(office);
     }
 
     private List<String> normalizeIpList(List<String> ips) {
