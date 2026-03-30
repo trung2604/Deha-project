@@ -5,13 +5,13 @@ const payrollService = {
     return await axios.post("/payrolls/generate", payload);
   },
 
-  getPayrolls: async ({ year, month, officeId } = {}) => {
+  listPayrolls: async ({ year, month, officeId } = {}) => {
     return await axios.get("/payrolls", {
       params: { year, month, officeId },
     });
   },
 
-  getPayrollById: async (id) => {
+  getPayrollDetailById: async (id) => {
     return await axios.get(`/payrolls/${id}`);
   },
 };

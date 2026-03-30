@@ -7,14 +7,15 @@ import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
-import com.deha.HumanResourceManagement.service.DepartmentService;
-import com.deha.HumanResourceManagement.service.OfficeService;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
+import com.deha.HumanResourceManagement.service.impl.UserService;
+import com.deha.HumanResourceManagement.service.support.AccessScopeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -43,12 +44,12 @@ class UserServiceDepartmentManagerSecurityTest {
         UserRepository userRepository = mock(UserRepository.class);
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
 
-        OfficeService officeService = mock(OfficeService.class);
+        IOfficeService officeService = mock(IOfficeService.class);
         Office office = new Office();
         office.setId(UUID.randomUUID());
         when(officeService.findById(any(UUID.class))).thenReturn(office);
 
-        DepartmentService departmentService = mock(DepartmentService.class);
+        IDepartmentService departmentService = mock(IDepartmentService.class);
         PositionRepository positionRepository = mock(PositionRepository.class);
         PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
 
@@ -99,28 +100,22 @@ class UserServiceDepartmentManagerSecurityTest {
 
         UserRepository userRepository = mock(UserRepository.class);
 
-        User u = new User();
-        u.setId(UUID.randomUUID());
-        u.setFirstName("John");
-        u.setLastName("Doe");
-        u.setEmail("john@doe.com");
-        u.setRole(Role.ROLE_EMPLOYEE);
-        u.setOffice(office);
-        u.setDepartment(department);
-        u.setActive(true);
+        User employeeUser = new User();
+        employeeUser.setId(UUID.randomUUID());
+        employeeUser.setFirstName("John");
+        employeeUser.setLastName("Doe");
+        employeeUser.setEmail("john@doe.com");
+        employeeUser.setRole(Role.ROLE_EMPLOYEE);
+        employeeUser.setOffice(office);
+        employeeUser.setDepartment(department);
+        employeeUser.setActive(true);
 
         PageRequest pageable = PageRequest.of(0, 10);
-        when(userRepository.searchUsers(
-                eq("kw"),
-                eq(officeId),
-                eq(departmentId),
-                isNull(UUID.class),
-                isNull(Boolean.class),
-                eq(pageable)
-        )).thenReturn(new PageImpl<>(List.of(u), pageable, 1));
+        when(userRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(employeeUser), pageable, 1));
 
-        DepartmentService departmentService = mock(DepartmentService.class);
-        OfficeService officeService = mock(OfficeService.class);
+        IDepartmentService departmentService = mock(IDepartmentService.class);
+        IOfficeService officeService = mock(IOfficeService.class);
         PositionRepository positionRepository = mock(PositionRepository.class);
         PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
 
@@ -144,14 +139,7 @@ class UserServiceDepartmentManagerSecurityTest {
         );
 
         assertEquals(1, result.getTotalElements());
-        verify(userRepository).searchUsers(
-                eq("kw"),
-                eq(officeId),
-                eq(departmentId),
-                isNull(UUID.class),
-                isNull(Boolean.class),
-                eq(pageable)
-        );
+        verify(userRepository).findAll(any(Specification.class), eq(pageable));
     }
 }
 

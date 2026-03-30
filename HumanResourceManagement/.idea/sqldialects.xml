@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/HumanResourceManagement/src/main/resources/db/migration/V1__enable_pg_trgm.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/HumanResourceManagement/src/main/resources/db/migration/V2__create_trigram_index.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/HumanResourceManagement/src/main/resources/db/migration/V7__update_users_role_check_allow_manager_null_department_position.sql" dialect="PostgreSQL" />
-    <file url="file://$PROJECT_DIR$/HumanResourceManagement/src/main/resources/db/migration/V9__allow_manager_any_department_position.sql" dialect="PostgreSQL" />
-  </component>
-</project>

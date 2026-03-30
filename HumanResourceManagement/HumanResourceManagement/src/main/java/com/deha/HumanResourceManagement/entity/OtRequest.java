@@ -2,7 +2,10 @@ package com.deha.HumanResourceManagement.entity;
 
 import com.deha.HumanResourceManagement.entity.enums.OtRequestStatus;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDate;
@@ -14,10 +17,13 @@ import java.util.UUID;
         name = "ot_requests",
         uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "log_date"})
 )
-@Data
+@Getter
+@Setter
 public class OtRequest {
+
     @Id
     @UuidGenerator
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -48,4 +54,3 @@ public class OtRequest {
     @Column(name = "decision_note", length = 500)
     private String decisionNote;
 }
-

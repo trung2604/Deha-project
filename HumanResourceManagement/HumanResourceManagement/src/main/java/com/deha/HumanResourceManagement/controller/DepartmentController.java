@@ -3,8 +3,8 @@ package com.deha.HumanResourceManagement.controller;
 import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.department.DepartmentRequest;
 import com.deha.HumanResourceManagement.dto.position.PositionRequest;
-import com.deha.HumanResourceManagement.service.DepartmentService;
-import com.deha.HumanResourceManagement.service.PositionService;
+import com.deha.HumanResourceManagement.service.IDepartmentService;
+import com.deha.HumanResourceManagement.service.IPositionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +14,10 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/departments")
 public class DepartmentController extends ApiControllerSupport {
-    private final DepartmentService departmentService;
-    private final PositionService positionService;
+    private final IDepartmentService departmentService;
+    private final IPositionService positionService;
 
-    public DepartmentController(DepartmentService departmentService, PositionService positionService) {
+    public DepartmentController(IDepartmentService departmentService, IPositionService positionService) {
         this.departmentService = departmentService;
         this.positionService = positionService;
     }

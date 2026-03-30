@@ -16,6 +16,7 @@ public class OtReportResponse {
     private UUID id;
     private UUID attendanceLogId;
     private UUID otRequestId;
+    private UUID otSessionId;
     private Integer reportedOtHours;
     private String reportNote;
     private String evidenceFileName;
@@ -31,6 +32,7 @@ public class OtReportResponse {
                 report.getId(),
                 report.getAttendanceLog() != null ? report.getAttendanceLog().getId() : null,
                 report.getOtRequest() != null ? report.getOtRequest().getId() : null,
+                report.getOtSession() != null ? report.getOtSession().getId() : null,
                 report.getReportedOtHours(),
                 report.getReportNote(),
                 report.getEvidenceFileName(),

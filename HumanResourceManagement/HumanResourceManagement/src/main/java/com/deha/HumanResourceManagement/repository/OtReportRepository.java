@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface OtReportRepository extends JpaRepository<OtReport, UUID> {
     Optional<OtReport> findByAttendanceLog_Id(UUID attendanceLogId);
+    Optional<OtReport> findByOtSession_Id(UUID otSessionId);
 
     List<OtReport> findByAttendanceLog_User_IdAndAttendanceLog_LogDateBetweenAndStatus(
             UUID userId,
@@ -19,12 +20,16 @@ public interface OtReportRepository extends JpaRepository<OtReport, UUID> {
             OtReportStatus status
     );
 
-    List<OtReport> findByAttendanceLog_User_IdOrderByAttendanceLog_LogDateDesc(UUID userId);
-
     List<OtReport> findByAttendanceLog_Office_IdAndStatusOrderByAttendanceLog_LogDateDesc(UUID officeId, OtReportStatus status);
 
     List<OtReport> findByAttendanceLog_User_Department_IdAndStatusOrderByAttendanceLog_LogDateDesc(UUID departmentId, OtReportStatus status);
 
     List<OtReport> findByStatusOrderByAttendanceLog_LogDateDesc(OtReportStatus status);
+
+    List<OtReport> findAllByAttendanceLog_User_Department_IdOrderByAttendanceLog_LogDateDesc(UUID departmentId);
+
+    List<OtReport> findAllByAttendanceLog_User_Office_IdOrderByAttendanceLog_LogDateDesc(UUID officeId);
+
+    List<OtReport> findByAttendanceLog_User_IdOrderByAttendanceLog_LogDateDesc(UUID userId);
 }
 

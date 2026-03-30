@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
@@ -19,7 +20,7 @@ public class DepartmentUserItem {
     private String email;
     private Role role;
     private boolean active;
-    private Date createdAt;
+    private LocalDateTime createdAt;
     private UUID positionId;
     private String positionName;
 

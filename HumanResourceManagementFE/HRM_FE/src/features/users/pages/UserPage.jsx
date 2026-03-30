@@ -10,7 +10,7 @@ import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
 import officeService from "@/features/offices/api/officeService";
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { isAdminRole, isDepartmentManagerRole, isOfficeManagerRole } from "@/utils/role";
+import { isAdminRole, isOfficeManagerRole } from "@/utils/role";
 import {
   getDepartmentDirectoryPayload,
   getListData,
@@ -24,7 +24,6 @@ export function UsersPage() {
   const { user } = useAuth();
   const admin = isAdminRole(user?.role);
   const officeManager = isOfficeManagerRole(user?.role);
-  const departmentManager = isDepartmentManagerRole(user?.role);
   const canEditUsers = admin || officeManager;
   const readOnly = !canEditUsers;
   const [loading, setLoading] = useState(true);

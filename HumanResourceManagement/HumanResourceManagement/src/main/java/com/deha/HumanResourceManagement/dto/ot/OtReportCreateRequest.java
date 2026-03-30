@@ -9,8 +9,8 @@ import java.util.UUID;
 
 @Data
 public class OtReportCreateRequest {
-    @NotNull(message = "Attendance log id is required")
-    private UUID attendanceLogId;
+    @NotNull(message = "OT session id is required")
+    private UUID otSessionId;
 
     @NotNull(message = "Reported OT hours is required")
     @Positive(message = "Reported OT hours must be greater than 0")

@@ -13,6 +13,12 @@ const officeService = {
   deleteOffice: async (id) => {
     return await axios.delete(`/offices/${id}`);
   },
+  getMyOfficePolicy: async () => {
+    return await axios.get("/offices/my-policy");
+  },
+  updateMyOfficePolicy: async (payload) => {
+    return await axios.put("/offices/my-policy", payload);
+  },
 };
 
 export default officeService;

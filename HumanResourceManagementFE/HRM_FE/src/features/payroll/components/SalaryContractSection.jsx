@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import { Button, DatePicker, Input, Select, Space, Table, Tag } from "antd";
+import { Button, DatePicker, Input, Select, Table, Tag } from "antd";
 import dayjs from "dayjs";
+import { FileText, Search, RotateCcw } from "lucide-react";
+import { payrollPrimaryButtonStyle, payrollSmallPrimaryButtonStyle } from "../constants/buttonStyles";
 
 function currency(value) {
   if (value == null) return "-";
@@ -79,19 +81,23 @@ export function SalaryContractSection({
       title: "User",
       dataIndex: "userName",
       key: "userName",
-      render: (v) => v || "-",
+      width: 160,
+      render: (v) => <span style={{ fontWeight: "600" }}>{v || "-"}</span>,
     },
     {
       title: "Base Salary",
       dataIndex: "baseSalary",
       key: "baseSalary",
+      width: 140,
+      align: "right",
       sorter: (a, b) => Number(a?.baseSalary || 0) - Number(b?.baseSalary || 0),
-      render: (v) => currency(v),
+      render: (v) => <span style={{ color: "#52c41a", fontWeight: "600" }}>{currency(v)}</span>,
     },
     {
       title: "Start Date",
       dataIndex: "startDate",
       key: "startDate",
+      width: 120,
       sorter: (a, b) =>
         dayjs(a?.startDate || "1970-01-01").valueOf() -
         dayjs(b?.startDate || "1970-01-01").valueOf(),
@@ -101,6 +107,7 @@ export function SalaryContractSection({
       title: "End Date",
       dataIndex: "endDate",
       key: "endDate",
+      width: 120,
       sorter: (a, b) =>
         dayjs(a?.endDate || "9999-12-31").valueOf() -
         dayjs(b?.endDate || "9999-12-31").valueOf(),
@@ -109,6 +116,7 @@ export function SalaryContractSection({
     {
       title: "Status",
       key: "status",
+      width: 100,
       render: (_, r) => {
         const meta = statusMeta(r);
         return <Tag color={meta.color}>{meta.label}</Tag>;
@@ -117,8 +125,16 @@ export function SalaryContractSection({
     {
       title: "Action",
       key: "action",
+      width: 100,
+      fixed: "right",
       render: (_, r) => (
-        <Button size="small" onClick={() => onEdit(r)}>
+        <Button
+          type="primary"
+          size="small"
+          className="rounded-lg transition-all duration-200 hover:opacity-95"
+          style={payrollSmallPrimaryButtonStyle}
+          onClick={() => onEdit(r)}
+        >
           Edit
         </Button>
       ),
@@ -126,76 +142,100 @@ export function SalaryContractSection({
   ];
 
   return (
-    <div
-      className="rounded-xl p-4 space-y-3"
-      style={{
-        backgroundColor: "#FFFFFF",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-      }}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#0A0A0A" }}>
-          Salary Contracts
-        </h3>
-        <Button type="primary" onClick={onCreate}>
-          New Contract
-        </Button>
-      </div>
-      <Select
-        value={selectedUserId}
-        onChange={onUserChange}
-        allowClear
-        showSearch
-        optionFilterProp="label"
-        placeholder="Filter by user"
-        style={{ width: "100%", maxWidth: 400, marginRight: 10 }}
-        options={users.map((u) => ({
-          value: u.id,
-          label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.email,
-        }))}
-      />
-      <Space wrap size={10}>
-        <Input
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="Search salary, date..."
-          style={{ width: 240 }}
-          allowClear
-        />
-        <Select
-          value={statusFilter}
-          onChange={setStatusFilter}
-          style={{ width: 140 }}
-          options={[
-            { value: "all", label: "All status" },
-            { value: "active", label: "Active" },
-            { value: "future", label: "Future" },
-            { value: "expired", label: "Expired" },
-          ]}
-        />
-        <DatePicker.RangePicker
-          value={range}
-          onChange={(value) => setRange(value)}
-          allowEmpty={[true, true]}
-        />
-        <Button
-          onClick={() => {
-            setKeyword("");
-            setStatusFilter("all");
-            setRange(null);
-          }}
+    <div className="section-card">
+      {/* Header */}
+      <div
+        className="section-header section-contracts-header"
+        style={{ borderColor: "rgba(147, 51, 234, 0.2)", background: "linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(147, 51, 234, 0.02) 100%)" }}
+      >
+        <div className="section-header-icon" style={{ color: "#9333ea" }}>
+          <FileText className="w-5 h-5" />
+        </div>
+        <h3 style={{ margin: 0, flex: 1 }}>Salary Contracts</h3>
+        <button
+          type="button"
+          onClick={onCreate}
+          className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95"
+          style={payrollPrimaryButtonStyle}
         >
-          Clear
-        </Button>
-      </Space>
-      <Table
-        rowKey={(r) => r.id}
-        loading={loading}
-        dataSource={filteredContracts}
-        columns={columns}
-        pagination={{ pageSize: 8 }}
-        locale={{ emptyText: "No contracts match current filter." }}
-      />
+          <span style={{ fontSize: "14px", fontWeight: "500" }}>New Contract</span>
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="section-content" style={{ paddingBottom: "16px" }}>
+        <div className="mb-4">
+          <label className="form-label">Filter by Employee</label>
+          <Select
+            value={selectedUserId}
+            onChange={onUserChange}
+            allowClear
+            showSearch
+            placeholder="All employees"
+            size="large"
+            style={{ width: "100%" }}
+            options={users.map((u) => ({
+              value: u.id,
+              label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.email,
+            }))}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Input
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            placeholder="Search salary, date..."
+            size="large"
+            prefix={<Search className="w-4 h-4 text-gray-400" />}
+            allowClear
+          />
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            size="large"
+            options={[
+              { value: "all", label: "All status" },
+              { value: "active", label: "Active" },
+              { value: "future", label: "Future" },
+              { value: "expired", label: "Expired" },
+            ]}
+          />
+          <DatePicker.RangePicker
+            value={range}
+            onChange={(value) => setRange(value)}
+            size="large"
+            allowEmpty={[true, true]}
+            style={{ width: "100%" }}
+          />
+        </div>
+
+        <div className="mt-3">
+          <Button
+            type="text"
+            icon={<RotateCcw className="w-4 h-4" />}
+            onClick={() => {
+              setKeyword("");
+              setStatusFilter("all");
+              setRange(null);
+            }}
+          >
+            Clear Filters
+          </Button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div style={{ padding: "0 20px 20px 20px" }}>
+        <Table
+          rowKey={(r) => r.id}
+          loading={loading}
+          dataSource={filteredContracts}
+          columns={columns}
+          pagination={{ pageSize: 8 }}
+          locale={{ emptyText: "No contracts match current filter." }}
+        />
+      </div>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { DollarSign } from "lucide-react";
 import payrollService from "../api/payrollService";
 import salaryContractService from "../api/salaryContractService";
 import officeService from "@/features/offices/api/officeService";
-import UserService from "@/features/users/api/UserService";
+import userService from "@/features/users/api/UserService";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { isAdminRole } from "@/utils/role";
 import { getListData, getPageContent, getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
@@ -14,124 +15,166 @@ import { PayrollDetailDrawer } from "../components/PayrollDetailDrawer";
 import { SalaryContractSection } from "../components/SalaryContractSection";
 import { SalaryContractModal } from "../components/SalaryContractModal";
 
+function PayrollPageHeader() {
+  return (
+    <div className="mb-8">
+      <div className="flex items-center gap-3 mb-2">
+        <div
+          className="p-2 rounded-lg"
+          style={{
+            backgroundColor: "rgba(82, 196, 26, 0.1)",
+            color: "#52c41a",
+          }}
+        >
+          <DollarSign className="w-6 h-6" />
+        </div>
+        <h1
+          style={{
+            fontFamily: "DM Sans, sans-serif",
+            fontSize: "28px",
+            fontWeight: "700",
+            color: "#0A0A0A",
+            margin: 0,
+          }}
+        >
+          Payroll Management
+        </h1>
+      </div>
+      <p
+        style={{
+          fontSize: "14px",
+          color: "#595959",
+          margin: 0,
+          paddingLeft: "44px",
+        }}
+      >
+        Generate, view, and manage payroll records and salary contracts
+      </p>
+    </div>
+  );
+}
+
 export function PayrollPage() {
   const { user } = useAuth();
   const isAdmin = isAdminRole(user?.role);
   const now = new Date();
 
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [contractsLoading, setContractsLoading] = useState(false);
+  const [isPayrollListLoading, setIsPayrollListLoading] = useState(true);
+  const [isSubmittingPayrollAction, setIsSubmittingPayrollAction] = useState(false);
+  const [isSalaryContractsLoading, setIsSalaryContractsLoading] = useState(false);
 
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [officeId, setOfficeId] = useState(isAdmin ? undefined : user?.officeId);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedOfficeId, setSelectedOfficeId] = useState(isAdmin ? undefined : user?.officeId);
 
-  const [offices, setOffices] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [payrolls, setPayrolls] = useState([]);
+  const [officeOptions, setOfficeOptions] = useState([]);
+  const [userOptions, setUserOptions] = useState([]);
+  const [payrollRows, setPayrollRows] = useState([]);
 
   const [selectedPayroll, setSelectedPayroll] = useState(null);
-  const [detailOpen, setDetailOpen] = useState(false);
+  const [isPayrollDetailDrawerOpen, setIsPayrollDetailDrawerOpen] = useState(false);
 
-  const [selectedUserId, setSelectedUserId] = useState(undefined);
-  const [contracts, setContracts] = useState([]);
-  const [contractModalOpen, setContractModalOpen] = useState(false);
-  const [editingContract, setEditingContract] = useState(null);
+  const [selectedContractUserId, setSelectedContractUserId] = useState(undefined);
+  const [salaryContracts, setSalaryContracts] = useState([]);
+  const [isSalaryContractModalOpen, setIsSalaryContractModalOpen] = useState(false);
+  const [editingSalaryContract, setEditingSalaryContract] = useState(null);
 
-  const effectiveOfficeId = useMemo(() => (isAdmin ? officeId : user?.officeId), [isAdmin, officeId, user?.officeId]);
+  const effectiveScopeOfficeId = useMemo(
+    () => (isAdmin ? selectedOfficeId : user?.officeId),
+    [isAdmin, selectedOfficeId, user?.officeId],
+  );
 
-  const loadFilters = useCallback(async () => {
+  const loadFilterOptions = useCallback(async () => {
     try {
       const officeRes = isAdmin
         ? await officeService.getOffices()
         : { data: user?.officeId ? [{ id: user.officeId, name: user.officeName }] : [] };
       if (!isAdmin && user?.officeId) {
-        setOfficeId(user.officeId);
+        setSelectedOfficeId(user.officeId);
       }
 
-      const userRes = await UserService.getUsers({
+      const userListRes = await userService.getUsers({
         page: 0,
         size: 2000,
-        officeId: effectiveOfficeId || undefined,
+        officeId: effectiveScopeOfficeId || undefined,
       });
 
-      setOffices(getListData(officeRes));
-      setUsers(getPageContent(userRes));
+      setOfficeOptions(getListData(officeRes));
+      setUserOptions(getPageContent(userListRes));
     } catch {
       toast.error("Failed to load payroll filters");
     }
-  }, [isAdmin, user?.officeId, user?.officeName, effectiveOfficeId]);
+  }, [isAdmin, user?.officeId, user?.officeName, effectiveScopeOfficeId]);
 
-  const loadPayrolls = useCallback(async () => {
-    setLoading(true);
+  const loadPayrollList = useCallback(async () => {
+    setIsPayrollListLoading(true);
     try {
-      const res = await payrollService.getPayrolls({
-        year,
-        month,
-        officeId: effectiveOfficeId || undefined,
+      const res = await payrollService.listPayrolls({
+        year: selectedYear,
+        month: selectedMonth,
+        officeId: effectiveScopeOfficeId || undefined,
       });
       if (!isSuccessResponse(res)) {
         return toast.error(getResponseMessage(res, "Failed to load payrolls"));
       }
-      setPayrolls(Array.isArray(res?.data) ? res.data : []);
+      setPayrollRows(Array.isArray(res?.data) ? res.data : []);
     } catch {
       toast.error("Failed to load payrolls");
     } finally {
-      setLoading(false);
+      setIsPayrollListLoading(false);
     }
-  }, [year, month, effectiveOfficeId]);
+  }, [selectedYear, selectedMonth, effectiveScopeOfficeId]);
 
-  const loadContracts = useCallback(async () => {
-    if (!users.length) {
-      setContracts([]);
+  const loadSalaryContracts = useCallback(async () => {
+    if (!userOptions.length) {
+      setSalaryContracts([]);
       return;
     }
 
-    setContractsLoading(true);
+    setIsSalaryContractsLoading(true);
     try {
-      if (selectedUserId) {
-        const res = await salaryContractService.getByUser(selectedUserId);
+      if (selectedContractUserId) {
+        const res = await salaryContractService.getByUser(selectedContractUserId);
         if (!isSuccessResponse(res)) {
           return toast.error(getResponseMessage(res, "Failed to load contracts"));
         }
-        setContracts(Array.isArray(res?.data) ? res.data : []);
+        setSalaryContracts(Array.isArray(res?.data) ? res.data : []);
         return;
       }
 
       const settled = await Promise.allSettled(
-        users.map((u) => salaryContractService.getByUser(u.id)),
+        userOptions.map((userOption) => salaryContractService.getByUser(userOption.id)),
       );
 
-      const nextContracts = [];
-      for (const item of settled) {
-        if (item.status !== "fulfilled") continue;
-        const res = item.value;
-        if (!isSuccessResponse(res) || !Array.isArray(res?.data)) continue;
-        nextContracts.push(...res.data);
+      const aggregatedContracts = [];
+      for (const settledResult of settled) {
+        if (settledResult.status !== "fulfilled") continue;
+        const response = settledResult.value;
+        if (!isSuccessResponse(response) || !Array.isArray(response?.data)) continue;
+        aggregatedContracts.push(...response.data);
       }
-      setContracts(nextContracts);
+      setSalaryContracts(aggregatedContracts);
     } catch {
       toast.error("Failed to load contracts");
     } finally {
-      setContractsLoading(false);
+      setIsSalaryContractsLoading(false);
     }
-  }, [selectedUserId, users]);
+  }, [selectedContractUserId, userOptions]);
 
   useEffect(() => {
-    loadFilters();
-  }, [loadFilters]);
+    loadFilterOptions();
+  }, [loadFilterOptions]);
 
   useEffect(() => {
-    loadPayrolls();
-  }, [loadPayrolls]);
+    loadPayrollList();
+  }, [loadPayrollList]);
 
   useEffect(() => {
-    loadContracts();
-  }, [loadContracts]);
+    loadSalaryContracts();
+  }, [loadSalaryContracts]);
 
-  const handleGenerate = async (values) => {
-    setSubmitting(true);
+  const handleGeneratePayroll = async (values) => {
+    setIsSubmittingPayrollAction(true);
     try {
       const payload = {
         year: values.year,
@@ -144,115 +187,111 @@ export function PayrollPage() {
         return toast.error(getResponseMessage(res, "Failed to generate payroll"));
       }
       toast.success(getResponseMessage(res, "Payroll generated successfully"));
-      await loadPayrolls();
+      await loadPayrollList();
     } catch {
       toast.error("Failed to generate payroll");
     } finally {
-      setSubmitting(false);
+      setIsSubmittingPayrollAction(false);
     }
   };
 
-  const handleOpenDetail = async (row) => {
-    if (!row?.id) return;
+  const handleOpenPayrollDetail = async (payrollRow) => {
+    if (!payrollRow?.id) return;
     try {
-      const res = await payrollService.getPayrollById(row.id);
+      const res = await payrollService.getPayrollDetailById(payrollRow.id);
       if (!isSuccessResponse(res)) {
         return toast.error(getResponseMessage(res, "Failed to load payroll detail"));
       }
       setSelectedPayroll(res?.data ?? null);
-      setDetailOpen(true);
+      setIsPayrollDetailDrawerOpen(true);
     } catch {
       toast.error("Failed to load payroll detail");
     }
   };
 
-  const handleSubmitContract = async (payload) => {
-    setSubmitting(true);
+  const handleSubmitSalaryContract = async (payload) => {
+    setIsSubmittingPayrollAction(true);
     try {
-      const res = editingContract?.id
-        ? await salaryContractService.update(editingContract.id, payload)
+      const res = editingSalaryContract?.id
+        ? await salaryContractService.update(editingSalaryContract.id, payload)
         : await salaryContractService.create(payload);
       if (!isSuccessResponse(res)) {
         return toast.error(getResponseMessage(res, "Failed to save salary contract"));
       }
       toast.success(getResponseMessage(res, "Salary contract saved successfully"));
-      setContractModalOpen(false);
-      setEditingContract(null);
-      await loadContracts();
+      setIsSalaryContractModalOpen(false);
+      setEditingSalaryContract(null);
+      await loadSalaryContracts();
     } catch {
       toast.error("Failed to save salary contract");
     } finally {
-      setSubmitting(false);
+      setIsSubmittingPayrollAction(false);
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 style={{ fontFamily: "DM Sans, sans-serif", fontSize: "24px", fontWeight: "600", color: "#0A0A0A" }}>
-          Payroll
-        </h1>
-      </div>
+      <PayrollPageHeader />
 
       <PayrollFilters
-        year={year}
-        month={month}
-        officeId={officeId}
-        offices={offices}
+        year={selectedYear}
+        month={selectedMonth}
+        officeId={selectedOfficeId}
+        offices={officeOptions}
         showOfficeFilter={isAdmin}
-        onYearChange={setYear}
-        onMonthChange={setMonth}
-        onOfficeChange={(value) => setOfficeId(value ?? undefined)}
-        onReload={loadPayrolls}
+        onYearChange={setSelectedYear}
+        onMonthChange={setSelectedMonth}
+        onOfficeChange={(value) => setSelectedOfficeId(value ?? undefined)}
+        onReload={loadPayrollList}
       />
 
       <GeneratePayrollPanel
-        submitting={submitting}
-        offices={offices}
-        users={users}
+        submitting={isSubmittingPayrollAction}
+        offices={officeOptions}
+        users={userOptions}
         showOfficeFilter={isAdmin}
-        initialYear={year}
-        initialMonth={month}
-        initialOfficeId={officeId}
-        onSubmit={handleGenerate}
+        initialYear={selectedYear}
+        initialMonth={selectedMonth}
+        initialOfficeId={selectedOfficeId}
+        onSubmit={handleGeneratePayroll}
       />
 
-      <PayrollTable loading={loading} payrolls={payrolls} onViewDetail={handleOpenDetail} />
+      <PayrollTable loading={isPayrollListLoading} payrolls={payrollRows} onViewDetail={handleOpenPayrollDetail} />
 
       <SalaryContractSection
-        loading={contractsLoading}
-        contracts={contracts}
-        users={users}
-        selectedUserId={selectedUserId}
-        onUserChange={(value) => setSelectedUserId(value)}
+        loading={isSalaryContractsLoading}
+        contracts={salaryContracts}
+        users={userOptions}
+        selectedUserId={selectedContractUserId}
+        onUserChange={(value) => setSelectedContractUserId(value)}
         onCreate={() => {
-          setEditingContract(null);
-          setContractModalOpen(true);
+          setEditingSalaryContract(null);
+          setIsSalaryContractModalOpen(true);
         }}
         onEdit={(contract) => {
-          setEditingContract(contract);
-          setContractModalOpen(true);
+          setEditingSalaryContract(contract);
+          setIsSalaryContractModalOpen(true);
         }}
       />
 
       <SalaryContractModal
-        open={contractModalOpen}
-        submitting={submitting}
-        users={users}
-        editingContract={editingContract}
-        defaultUserId={selectedUserId}
+        open={isSalaryContractModalOpen}
+        submitting={isSubmittingPayrollAction}
+        users={userOptions}
+        editingContract={editingSalaryContract}
+        defaultUserId={selectedContractUserId}
         onClose={() => {
-          setContractModalOpen(false);
-          setEditingContract(null);
+          setIsSalaryContractModalOpen(false);
+          setEditingSalaryContract(null);
         }}
-        onSubmit={handleSubmitContract}
+        onSubmit={handleSubmitSalaryContract}
       />
 
       <PayrollDetailDrawer
-        open={detailOpen}
+        open={isPayrollDetailDrawerOpen}
         payroll={selectedPayroll}
         onClose={() => {
-          setDetailOpen(false);
+          setIsPayrollDetailDrawerOpen(false);
           setSelectedPayroll(null);
         }}
       />

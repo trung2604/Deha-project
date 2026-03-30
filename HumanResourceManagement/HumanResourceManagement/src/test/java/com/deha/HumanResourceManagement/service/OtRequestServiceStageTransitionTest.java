@@ -10,6 +10,9 @@ import com.deha.HumanResourceManagement.entity.enums.OtRequestStatus;
 import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
+import com.deha.HumanResourceManagement.service.impl.OtRequestService;
+import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.service.ot.workflow.OtRequestWorkflowService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
@@ -68,7 +71,11 @@ class OtRequestServiceStageTransitionTest {
             }
         };
 
-        OtRequestService service = new OtRequestService(otRequestRepository, accessScopeService);
+        OtRequestService service = new OtRequestService(
+                otRequestRepository,
+                accessScopeService,
+                new OtRequestWorkflowService()
+        );
 
         OtDecisionRequest decision = new OtDecisionRequest();
         decision.setApproved(true);
@@ -76,7 +83,7 @@ class OtRequestServiceStageTransitionTest {
 
         OtRequestResponse response = service.decide(requestId, decision);
 
-        assertEquals(OtRequestStatus.PENDING_OFFICE, response.getStatus());
+        assertEquals(OtRequestStatus.APPROVED, response.getStatus());
         assertNotNull(response.getApprovedById());
     }
 
@@ -122,7 +129,11 @@ class OtRequestServiceStageTransitionTest {
             }
         };
 
-        OtRequestService service = new OtRequestService(otRequestRepository, accessScopeService);
+        OtRequestService service = new OtRequestService(
+                otRequestRepository,
+                accessScopeService,
+                new OtRequestWorkflowService()
+        );
 
         OtDecisionRequest decision = new OtDecisionRequest();
         decision.setApproved(true);
@@ -183,7 +194,11 @@ class OtRequestServiceStageTransitionTest {
             }
         };
 
-        OtRequestService service = new OtRequestService(otRequestRepository, accessScopeService);
+        OtRequestService service = new OtRequestService(
+                otRequestRepository,
+                accessScopeService,
+                new OtRequestWorkflowService()
+        );
 
         OtDecisionRequest decision = new OtDecisionRequest();
         decision.setApproved(true);
@@ -238,7 +253,11 @@ class OtRequestServiceStageTransitionTest {
             }
         };
 
-        OtRequestService service = new OtRequestService(otRequestRepository, accessScopeService);
+        OtRequestService service = new OtRequestService(
+                otRequestRepository,
+                accessScopeService,
+                new OtRequestWorkflowService()
+        );
 
         OtDecisionRequest decision = new OtDecisionRequest();
         decision.setApproved(true);

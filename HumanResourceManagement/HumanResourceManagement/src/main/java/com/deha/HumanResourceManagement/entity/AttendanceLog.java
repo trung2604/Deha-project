@@ -3,7 +3,10 @@ package com.deha.HumanResourceManagement.entity;
 import com.deha.HumanResourceManagement.entity.enums.OtType;
 import com.deha.HumanResourceManagement.entity.enums.CheckoutSource;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDate;
@@ -15,10 +18,13 @@ import java.util.UUID;
         name = "attendance_logs",
         uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "log_date"})
 )
-@Data
+@Getter
+@Setter
 public class AttendanceLog {
+
     @Id
     @UuidGenerator
+    @EqualsAndHashCode.Include
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -59,11 +65,12 @@ public class AttendanceLog {
     private LocalDate logDate;
 
     public void checkIn(User user, Office office, String clientIp) {
-        this.user        = user;
-        this.office      = office;
-        this.clientIp    = clientIp;
-        this.checkInTime = LocalDateTime.now();
-        this.logDate     = LocalDate.now();
+        this.user            = user;
+        this.office          = office;
+        this.clientIp        = clientIp;
+        this.checkInTime     = LocalDateTime.now();
+        this.logDate         = LocalDate.now();
+        this.checkoutSource  = CheckoutSource.MANUAL;
+        this.autoCheckedOut  = false;
     }
-
 }

@@ -5,7 +5,7 @@ import com.deha.HumanResourceManagement.dto.PageResponse;
 import com.deha.HumanResourceManagement.dto.user.UserRequest;
 import com.deha.HumanResourceManagement.dto.user.UpdateUserRequest;
 import com.deha.HumanResourceManagement.dto.user.UserResponse;
-import com.deha.HumanResourceManagement.service.UserService;
+import com.deha.HumanResourceManagement.service.IUserService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,9 +18,9 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 public class UserController extends ApiControllerSupport {
-    private final UserService userService;
+    private final IUserService userService;
 
-    public UserController(UserService userService) {
+    public UserController(IUserService userService) {
         this.userService = userService;
     }
 
