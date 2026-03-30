@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import authService from "../api/authService";
 import { getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
@@ -32,8 +33,11 @@ export function AuthProvider({ children }) {
     try {
       const res = await authService.getMe();
       if (!isSuccessResponse(res)) {
-        clearAuth();
-        return { ok: false, message: getResponseMessage(res, "Unauthorized") };
+        const statusCode = Number(res?.statusCode ?? 0);
+        if (statusCode === 401) {
+          clearAuth();
+        }
+        return { ok: false, message: getResponseMessage(res, "Unable to refresh profile") };
       }
 
       const profile = res.data ?? null;
@@ -41,7 +45,6 @@ export function AuthProvider({ children }) {
       localStorage.setItem(USER_KEY, JSON.stringify(profile));
       return { ok: true, data: profile, message: res.message };
     } catch {
-      clearAuth();
       return { ok: false, message: "Unable to refresh profile" };
     }
   }, [clearAuth]);

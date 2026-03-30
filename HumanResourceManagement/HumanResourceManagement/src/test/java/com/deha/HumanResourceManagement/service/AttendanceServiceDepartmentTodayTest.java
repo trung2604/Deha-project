@@ -7,6 +7,9 @@ import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
+import com.deha.HumanResourceManagement.service.impl.AttendanceService;
+import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.strategy.OtTypeResolver;
 import org.junit.jupiter.api.Test;
 
@@ -71,7 +74,8 @@ class AttendanceServiceDepartmentTodayTest {
                 attendanceLogRepository,
                 null,
                 new OtTypeResolver(List.of()),
-                accessScopeService
+                accessScopeService,
+                new OfficePolicyService()
         );
 
         List<AttendanceLog> result = attendanceService.getDepartmentTodayLogsOrEmpty(actor);
@@ -105,7 +109,8 @@ class AttendanceServiceDepartmentTodayTest {
                 attendanceLogRepository,
                 null,
                 new OtTypeResolver(List.of()),
-                accessScopeService
+                accessScopeService,
+                new OfficePolicyService()
         );
 
         assertThrows(ForbiddenException.class, () -> attendanceService.getDepartmentTodayLogsOrEmpty(actor));

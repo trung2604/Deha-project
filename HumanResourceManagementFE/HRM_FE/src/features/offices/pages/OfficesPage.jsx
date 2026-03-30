@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Edit, Plus, Trash2 } from "lucide-react";
-import { Modal, Input, Form, InputNumber } from "antd";
+import { Modal, Input, Form } from "antd";
 import { toast } from "sonner";
 import officeService from "@/features/offices/api/officeService";
 import { getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
@@ -15,11 +15,6 @@ export function OfficesPage() {
     name: "",
     description: "",
     ipWifiText: "",
-    baseWorkHoursPerDay: 9,
-    otWeekdayMultiplier: 1.5,
-    otWeekendMultiplier: 2.0,
-    otHolidayMultiplier: 3.0,
-    otNightBonusMultiplier: 0.3,
   });
 
   const parseIpList = (text) => {
@@ -51,11 +46,6 @@ export function OfficesPage() {
       name: "",
       description: "",
       ipWifiText: "",
-      baseWorkHoursPerDay: 9,
-      otWeekdayMultiplier: 1.5,
-      otWeekendMultiplier: 2.0,
-      otHolidayMultiplier: 3.0,
-      otNightBonusMultiplier: 0.3,
     });
     setOpen(true);
   };
@@ -68,11 +58,6 @@ export function OfficesPage() {
       ipWifiText: Array.isArray(office?.ipWifiIps)
         ? office.ipWifiIps.join("\n")
         : "",
-      baseWorkHoursPerDay: office?.baseWorkHoursPerDay ?? 9,
-      otWeekdayMultiplier: office?.otWeekdayMultiplier ?? 1.5,
-      otWeekendMultiplier: office?.otWeekendMultiplier ?? 2.0,
-      otHolidayMultiplier: office?.otHolidayMultiplier ?? 3.0,
-      otNightBonusMultiplier: office?.otNightBonusMultiplier ?? 0.3,
     });
     setOpen(true);
   };
@@ -82,8 +67,6 @@ export function OfficesPage() {
     const ipWifiIps = parseIpList(form.ipWifiText);
     if (ipWifiIps.length === 0)
       return toast.error("Office must have at least 1 WiFi IP");
-    if (!form.baseWorkHoursPerDay || form.baseWorkHoursPerDay <= 0)
-      return toast.error("Base work hours per day must be greater than 0");
 
     setSaving(true);
     try {
@@ -91,11 +74,6 @@ export function OfficesPage() {
         name: form.name.trim(),
         description: form.description?.trim() || null,
         ipWifiIps,
-        baseWorkHoursPerDay: Number(form.baseWorkHoursPerDay),
-        otWeekdayMultiplier: Number(form.otWeekdayMultiplier),
-        otWeekendMultiplier: Number(form.otWeekendMultiplier),
-        otHolidayMultiplier: Number(form.otHolidayMultiplier),
-        otNightBonusMultiplier: Number(form.otNightBonusMultiplier),
       };
       const res = editing?.id
         ? await officeService.updateOffice(editing.id, payload)
@@ -292,63 +270,6 @@ export function OfficesPage() {
             />
           </Form.Item>
 
-          <Form.Item label="Base work hours per day" required>
-            <InputNumber
-              value={form.baseWorkHoursPerDay}
-              onChange={(value) =>
-                setForm((p) => ({ ...p, baseWorkHoursPerDay: value ?? 0 }))
-              }
-              min={1}
-              style={{ width: "100%" }}
-            />
-          </Form.Item>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Form.Item label="OT weekday multiplier" required>
-              <InputNumber
-                value={form.otWeekdayMultiplier}
-                onChange={(value) =>
-                  setForm((p) => ({ ...p, otWeekdayMultiplier: value ?? 0 }))
-                }
-                min={0.1}
-                step={0.1}
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-            <Form.Item label="OT weekend multiplier" required>
-              <InputNumber
-                value={form.otWeekendMultiplier}
-                onChange={(value) =>
-                  setForm((p) => ({ ...p, otWeekendMultiplier: value ?? 0 }))
-                }
-                min={0.1}
-                step={0.1}
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-            <Form.Item label="OT holiday multiplier" required>
-              <InputNumber
-                value={form.otHolidayMultiplier}
-                onChange={(value) =>
-                  setForm((p) => ({ ...p, otHolidayMultiplier: value ?? 0 }))
-                }
-                min={0.1}
-                step={0.1}
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-            <Form.Item label="OT night bonus multiplier" required>
-              <InputNumber
-                value={form.otNightBonusMultiplier}
-                onChange={(value) =>
-                  setForm((p) => ({ ...p, otNightBonusMultiplier: value ?? 0 }))
-                }
-                min={0}
-                step={0.1}
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-          </div>
         </Form>
       </Modal>
     </div>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, Building, Clock, LayoutDashboard, ReceiptText, UserCircle, Users } from 'lucide-react';
+import { Building2, Building, Clock, Zap, LayoutDashboard, ReceiptText, UserCircle, Users } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { canAccessNavItem } from '@/utils/role';
 
@@ -10,8 +10,10 @@ import { canAccessNavItem } from '@/utils/role';
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
   { path: '/attendance', label: 'Attendance', icon: Clock, roles: ['MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/overtime', label: 'Overtime', icon: Zap, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
   { path: '/payroll', label: 'Payroll', icon: ReceiptText, roles: ['ADMIN', 'MANAGER_OFFICE'] },
   { path: '/offices', label: 'Offices', icon: Building, roles: ['ADMIN'] },
+  { path: '/office-policy', label: 'Office Policy', icon: Building, roles: ['MANAGER_OFFICE'] },
   { path: '/users', label: 'Users', icon: Users, roles: ['ADMIN', 'MANAGER_OFFICE'] },
   { path: '/departments', label: 'Departments', icon: Building2, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT'] },
   { path: '/profile', label: 'Profile', icon: UserCircle, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },

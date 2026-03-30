@@ -2,6 +2,9 @@ package com.deha.HumanResourceManagement.service;
 
 import com.deha.HumanResourceManagement.entity.AttendanceLog;
 import com.deha.HumanResourceManagement.entity.Office;
+import com.deha.HumanResourceManagement.service.impl.AttendanceService;
+import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.strategy.OtTypeResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AttendanceServiceTest {
@@ -23,7 +26,8 @@ class AttendanceServiceTest {
                 null,
                 null,
                 new OtTypeResolver(List.of()),
-                new AccessScopeService(null)
+                new AccessScopeService(null),
+                new OfficePolicyService()
         );
     }
 
@@ -76,8 +80,8 @@ class AttendanceServiceTest {
 
         assertTrue(changed);
         assertEquals(9, log.getWorkedHours());
-        assertEquals(0, log.getOtHours());
-        assertNull(log.getOtType());
+        assertEquals(2, log.getOtHours());
+        assertNotNull(log.getOtType());
     }
 }
 

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +40,9 @@ public class Office {
 
     @Column(name = "ot_night_bonus_multiplier", nullable = false)
     private double otNightBonusMultiplier = 0.3d;
+
+    @Column(name = "latest_checkout_time", nullable = false)
+    private LocalTime latestCheckoutTime = LocalTime.of(22, 0);
 
     @OneToMany(mappedBy = "office", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OfficeWifiIp> wifiIps = new ArrayList<>();

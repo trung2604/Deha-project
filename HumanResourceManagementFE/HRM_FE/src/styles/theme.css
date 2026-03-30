@@ -13,6 +13,15 @@
   --text-secondary: #595959;
   --sidebar-dark: #141414;
 
+  /* Section Colors */
+  --section-attendance: #f0f7ff;
+  --section-ot: #fffaf0;
+  --section-payroll: #f6ffed;
+  --section-contracts: #f9f0ff;
+  --section-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --section-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --section-border-radius: 12px;
+
   /* Typography */
   --font-heading: "DM Sans", sans-serif;
   --font-body: "Inter", sans-serif;
@@ -224,3 +233,120 @@
   border-color: rgba(22, 119, 255, 0.35) !important;
   transition: border-color 0.2s ease;
 }
+
+/* Section Card Utilities */
+.section-card {
+  background-color: var(--card-white);
+  border-radius: var(--section-border-radius);
+  box-shadow: var(--section-shadow);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.section-card:hover {
+  box-shadow: var(--section-shadow-hover);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: var(--section-border-radius) var(--section-border-radius) 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+}
+
+.section-header-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-blue);
+}
+
+.section-attendance-header {
+  background: linear-gradient(135deg, rgba(22, 119, 255, 0.05) 0%, rgba(22, 119, 255, 0.02) 100%);
+}
+
+.section-ot-header {
+  background: linear-gradient(135deg, rgba(250, 140, 22, 0.05) 0%, rgba(250, 140, 22, 0.02) 100%);
+}
+
+.section-payroll-header {
+  background: linear-gradient(135deg, rgba(82, 196, 26, 0.05) 0%, rgba(82, 196, 26, 0.02) 100%);
+}
+
+.section-content {
+  padding: 20px;
+}
+
+/* Enhanced Table Styles */
+.enhanced-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.enhanced-table thead tr {
+  background-color: #f5f7fa;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.enhanced-table thead th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: #f5f7fa;
+}
+
+.enhanced-table tbody tr {
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s;
+}
+
+.enhanced-table tbody tr:hover {
+  background-color: rgba(22, 119, 255, 0.02);
+}
+
+.enhanced-table tbody tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.01);
+}
+
+.enhanced-table tbody td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.enhanced-table tbody td.text-secondary {
+  color: var(--text-secondary);
+}
+
+/* Form Field Styling */
+.form-field-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-label.required::after {
+  content: "*";
+  color: var(--error-red);
+  margin-left: 4px;
+}
+

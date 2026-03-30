@@ -1,5 +1,6 @@
 import { DatePicker, Form, InputNumber, Modal, Select } from "antd";
 import dayjs from "dayjs";
+import { payrollPrimaryButtonStyle } from "../constants/buttonStyles";
 
 export function SalaryContractModal({
   open,
@@ -25,7 +26,11 @@ export function SalaryContractModal({
       open={open}
       onCancel={onClose}
       onOk={() => form.submit()}
-      okButtonProps={{ loading: submitting }}
+      okButtonProps={{
+        loading: submitting,
+        className: "rounded-xl transition-all duration-200 hover:opacity-95",
+        style: payrollPrimaryButtonStyle,
+      }}
       destroyOnHidden
     >
       <Form

@@ -3,8 +3,9 @@ package com.deha.HumanResourceManagement.controller;
 import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.attendance.AttendanceLogResponse;
 import com.deha.HumanResourceManagement.entity.User;
-import com.deha.HumanResourceManagement.service.AccessScopeService;
-import com.deha.HumanResourceManagement.service.AttendanceService;
+import com.deha.HumanResourceManagement.service.IAttendanceService;
+import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.service.support.ClientIpResolverService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,26 +13,29 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/attendance")
 public class AttendanceController extends ApiControllerSupport {
-    private final AttendanceService attendanceService;
+    private final IAttendanceService attendanceService;
     private final AccessScopeService accessScopeService;
+    private final ClientIpResolverService clientIpResolverService;
 
-    public AttendanceController(AttendanceService attendanceService, AccessScopeService accessScopeService) {
+    public AttendanceController(
+            IAttendanceService attendanceService,
+            AccessScopeService accessScopeService,
+            ClientIpResolverService clientIpResolverService
+    ) {
         this.attendanceService = attendanceService;
         this.accessScopeService = accessScopeService;
+        this.clientIpResolverService = clientIpResolverService;
     }
 
     @PostMapping("/check-in")
     public ApiResponse checkIn(HttpServletRequest request) {
         User actor = accessScopeService.currentUserOrThrow();
-        List<String> clientIps = extractClientIps(request);
+        List<String> clientIps = clientIpResolverService.extractClientIps(request);
         attendanceService.checkIn(actor, clientIps);
         return success("Checked in successfully", HttpStatus.OK, null);
     }
@@ -39,7 +43,7 @@ public class AttendanceController extends ApiControllerSupport {
     @PostMapping("/check-out")
     public ApiResponse checkOut(HttpServletRequest request) {
         User actor = accessScopeService.currentUserOrThrow();
-        List<String> clientIps = extractClientIps(request);
+        List<String> clientIps = clientIpResolverService.extractClientIps(request);
         attendanceService.checkOut(actor, clientIps);
         return success("Checked out successfully", HttpStatus.OK, null);
     }
@@ -62,30 +66,7 @@ public class AttendanceController extends ApiControllerSupport {
         );
     }
 
-    private List<String> extractClientIps(HttpServletRequest request) {
-        Set<String> unique = new LinkedHashSet<>();
 
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            for (String part : forwardedFor.split(",")) {
-                String value = part == null ? "" : part.trim();
-                if (!value.isBlank()) unique.add(value);
-            }
-        }
 
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            unique.add(realIp.trim());
-        }
-
-        String remoteAddr = request.getRemoteAddr();
-        if (remoteAddr != null && !remoteAddr.isBlank()) {
-            unique.add(remoteAddr.trim());
-        }
-
-        return new ArrayList<>(unique);
-    }
-
-    
 }
 

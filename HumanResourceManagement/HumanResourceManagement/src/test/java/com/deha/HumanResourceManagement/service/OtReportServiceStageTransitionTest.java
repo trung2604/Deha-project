@@ -14,6 +14,11 @@ import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
 import com.deha.HumanResourceManagement.repository.OtReportRepository;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
+import com.deha.HumanResourceManagement.repository.OtSessionRepository;
+import com.deha.HumanResourceManagement.service.impl.OtReportService;
+import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
+import com.deha.HumanResourceManagement.service.ot.workflow.OtReportWorkflowService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
@@ -88,7 +93,10 @@ class OtReportServiceStageTransitionTest {
                 otReportRepository,
                 mock(OtRequestRepository.class),
                 mock(AttendanceLogRepository.class),
-                accessScopeService
+                mock(OtSessionRepository.class),
+                accessScopeService,
+                new OfficePolicyService(),
+                new OtReportWorkflowService()
         );
 
         OtDecisionRequest decision = new OtDecisionRequest();
@@ -150,7 +158,10 @@ class OtReportServiceStageTransitionTest {
                 otReportRepository,
                 mock(OtRequestRepository.class),
                 mock(AttendanceLogRepository.class),
-                accessScopeService
+                mock(OtSessionRepository.class),
+                accessScopeService,
+                new OfficePolicyService(),
+                new OtReportWorkflowService()
         );
 
         OtDecisionRequest decision = new OtDecisionRequest();
@@ -217,7 +228,10 @@ class OtReportServiceStageTransitionTest {
                 otReportRepository,
                 mock(OtRequestRepository.class),
                 mock(AttendanceLogRepository.class),
-                accessScopeService
+                mock(OtSessionRepository.class),
+                accessScopeService,
+                new OfficePolicyService(),
+                new OtReportWorkflowService()
         );
 
         OtDecisionRequest decision = new OtDecisionRequest();
@@ -280,7 +294,10 @@ class OtReportServiceStageTransitionTest {
                 otReportRepository,
                 mock(OtRequestRepository.class),
                 mock(AttendanceLogRepository.class),
-                accessScopeService
+                mock(OtSessionRepository.class),
+                accessScopeService,
+                new OfficePolicyService(),
+                new OtReportWorkflowService()
         );
 
         OtDecisionRequest decision = new OtDecisionRequest();

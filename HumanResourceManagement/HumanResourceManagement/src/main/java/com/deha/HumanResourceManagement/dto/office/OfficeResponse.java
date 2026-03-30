@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,6 +23,8 @@ public class OfficeResponse {
     private Double otWeekendMultiplier;
     private Double otHolidayMultiplier;
     private Double otNightBonusMultiplier;
+    private Integer otMinHours;
+    private LocalTime latestCheckoutTime;
 
     public static OfficeResponse fromEntity(Office office) {
         if (office == null) return null;
@@ -38,7 +41,9 @@ public class OfficeResponse {
                 office.getOtWeekdayMultiplier(),
                 office.getOtWeekendMultiplier(),
                 office.getOtHolidayMultiplier(),
-                office.getOtNightBonusMultiplier()
+                office.getOtNightBonusMultiplier(),
+                office.getOtMinHours(),
+                office.getLatestCheckoutTime()
         );
     }
 }

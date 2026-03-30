@@ -1,4 +1,6 @@
 import { Button, Select } from "antd";
+import { Filter, RotateCcw } from "lucide-react";
+import { payrollPrimaryButtonStyle } from "../constants/buttonStyles";
 
 export function PayrollFilters({
   year,
@@ -21,31 +23,65 @@ export function PayrollFilters({
   }));
 
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-      <div className="flex flex-wrap items-center gap-3">
-        <Select
-          value={year}
-          options={yearOptions}
-          style={{ minWidth: 140 }}
-          onChange={onYearChange}
-        />
-        <Select
-          value={month}
-          options={monthOptions}
-          style={{ minWidth: 140 }}
-          onChange={onMonthChange}
-        />
-        {showOfficeFilter && (
-          <Select
-            value={officeId}
-            allowClear
-            placeholder="All offices"
-            style={{ minWidth: 220 }}
-            options={offices.map((o) => ({ value: o.id, label: o.name }))}
-            onChange={onOfficeChange}
-          />
-        )}
-        <Button onClick={onReload}>Reload</Button>
+    <div className="section-card mb-6">
+      <div
+        className="section-header section-payroll-header"
+        style={{ borderColor: "rgba(82, 196, 26, 0.2)" }}
+      >
+        <div className="section-header-icon">
+          <Filter className="w-5 h-5" style={{ color: "#52c41a" }} />
+        </div>
+        <h3 style={{ margin: 0 }}>Filters</h3>
+      </div>
+      <div className="section-content">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div>
+            <label className="form-label">Year</label>
+            <Select
+              value={year}
+              options={yearOptions}
+              onChange={onYearChange}
+              style={{ width: "100%" }}
+              size="large"
+            />
+          </div>
+          <div>
+            <label className="form-label">Month</label>
+            <Select
+              value={month}
+              options={monthOptions}
+              onChange={onMonthChange}
+              style={{ width: "100%" }}
+              size="large"
+            />
+          </div>
+          {showOfficeFilter && (
+            <div>
+              <label className="form-label">Office</label>
+              <Select
+                value={officeId}
+                allowClear
+                placeholder="All offices"
+                style={{ width: "100%" }}
+                size="large"
+                options={offices.map((o) => ({ value: o.id, label: o.name }))}
+                onChange={onOfficeChange}
+              />
+            </div>
+          )}
+          <div className={`flex items-end ${showOfficeFilter ? "col-span-1" : "col-span-2"}`}>
+            <Button
+              type="primary"
+              icon={<RotateCcw className="w-4 h-4" />}
+              onClick={onReload}
+              size="large"
+              className="rounded-xl transition-all duration-200 hover:opacity-95"
+              style={{ width: "100%", ...payrollPrimaryButtonStyle }}
+            >
+              Reload
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

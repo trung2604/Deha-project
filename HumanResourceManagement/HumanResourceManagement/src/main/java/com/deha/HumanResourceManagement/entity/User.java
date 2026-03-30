@@ -5,9 +5,11 @@ import com.deha.HumanResourceManagement.exception.BadRequestException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
@@ -33,6 +35,7 @@ public class User {
     private String email;
 
     @Column(name = "phone", nullable = true, length = 10)
+    @Pattern(regexp = "^\\d{9,15}$", message = "Phone number must be 9-15 digits")
     private String phone;
 
     @Column(name = "password", nullable = false)
@@ -58,7 +61,7 @@ public class User {
     private Role role;
 
     @Column(name = "created_at", nullable = false)
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
     public void applyBasicInfo(String firstName, String lastName, String email, Role role) {
         this.firstName = firstName;
@@ -71,7 +74,6 @@ public class User {
         if (office == null) {
             throw new BadRequestException("Office is required");
         }
-        // Allow office-only assignment (used for office managers / admin seed).
         if (department == null && position == null) {
             this.office = office;
             this.department = null;
@@ -86,7 +88,6 @@ public class User {
             throw new BadRequestException("Department does not belong to the specified office");
         }
         if (position == null) {
-            // Allow department without position (used for department managers).
             this.office = office;
             this.department = department;
             this.position = null;
@@ -107,6 +108,6 @@ public class User {
     }
 
     public void markCreatedNow() {
-        this.createdAt = new Date();
+        this.createdAt = LocalDateTime.now();
     }
 }

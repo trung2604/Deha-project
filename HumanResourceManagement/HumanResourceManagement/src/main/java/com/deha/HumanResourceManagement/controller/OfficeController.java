@@ -1,8 +1,9 @@
 package com.deha.HumanResourceManagement.controller;
 
 import com.deha.HumanResourceManagement.dto.ApiResponse;
+import com.deha.HumanResourceManagement.dto.office.OfficePolicyRequest;
 import com.deha.HumanResourceManagement.dto.office.OfficeRequest;
-import com.deha.HumanResourceManagement.service.OfficeService;
+import com.deha.HumanResourceManagement.service.IOfficeService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -12,9 +13,9 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/offices")
 public class OfficeController extends ApiControllerSupport {
-    private final OfficeService officeService;
+    private final IOfficeService officeService;
 
-    public OfficeController(OfficeService officeService) {
+    public OfficeController(IOfficeService officeService) {
         this.officeService = officeService;
     }
 
@@ -39,5 +40,13 @@ public class OfficeController extends ApiControllerSupport {
         return success("Office deleted successfully", HttpStatus.OK, null);
     }
 
-    
+    @GetMapping("/my-policy")
+    public ApiResponse myPolicy() {
+        return success("Office policy retrieved successfully", HttpStatus.OK, officeService.getMyPolicy());
+    }
+
+    @PutMapping("/my-policy")
+    public ApiResponse updateMyPolicy(@RequestBody @Valid OfficePolicyRequest request) {
+        return success("Office policy updated successfully", HttpStatus.OK, officeService.updateMyPolicy(request));
+    }
 }

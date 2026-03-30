@@ -8,6 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Component
@@ -30,7 +31,7 @@ public class InitAdminAccount implements CommandLineRunner {
             admin.setPassword(passwordEncoder.encode("12345678"));
             admin.setRole(Role.ROLE_ADMIN);
             admin.setActive(true);
-            admin.setCreatedAt(new Date());
+            admin.setCreatedAt(LocalDateTime.now());
 
             userRepository.save(admin);
 

@@ -50,15 +50,18 @@ export function ProfileSummaryCard({ user }) {
       </div>
 
       <div className="space-y-4 pt-4" style={{ borderTop: "1px solid #E8E8E8" }}>
-        {rows.map(({ icon: Icon, label, value }) => (
-          <div key={label} className="flex items-start gap-3">
-            <Icon className="w-4 h-4 mt-0.5" style={{ color: "#595959" }} />
-            <div className="flex-1">
-              <p style={{ color: "#8C8C8C", fontSize: "12px" }}>{label}</p>
-              <p style={{ color: "#0A0A0A", fontSize: "14px" }}>{value}</p>
+        {rows.map((row) => {
+          const IconComponent = row.icon;
+          return (
+            <div key={row.label} className="flex items-start gap-3">
+              <IconComponent className="w-4 h-4 mt-0.5" style={{ color: "#595959" }} />
+              <div className="flex-1">
+                <p style={{ color: "#8C8C8C", fontSize: "12px" }}>{row.label}</p>
+                <p style={{ color: "#0A0A0A", fontSize: "14px" }}>{row.value}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

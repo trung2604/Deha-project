@@ -3,9 +3,9 @@ package com.deha.HumanResourceManagement.controller;
 import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.auth.LoginRequest;
 import com.deha.HumanResourceManagement.dto.user.UpdateProfileRequest;
-import com.deha.HumanResourceManagement.service.AuthService;
-import jakarta.validation.Valid;
+import com.deha.HumanResourceManagement.service.support.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 

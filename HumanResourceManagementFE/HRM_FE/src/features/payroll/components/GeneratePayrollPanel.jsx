@@ -1,4 +1,6 @@
 import { Button, Form, Select } from "antd";
+import { Zap } from "lucide-react";
+import { payrollPrimaryButtonStyle } from "../constants/buttonStyles";
 
 export function GeneratePayrollPanel({
   submitting,
@@ -22,44 +24,90 @@ export function GeneratePayrollPanel({
   }));
 
   return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-      <h3 style={{ fontSize: "16px", fontWeight: 600, color: "#0A0A0A", marginBottom: 12 }}>Generate Payroll</h3>
-
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{
-          year: initialYear,
-          month: initialMonth,
-          officeId: initialOfficeId,
-          userId: undefined,
-        }}
-        onFinish={onSubmit}
+    <div className="section-card mb-6">
+      <div
+        className="section-header section-payroll-header"
+        style={{ borderColor: "rgba(82, 196, 26, 0.2)" }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          <Form.Item name="year" label="Year" rules={[{ required: true, message: "Year is required" }]}>
-            <Select options={yearOptions} />
-          </Form.Item>
-          <Form.Item name="month" label="Month" rules={[{ required: true, message: "Month is required" }]}>
-            <Select options={monthOptions} />
-          </Form.Item>
-          {showOfficeFilter && (
-            <Form.Item name="officeId" label="Office">
-              <Select allowClear placeholder="All offices" options={offices.map((o) => ({ value: o.id, label: o.name }))} />
-            </Form.Item>
-          )}
-          <Form.Item name="userId" label="User">
-            <Select
-              allowClear
-              placeholder="All users in scope"
-              options={users.map((u) => ({ value: u.id, label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.email }))}
-            />
-          </Form.Item>
+        <div className="section-header-icon">
+          <Zap className="w-5 h-5" style={{ color: "#52c41a" }} />
         </div>
-        <Button type="primary" htmlType="submit" loading={submitting}>
-          Generate
-        </Button>
-      </Form>
+        <h3 style={{ margin: 0 }}>Generate Payroll</h3>
+      </div>
+
+      <div className="section-content">
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={{
+            year: initialYear,
+            month: initialMonth,
+            officeId: initialOfficeId,
+            userId: undefined,
+          }}
+          onFinish={onSubmit}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <Form.Item
+              name="year"
+              label={<span className="form-label">Year</span>}
+              rules={[{ required: true, message: "Year is required" }]}
+              style={{ marginBottom: 0 }}
+            >
+              <Select options={yearOptions} size="large" />
+            </Form.Item>
+            <Form.Item
+              name="month"
+              label={<span className="form-label">Month</span>}
+              rules={[{ required: true, message: "Month is required" }]}
+              style={{ marginBottom: 0 }}
+            >
+              <Select options={monthOptions} size="large" />
+            </Form.Item>
+            {showOfficeFilter && (
+              <Form.Item
+                name="officeId"
+                label={<span className="form-label">Office</span>}
+                style={{ marginBottom: 0 }}
+              >
+                <Select
+                  allowClear
+                  placeholder="All offices"
+                  size="large"
+                  options={offices.map((o) => ({ value: o.id, label: o.name }))}
+                />
+              </Form.Item>
+            )}
+            <Form.Item
+              name="userId"
+              label={<span className="form-label">User</span>}
+              style={{ marginBottom: 0 }}
+            >
+              <Select
+                allowClear
+                placeholder="All users in scope"
+                size="large"
+                options={users.map((u) => ({
+                  value: u.id,
+                  label: `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() || u.email,
+                }))}
+              />
+            </Form.Item>
+          </div>
+          <div className="mt-6">
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitting}
+              size="large"
+              className="rounded-xl transition-all duration-200 hover:opacity-95"
+              style={{ minWidth: "170px", ...payrollPrimaryButtonStyle }}
+            >
+              Generate Payroll
+            </Button>
+          </div>
+        </Form>
+      </div>
     </div>
   );
 }

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Building2, Plus, Settings2, Trash2, Edit, Search } from "lucide-react";
+import { Building2, Plus, Settings2, Trash2, Edit, Search, BriefcaseBusiness, Users, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Input, Select, Spin } from "antd";
 import { DepartmentDetailModal } from "../components/DepartmentDetailModal";
 import { getDepartmentDirectoryPayload, getListData, getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { isAdminRole, isOfficeManagerRole } from "@/utils/role";
+import { isAdminRole, isDepartmentManagerRole, isOfficeManagerRole } from "@/utils/role";
 
 import departmentService from "../api/departmentService";
 import positionService from "../api/positionService";
@@ -13,6 +13,11 @@ import officeService from "@/features/offices/api/officeService";
 import { DepartmentModal } from "../components/DepartmentModal";
 import { DeleteDepartmentModal } from "../components/DeleteDepartmentModal";
 import { PositionsModal } from "../components/PositionsModal";
+import {
+  DEPARTMENT_WORKSPACE_COPY,
+  getDepartmentCountLabel,
+  resolveManagerDepartment,
+} from "../constants/departmentWorkspace.constants";
 
 function DepartmentGridSkeleton() {
   return (
@@ -48,6 +53,7 @@ export function DepartmentsPage() {
   const { user } = useAuth();
   const isAdmin = isAdminRole(user?.role);
   const officeManager = isOfficeManagerRole(user?.role);
+  const departmentManager = isDepartmentManagerRole(user?.role);
   const canManageDepartments = isAdmin || officeManager; // Department manager is view-only
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -118,6 +124,24 @@ export function DepartmentsPage() {
   const showSkeletonOnly = loading && departments.length === 0;
   const refetchingOverlay = loading && departments.length > 0;
 
+  const myDepartment = useMemo(() => {
+    if (!departmentManager) return null;
+    return resolveManagerDepartment(departments, {
+      departmentId: user?.departmentId,
+      departmentName: user?.departmentName,
+    });
+  }, [departmentManager, departments, user?.departmentId, user?.departmentName]);
+
+  const visibleDepartments = useMemo(() => {
+    if (!departmentManager) return departments;
+    return myDepartment ? [myDepartment] : [];
+  }, [departmentManager, departments, myDepartment]);
+
+  const managerPositionPreview = useMemo(() => {
+    if (!myDepartment?.id) return [];
+    return positionPreviewByDeptId[myDepartment.id] ?? [];
+  }, [myDepartment?.id, positionPreviewByDeptId]);
+
   const refreshAll = useCallback(async () => {
     setLoading(true);
     try {
@@ -166,14 +190,14 @@ export function DepartmentsPage() {
 
   useEffect(() => {
     (async () => {
-      for (const d of departments) {
+      for (const d of visibleDepartments) {
         if (!d?.id) continue;
         if (positionPreviewByDeptId[d.id] !== undefined) continue;
         await loadPositionPreview(d.id);
       }
     })().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [departments]);
+  }, [visibleDepartments]);
 
   const refreshDepartmentPositions = async (departmentId) => {
     if (!departmentId) return;
@@ -311,7 +335,7 @@ export function DepartmentsPage() {
               color: "#0A0A0A",
             }}
           >
-            Departments
+            {departmentManager ? DEPARTMENT_WORKSPACE_COPY.titleManager : DEPARTMENT_WORKSPACE_COPY.titleDefault}
           </h1>
           <span
             className="px-3 py-1 rounded-full"
@@ -324,7 +348,13 @@ export function DepartmentsPage() {
               boxShadow: "inset 0 0 0 1px rgba(139,92,246,0.2)",
             }}
           >
-            {debouncedSearchTerm ? `${departments.length} / ${departmentTotalCount}` : departmentTotalCount}
+            {getDepartmentCountLabel({
+              departmentManager,
+              myDepartment,
+              visibleDepartments,
+              debouncedSearchTerm,
+              departmentTotalCount,
+            })}
           </span>
         </div>
 
@@ -347,7 +377,36 @@ export function DepartmentsPage() {
         )}
       </div>
 
-      {!showSkeletonOnly && (
+      {departmentManager && (
+        <div className="rounded-2xl p-5" style={{ background: "linear-gradient(135deg, rgba(22,119,255,0.10), rgba(139,92,246,0.10))", border: "1px solid rgba(22,119,255,0.2)" }}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div style={{ color: "#0A0A0A", fontSize: "18px", fontWeight: 700 }}>
+                {myDepartment?.name || user?.departmentName || "Department not assigned"}
+              </div>
+              <div style={{ color: "#595959", fontSize: "13px", marginTop: 4 }}>
+                {DEPARTMENT_WORKSPACE_COPY.managerDescription}
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <span className="px-3 py-1 rounded-full" style={{ backgroundColor: "rgba(22,119,255,0.12)", color: "#1677FF", fontSize: 12, fontWeight: 700 }}>
+                <BriefcaseBusiness className="w-3.5 h-3.5 inline mr-1" />
+                {myDepartment?.officeName || user?.officeName || "Office"}
+              </span>
+              <span className="px-3 py-1 rounded-full" style={{ backgroundColor: "rgba(139,92,246,0.12)", color: "#8B5CF6", fontSize: 12, fontWeight: 700 }}>
+                <Users className="w-3.5 h-3.5 inline mr-1" />
+                {myDepartment?.id ? (positionPreviewByDeptId[myDepartment.id]?.length || 0) : 0} positions
+              </span>
+              <span className="px-3 py-1 rounded-full" style={{ backgroundColor: "rgba(82,196,26,0.12)", color: "#389E0D", fontSize: 12, fontWeight: 700 }}>
+                <ShieldCheck className="w-3.5 h-3.5 inline mr-1" />
+                {DEPARTMENT_WORKSPACE_COPY.managerViewBadge}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!showSkeletonOnly && !departmentManager && (
         <div
           className="rounded-xl p-4"
           style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
@@ -381,6 +440,180 @@ export function DepartmentsPage() {
 
       {showSkeletonOnly ? (
         <DepartmentGridSkeleton />
+      ) : departmentManager ? (
+        <div className="relative">
+          {refetchingOverlay && (
+            <div
+              className="absolute inset-0 z-20 flex items-start justify-center pt-16 pointer-events-none rounded-2xl"
+              style={{
+                background: "linear-gradient(180deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.45) 45%, transparent 100%)",
+                backdropFilter: "blur(1px)",
+              }}
+            >
+              <div
+                className="pointer-events-none flex items-center gap-2 px-4 py-2 rounded-full border"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.95)",
+                  borderColor: "rgba(139,92,246,0.22)",
+                  boxShadow: "0 8px 24px rgba(139,92,246,0.12)",
+                }}
+              >
+                <Spin size="small" />
+                <span style={{ color: "#595959", fontSize: "13px", fontWeight: 500 }}>Updating department workspace…</span>
+              </div>
+            </div>
+          )}
+
+          {myDepartment ? (
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 transition-opacity duration-300 ease-out" style={{ opacity: refetchingOverlay ? 0.55 : 1 }}>
+              <div
+                className="xl:col-span-2 rounded-2xl p-6 border"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderColor: "rgba(15,23,42,0.08)",
+                  boxShadow: "0 12px 28px rgba(15,23,42,0.08)",
+                }}
+              >
+                <div className="flex items-start justify-between gap-4 mb-5">
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-14 h-14 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: "rgba(139, 92, 246, 0.12)" }}
+                    >
+                      <Building2 className="w-7 h-7" style={{ color: "#8B5CF6" }} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: "24px", fontWeight: 700, color: "#0A0A0A" }}>{myDepartment.name}</h3>
+                      <p style={{ margin: "6px 0 0 0", color: "#595959", fontSize: "14px" }}>{myDepartment.description || "No description"}</p>
+                    </div>
+                  </div>
+                  <span
+                    className="px-3 py-1 rounded-full"
+                    style={{
+                      backgroundColor: "rgba(82,196,26,0.12)",
+                      color: "#389E0D",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Team Scope
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+                  <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
+                    <div style={{ color: "#8C8C8C", fontSize: "12px", fontWeight: 700, marginBottom: 6 }}>Office</div>
+                    <div style={{ color: "#0A0A0A", fontSize: "15px", fontWeight: 700 }}>{myDepartment.officeName || user?.officeName || "-"}</div>
+                  </div>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
+                    <div style={{ color: "#8C8C8C", fontSize: "12px", fontWeight: 700, marginBottom: 6 }}>Visible Positions</div>
+                    <div style={{ color: "#0A0A0A", fontSize: "15px", fontWeight: 700 }}>{managerPositionPreview.length}</div>
+                  </div>
+                  <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
+                    <div style={{ color: "#8C8C8C", fontSize: "12px", fontWeight: 700, marginBottom: 6 }}>Access Mode</div>
+                    <div style={{ color: "#0A0A0A", fontSize: "15px", fontWeight: 700 }}>{DEPARTMENT_WORKSPACE_COPY.managerViewBadge}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ color: "#8C8C8C", fontSize: "12px", fontWeight: 700, marginBottom: "8px", textTransform: "uppercase" }}>
+                    Positions Snapshot
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {positionPreviewLoadingByDeptId[myDepartment.id] ? (
+                      <span style={{ color: "#8C8C8C", fontSize: "13px" }}>Loading positions…</span>
+                    ) : managerPositionPreview.length === 0 ? (
+                      <span style={{ color: "#8C8C8C", fontSize: "13px" }}>No positions available</span>
+                    ) : (
+                      managerPositionPreview.slice(0, 8).map((name) => (
+                        <span
+                          key={`${myDepartment.id}-${name}`}
+                          className="px-2.5 py-1 rounded-full"
+                          style={{
+                            backgroundColor: "rgba(22, 119, 255, 0.1)",
+                            color: "#1677FF",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {name}
+                        </span>
+                      ))
+                    )}
+                    {managerPositionPreview.length > 8 && (
+                      <span
+                        className="px-2.5 py-1 rounded-full"
+                        style={{
+                          backgroundColor: "rgba(0,0,0,0.04)",
+                          color: "#595959",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        +{managerPositionPreview.length - 8}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="rounded-2xl p-6 border"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  borderColor: "rgba(15,23,42,0.08)",
+                  boxShadow: "0 12px 28px rgba(15,23,42,0.08)",
+                }}
+              >
+                <div style={{ color: "#0A0A0A", fontSize: "16px", fontWeight: 700, marginBottom: 6 }}>Department Actions</div>
+                <p style={{ color: "#595959", fontSize: "13px", marginBottom: 16 }}>
+                  Review full team members and position assignments in detail.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setDetailDepartmentId(myDepartment.id)}
+                  className="w-full flex items-center justify-center gap-2 px-4 h-10 rounded-xl transition-all duration-200 hover:opacity-95"
+                  style={{
+                    background: "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
+                    color: "#FFFFFF",
+                    fontSize: "14px",
+                    fontWeight: "600",
+                    boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
+                  }}
+                >
+                  Open Department Details
+                </button>
+
+                <div className="mt-5 rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
+                  <div style={{ color: "#8C8C8C", fontSize: "12px", fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>
+                    Notes
+                  </div>
+                  <ul style={{ margin: 0, paddingLeft: 18, color: "#595959", fontSize: "13px", lineHeight: 1.7 }}>
+                    <li>You have view access across departments but this page focuses your own team.</li>
+                    <li>For position changes, contact office manager/admin.</li>
+                    <li>Use Attendance and Overtime pages for daily operation workflows.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="rounded-2xl p-12 text-center border"
+              style={{
+                backgroundColor: "#FFFFFF",
+                borderColor: "#E8E8E8",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+              }}
+            >
+              <p className="mb-1" style={{ color: "#0A0A0A", fontSize: "15px", fontWeight: 600 }}>
+                {DEPARTMENT_WORKSPACE_COPY.managerNotAssignedTitle}
+              </p>
+              <p style={{ color: "#8C8C8C", fontSize: "13px" }}>
+                {DEPARTMENT_WORKSPACE_COPY.managerNotAssignedDescription}
+              </p>
+            </div>
+          )}
+        </div>
       ) : (
         <div className="relative">
           {refetchingOverlay && (
@@ -409,7 +642,7 @@ export function DepartmentsPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-300 ease-out"
             style={{ opacity: refetchingOverlay ? 0.55 : 1 }}
           >
-            {departments.length === 0 ? (
+            {visibleDepartments.length === 0 ? (
               <div
                 className="col-span-full rounded-2xl p-12 text-center border"
                 style={{
@@ -422,13 +655,11 @@ export function DepartmentsPage() {
                   {departmentTotalCount === 0 ? "No departments yet" : "No departments match your search"}
                 </p>
                 <p style={{ color: "#8C8C8C", fontSize: "13px" }}>
-                  {departmentTotalCount === 0
-                    ? "Create a department to get started"
-                    : "Try another keyword"}
+                  {departmentTotalCount === 0 ? "Create a department to get started" : "Try another keyword"}
                 </p>
               </div>
             ) : (
-              departments.map((dept, index) => {
+              visibleDepartments.map((dept, index) => {
                 const preview = positionPreviewByDeptId[dept.id] ?? [];
                 const previewLoading = !!positionPreviewLoadingByDeptId[dept.id];
                 const previewTop = preview.slice(0, 4);

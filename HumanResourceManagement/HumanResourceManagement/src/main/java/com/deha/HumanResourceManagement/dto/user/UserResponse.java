@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
@@ -26,7 +27,7 @@ public class UserResponse {
     private String positionName;
     private Role role;
     private boolean active;
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
     public static UserResponse fromEntity(User user) {
         return new UserResponse(

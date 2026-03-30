@@ -2,7 +2,7 @@ package com.deha.HumanResourceManagement.controller;
 
 import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.salarycontract.SalaryContractRequest;
-import com.deha.HumanResourceManagement.service.SalaryContractService;
+import com.deha.HumanResourceManagement.service.impl.SalaryContractService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -35,4 +35,3 @@ public class SalaryContractController extends ApiControllerSupport {
 
     
 }
-

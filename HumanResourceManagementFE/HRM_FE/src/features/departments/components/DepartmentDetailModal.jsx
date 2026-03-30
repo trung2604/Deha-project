@@ -167,7 +167,11 @@ export function DepartmentDetailModal({
                   {department?.name ?? "Department detail"}
                 </div>
                 <div style={{ color: "#8C8C8C", fontSize: "13px", marginTop: "2px" }}>
-                  {loading ? "Loading…" : "Positions and users in this department"}
+                  {loading
+                    ? "Loading…"
+                    : canManagePositions
+                      ? "Positions and users in this department"
+                      : "Department overview and team members"}
                 </div>
               </div>
             </div>
