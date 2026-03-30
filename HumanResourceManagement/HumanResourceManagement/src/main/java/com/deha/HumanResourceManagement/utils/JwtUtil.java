@@ -23,8 +23,6 @@ public class JwtUtil {
             @Value("${app.jwt.expiration-ms}") long expirationMs,
             @Value("${app.jwt.refresh-expiration-ms}") long refreshExpirationMs
     ) {
-        // Treat secret as raw text (not Base64). Derive a 256-bit key for HS256.
-        // This avoids JJWT's WeakKeyException when the configured secret is short.
         this.secretKey = Keys.hmacShaKeyFor(sha256(secretKey));
         this.expirationMs = expirationMs;
         this.refreshExpirationMs = refreshExpirationMs;
