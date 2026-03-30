@@ -43,7 +43,7 @@ public class AuthController extends ApiControllerSupport {
             @CookieValue(value = REFRESH_COOKIE_NAME, required = false) String refreshToken,
             HttpServletResponse response
     ) {
-        authService.logout(response);
+        authService.logout(refreshToken, response);
         return success("Logged out successfully", HttpStatus.OK, null);
     }
 

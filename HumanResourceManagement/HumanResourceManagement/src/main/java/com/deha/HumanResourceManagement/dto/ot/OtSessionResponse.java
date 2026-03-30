@@ -15,21 +15,29 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OtSessionResponse {
     private UUID id;
+    private Long version;
     private UUID otRequestId;
     private LocalDate logDate;
     private LocalDateTime checkInTime;
     private LocalDateTime checkOutTime;
+    private Integer minimumOtHours;
     private String source;
     private OtSessionStatus status;
 
     public static OtSessionResponse fromEntity(OtSession session) {
+        return fromEntity(session, 1);
+    }
+
+    public static OtSessionResponse fromEntity(OtSession session, int minimumOtHours) {
         if (session == null) return null;
         return new OtSessionResponse(
                 session.getId(),
+                session.getVersion(),
                 session.getOtRequest() != null ? session.getOtRequest().getId() : null,
                 session.getLogDate(),
                 session.getCheckInTime(),
                 session.getCheckOutTime(),
+                minimumOtHours,
                 session.getSource(),
                 session.getStatus()
         );

@@ -91,11 +91,11 @@ class OtRequestWorkflowServiceTest {
     void pendingStatusSets_shouldMatchWorkflowQueues() {
         assertEquals(
                 java.util.List.of(OtRequestStatus.PENDING_DEPARTMENT, OtRequestStatus.PENDING),
-                workflowService.pendingStatusesForDepartmentManager()
+                workflowService.pendingForDeptMgr()
         );
         assertEquals(
                 java.util.List.of(OtRequestStatus.PENDING_OFFICE),
-                workflowService.pendingStatusesForOfficeManager()
+                workflowService.pendingForOfficeMgr()
         );
     }
 }

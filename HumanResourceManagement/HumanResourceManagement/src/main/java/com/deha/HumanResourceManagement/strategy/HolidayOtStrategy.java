@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.strategy;
 
+import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.enums.OtType;
 import org.springframework.stereotype.Component;
 
@@ -9,6 +10,11 @@ import java.util.List;
 
 @Component
 public class HolidayOtStrategy implements  OtTypeStrategy{
+    private final NightHelper nightHelper;
+
+    public HolidayOtStrategy(NightHelper nightHelper) {
+        this.nightHelper = nightHelper;
+    }
 
     int year = LocalDate.now().getYear();
 
@@ -25,8 +31,8 @@ public class HolidayOtStrategy implements  OtTypeStrategy{
     }
 
     @Override
-    public OtType resolve(LocalDate date, LocalTime checkOutTime) {
-        return NightHelper.isNight(checkOutTime)
+    public OtType resolve(LocalDate date, LocalTime checkOutTime, Office office) {
+        return nightHelper.isNight(office, checkOutTime)
                 ? OtType.NIGHT_HOLIDAY
                 : OtType.HOLIDAY;
     }

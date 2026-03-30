@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -14,6 +15,10 @@ import java.util.UUID;
 @AllArgsConstructor
 public class OtReportResponse {
     private UUID id;
+    private Long version;
+    private UUID userId;
+    private String userName;
+    private LocalDate logDate;
     private UUID attendanceLogId;
     private UUID otRequestId;
     private UUID otSessionId;
@@ -30,6 +35,14 @@ public class OtReportResponse {
         if (report == null) return null;
         return new OtReportResponse(
                 report.getId(),
+                report.getVersion(),
+                report.getAttendanceLog() != null && report.getAttendanceLog().getUser() != null
+                        ? report.getAttendanceLog().getUser().getId()
+                        : null,
+                report.getAttendanceLog() != null && report.getAttendanceLog().getUser() != null
+                        ? (report.getAttendanceLog().getUser().getFirstName() + " " + report.getAttendanceLog().getUser().getLastName()).trim()
+                        : null,
+                report.getAttendanceLog() != null ? report.getAttendanceLog().getLogDate() : null,
                 report.getAttendanceLog() != null ? report.getAttendanceLog().getId() : null,
                 report.getOtRequest() != null ? report.getOtRequest().getId() : null,
                 report.getOtSession() != null ? report.getOtSession().getId() : null,

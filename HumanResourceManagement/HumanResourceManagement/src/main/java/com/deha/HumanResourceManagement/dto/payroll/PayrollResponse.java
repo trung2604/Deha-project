@@ -15,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PayrollResponse {
     private UUID id;
+    private Long version;
     private UUID userId;
     private String userName;
     private UUID officeId;
@@ -34,6 +35,7 @@ public class PayrollResponse {
     public static PayrollResponse fromEntity(Payroll payroll) {
         return new PayrollResponse(
                 payroll.getId(),
+                payroll.getVersion(),
                 payroll.getUser() != null ? payroll.getUser().getId() : null,
                 payroll.getUser() != null ? (payroll.getUser().getFirstName() + " " + payroll.getUser().getLastName()).trim() : null,
                 payroll.getOffice() != null ? payroll.getOffice().getId() : null,

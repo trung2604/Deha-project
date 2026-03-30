@@ -15,6 +15,8 @@ import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IPositionService;
 import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,8 @@ public class PositionService implements IPositionService {
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
     private final AccessScopeService accessScopeService;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public PositionService(
             PositionRepository positionRepository,
@@ -114,26 +118,32 @@ public class PositionService implements IPositionService {
     @Override
     @Transactional
     public PositionResponse updatePosition(UUID id, UUID departmentId, PositionRequest request) {
-        Position existingPosition = positionRepository.findById(id).orElseThrow(
+        Position current = positionRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + id));
-        UUID existingOfficeId = existingPosition.getDepartment() != null && existingPosition.getDepartment().getOffice() != null
-                ? existingPosition.getDepartment().getOffice().getId()
+//        assertExpectedVersion(request.getExpectedVersion(), existingPosition.getVersion(), "Position");
+        if (request.getExpectedVersion() == null) {
+            throw new BadRequestException("Expected version is required");
+        }
+        UUID existingOfficeId = current.getDepartment() != null && current.getDepartment().getOffice() != null
+                ? current.getDepartment().getOffice().getId()
                 : null;
         accessScopeService.assertCanManageOffice(existingOfficeId);
 
         Department department = departmentService.findDepartmentById(departmentId);
-        if (!existingPosition.belongsToDepartment(departmentId)) {
-            existingPosition.assignDepartment(department);
-        }
+        boolean movedDepartment = !current.belongsToDepartment(departmentId);
 
-        boolean nameChanged = existingPosition.isNameChanged(request.getName());
+        boolean nameChanged = current.isNameChanged(request.getName()) || movedDepartment;
         if (nameChanged && positionRepository.existsByNameInDepartment(departmentId, request.getName())) {
             throw new ResourceAlreadyExistException("Position with the same name already exists in the department.");
         }
 
-        existingPosition.rename(request.getName());
-        positionRepository.save(existingPosition);
-        return PositionResponse.fromEntity(existingPosition);
+        Position position = new Position();
+        position.setId(current.getId());
+        position.setVersion(request.getExpectedVersion());
+        position.rename(request.getName());
+        position.assignDepartment(department);
+        Position merged = mergeAndFlush(position);
+        return PositionResponse.fromEntity(merged);
     }
 
     @Override
@@ -171,6 +181,24 @@ public class PositionService implements IPositionService {
             throw new ConflictException(
                     "Cannot delete position while users are assigned to it. Reassign users first.");
         }
+    }
+
+//    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
+//        if (expectedVersion == null) {
+//            throw new BadRequestException("Expected version is required");
+//        }
+//        if (!Objects.equals(expectedVersion, currentVersion)) {
+//            throw new ConflictException(resourceName + " was modified by another user. Please refresh and retry.");
+//        }
+//    }
+
+    private Position mergeAndFlush(Position position) {
+        if (entityManager != null) {
+            Position merged = entityManager.merge(position);
+            entityManager.flush();
+            return merged;
+        }
+        return positionRepository.saveAndFlush(position);
     }
 }
 

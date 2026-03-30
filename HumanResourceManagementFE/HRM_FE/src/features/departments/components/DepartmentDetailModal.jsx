@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, Settings2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Spin } from "antd";
-import { getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
+import {
+  getOptimisticConflictMessage,
+  getResponseMessage,
+  isOptimisticConflictResponse,
+  isSuccessResponse,
+} from "@/utils/apiResponse";
 
 import departmentService from "../api/departmentService";
 import positionService from "../api/positionService";
@@ -95,12 +100,26 @@ export function DepartmentDetailModal({
     }
   };
 
-  const handleUpdatePosition = async (positionId, name) => {
+  const handleUpdatePosition = async (position, name) => {
     if (!departmentId) return;
+    if (!position?.id) return;
+    if (position?.version == null) {
+      toast.error(getOptimisticConflictMessage());
+      return;
+    }
     setSubmitting(true);
     try {
-      const res = await positionService.updateDepartmentPosition(departmentId, positionId, { name });
-      if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to update position"));
+      const res = await positionService.updateDepartmentPosition(departmentId, position.id, {
+        name,
+        expectedVersion: position.version,
+      });
+      if (!isSuccessResponse(res)) {
+        return toast.error(
+          isOptimisticConflictResponse(res)
+            ? getOptimisticConflictMessage(res)
+            : getResponseMessage(res, "Failed to update position"),
+        );
+      }
       toast.success(getResponseMessage(res, "Position updated successfully"));
       await refresh();
     } catch {

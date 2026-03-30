@@ -15,6 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class DepartmentUserItem {
     private UUID id;
+    private Long version;
     private String firstName;
     private String lastName;
     private String email;
@@ -28,6 +29,7 @@ public class DepartmentUserItem {
         if (user == null) return null;
         return new DepartmentUserItem(
                 user.getId(),
+                user.getVersion(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),

@@ -22,6 +22,9 @@ public class User {
     @UuidGenerator
     private UUID id;
 
+    @Version
+    private Long version;
+
     @Column(name = "first_name", nullable = false, length = 100)
     @NotNull(message = "First name cannot be null")
     private String firstName;

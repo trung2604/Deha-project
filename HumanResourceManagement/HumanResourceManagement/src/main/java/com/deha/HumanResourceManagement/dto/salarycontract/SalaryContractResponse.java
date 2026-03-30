@@ -15,6 +15,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class SalaryContractResponse {
     private UUID id;
+    private Long version;
     private UUID userId;
     private String userName;
     private BigDecimal baseSalary;
@@ -25,6 +26,7 @@ public class SalaryContractResponse {
     public static SalaryContractResponse fromEntity(SalaryContract contract) {
         return new SalaryContractResponse(
                 contract.getId(),
+                contract.getVersion(),
                 contract.getUser() != null ? contract.getUser().getId() : null,
                 contract.getUser() != null
                         ? (contract.getUser().getFirstName() + " " + contract.getUser().getLastName()).trim()

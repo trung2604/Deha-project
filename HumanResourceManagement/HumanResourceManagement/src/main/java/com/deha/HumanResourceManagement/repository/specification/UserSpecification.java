@@ -11,12 +11,13 @@ public class UserSpecification {
         return (root, query, cb) -> {
             if (keyword == null || keyword.isBlank()) return null;
 
-            String pattern = "%" + keyword + "%";
+            String pattern = "%" + keyword.trim().toLowerCase() + "%";
 
             return cb.or(
-                    cb.like(root.get("firstName"), pattern),
-                    cb.like(root.get("lastName"), pattern),
-                    cb.like(root.get("email"), pattern)
+                    cb.like(cb.lower(root.get("firstName").as(String.class)), pattern),
+                    cb.like(cb.lower(root.get("lastName").as(String.class)), pattern),
+                    cb.like(cb.lower(root.get("email").as(String.class)), pattern),
+                    cb.like(cb.lower(root.get("phone").as(String.class)), pattern)
             );
         };
     }

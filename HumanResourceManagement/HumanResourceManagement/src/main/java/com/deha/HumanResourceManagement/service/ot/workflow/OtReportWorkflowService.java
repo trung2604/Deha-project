@@ -42,11 +42,11 @@ public class OtReportWorkflowService {
         throw new ForbiddenException("You do not have permission to decide OT reports");
     }
 
-    public List<OtReportStatus> pendingStatusesForDepartmentManager() {
+    public List<OtReportStatus> pendingForDeptMgr() {
         return List.of(OtReportStatus.PENDING_DEPARTMENT, OtReportStatus.PENDING);
     }
 
-    public List<OtReportStatus> pendingStatusesForOfficeManager() {
+    public List<OtReportStatus> pendingForOfficeMgr() {
         return List.of(OtReportStatus.PENDING_OFFICE);
     }
 

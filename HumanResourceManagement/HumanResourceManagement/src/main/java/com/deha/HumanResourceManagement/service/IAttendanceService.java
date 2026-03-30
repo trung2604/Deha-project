@@ -13,11 +13,11 @@ public interface IAttendanceService {
 
     void checkOut(User user, List<String> clientIps);
 
-    int calculateWorkedHoursUntilDeadline(User user, LocalDate logDate, LocalTime deadlineTime);
+    int calculateHoursUntil(User user, LocalDate logDate, LocalTime deadlineTime);
 
     boolean synchronizeDerivedFields(AttendanceLog log);
 
-    int autoCheckoutOpenLogs(LocalDate date);
+    int autoCheckout(LocalDate date);
 
     AttendanceLog getTodayLogOrNull(User user);
 

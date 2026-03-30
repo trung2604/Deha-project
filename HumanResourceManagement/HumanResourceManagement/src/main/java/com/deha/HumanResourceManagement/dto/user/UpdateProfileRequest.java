@@ -17,4 +17,6 @@ public class UpdateProfileRequest {
 
     @Pattern(regexp = "^$|^[0-9]{10}$", message = "Phone must be 10 digits")
     private String phone;
+
+    private Long expectedVersion;
 }

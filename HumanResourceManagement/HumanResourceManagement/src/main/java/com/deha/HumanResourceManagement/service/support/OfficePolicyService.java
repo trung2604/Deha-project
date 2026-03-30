@@ -14,6 +14,8 @@ public class OfficePolicyService {
     private static final double DEFAULT_OT_HOLIDAY_MULTIPLIER = 3.0d;
     private static final double DEFAULT_OT_NIGHT_BONUS_MULTIPLIER = 0.3d;
     private static final LocalTime DEFAULT_LATEST_CHECKOUT_TIME = LocalTime.of(22, 0);
+    private static final LocalTime DEFAULT_NIGHT_START_TIME = LocalTime.of(22, 0);
+    private static final LocalTime DEFAULT_NIGHT_END_TIME = LocalTime.of(6, 0);
 
     public int standardWorkHours(Office office) {
         return office != null && office.getStandardWorkHours() > 0
@@ -31,6 +33,18 @@ public class OfficePolicyService {
         return office != null && office.getLatestCheckoutTime() != null
                 ? office.getLatestCheckoutTime()
                 : DEFAULT_LATEST_CHECKOUT_TIME;
+    }
+
+    public LocalTime nightStartTime(Office office) {
+        return office != null && office.getNightStartTime() != null
+                ? office.getNightStartTime()
+                : DEFAULT_NIGHT_START_TIME;
+    }
+
+    public LocalTime nightEndTime(Office office) {
+        return office != null && office.getNightEndTime() != null
+                ? office.getNightEndTime()
+                : DEFAULT_NIGHT_END_TIME;
     }
 
     public double otWeekdayMultiplier(Office office) {

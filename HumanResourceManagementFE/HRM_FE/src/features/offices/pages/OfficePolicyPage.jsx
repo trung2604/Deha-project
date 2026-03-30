@@ -2,22 +2,30 @@ import { useEffect, useState } from "react";
 import { Button, Form, Input, InputNumber } from "antd";
 import { toast } from "sonner";
 import officeService from "@/features/offices/api/officeService";
-import { getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
+import {
+  getOptimisticConflictMessage,
+  getResponseMessage,
+  isOptimisticConflictResponse,
+  isSuccessResponse,
+} from "@/utils/apiResponse";
 
-const normalizeTimeForInput = (value) => {
-  if (!value) return "22:00";
+const normalizeTimeForInput = (value, fallback = "22:00") => {
+  if (!value) return fallback;
   const text = String(value).trim();
-  return text.length >= 5 ? text.slice(0, 5) : "22:00";
+  return text.length >= 5 ? text.slice(0, 5) : fallback;
 };
 
 export function OfficePolicyPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
+    version: null,
     officeName: "",
     baseWorkHoursPerDay: 9,
     otMinHours: 1,
     latestCheckoutTime: "22:00",
+    nightStartTime: "22:00",
+    nightEndTime: "06:00",
     otWeekdayMultiplier: 1.5,
     otWeekendMultiplier: 2.0,
     otHolidayMultiplier: 3.0,
@@ -33,10 +41,13 @@ export function OfficePolicyPage() {
       }
       const data = res?.data ?? {};
       setForm({
+        version: data?.version ?? null,
         officeName: data?.officeName ?? "",
         baseWorkHoursPerDay: data?.baseWorkHoursPerDay ?? 9,
         otMinHours: data?.otMinHours ?? 1,
         latestCheckoutTime: normalizeTimeForInput(data?.latestCheckoutTime),
+        nightStartTime: normalizeTimeForInput(data?.nightStartTime, "22:00"),
+        nightEndTime: normalizeTimeForInput(data?.nightEndTime, "06:00"),
         otWeekdayMultiplier: data?.otWeekdayMultiplier ?? 1.5,
         otWeekendMultiplier: data?.otWeekendMultiplier ?? 2.0,
         otHolidayMultiplier: data?.otHolidayMultiplier ?? 3.0,
@@ -52,12 +63,19 @@ export function OfficePolicyPage() {
   }, []);
 
   const savePolicy = async () => {
+    if (form.version == null) {
+      toast.error(getOptimisticConflictMessage());
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
+        expectedVersion: form.version,
         baseWorkHoursPerDay: Number(form.baseWorkHoursPerDay),
         otMinHours: Number(form.otMinHours),
         latestCheckoutTime: normalizeTimeForInput(form.latestCheckoutTime),
+        nightStartTime: normalizeTimeForInput(form.nightStartTime, "22:00"),
+        nightEndTime: normalizeTimeForInput(form.nightEndTime, "06:00"),
         otWeekdayMultiplier: Number(form.otWeekdayMultiplier),
         otWeekendMultiplier: Number(form.otWeekendMultiplier),
         otHolidayMultiplier: Number(form.otHolidayMultiplier),
@@ -65,7 +83,11 @@ export function OfficePolicyPage() {
       };
       const res = await officeService.updateMyOfficePolicy(payload);
       if (!isSuccessResponse(res)) {
-        return toast.error(getResponseMessage(res, "Failed to update office policy"));
+        return toast.error(
+          isOptimisticConflictResponse(res)
+            ? getOptimisticConflictMessage(res)
+            : getResponseMessage(res, "Failed to update office policy"),
+        );
       }
       toast.success(getResponseMessage(res, "Office policy updated successfully"));
       await loadPolicy();
@@ -112,6 +134,22 @@ export function OfficePolicyPage() {
                 onChange={(e) => setForm((p) => ({ ...p, latestCheckoutTime: e.target.value }))}
               />
             </Form.Item>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Form.Item label="Night OT start time" required>
+                <Input
+                  type="time"
+                  value={form.nightStartTime}
+                  onChange={(e) => setForm((p) => ({ ...p, nightStartTime: e.target.value }))}
+                />
+              </Form.Item>
+              <Form.Item label="Night OT end time" required>
+                <Input
+                  type="time"
+                  value={form.nightEndTime}
+                  onChange={(e) => setForm((p) => ({ ...p, nightEndTime: e.target.value }))}
+                />
+              </Form.Item>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Form.Item label="OT weekday multiplier" required>
                 <InputNumber

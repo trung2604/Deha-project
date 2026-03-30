@@ -12,6 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class PositionResponse {
     private UUID id;
+    private Long version;
     private String name;
     private UUID departmentId;
     private String departmentName;
@@ -22,6 +23,7 @@ public class PositionResponse {
         if (position == null) return null;
         return new PositionResponse(
                 position.getId(),
+                position.getVersion(),
                 position.getName(),
                 position.getDepartment() != null ? position.getDepartment().getId() : null,
                 position.getDepartment() != null ? position.getDepartment().getName() : null,

@@ -11,13 +11,17 @@ import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.exception.UnauthorizedException;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.utils.JwtUtil;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -26,6 +30,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
@@ -74,18 +80,22 @@ public class AuthService {
             throw new UnauthorizedException("Missing refresh token");
         }
 
-        String tokenType = extractTokenTypeOrThrow(refreshToken, "Invalid or expired refresh token");
-        if (!"refresh".equals(tokenType)) {
+        UUID userId;
+        try {
+            userId = jwtUtil.validateAndGetUserId(refreshToken);
+        } catch (Exception e) {
+            clearRefreshCookie(response);
+            throw new UnauthorizedException("Invalid or expired refresh token");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (!user.isActive()) {
             clearRefreshCookie(response);
             throw new UnauthorizedException("Invalid refresh token");
         }
 
-        String email = extractUsernameOrThrow(refreshToken, "Invalid or expired refresh token");
-        User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null || !user.isActive()) {
-            clearRefreshCookie(response);
-            throw new UnauthorizedException("Invalid refresh token");
-        }
+        jwtUtil.deleteToken(refreshToken);
 
         String newAccessToken = jwtUtil.generateToken(user.getEmail());
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getEmail());
@@ -93,6 +103,7 @@ public class AuthService {
         return new LoginResponse(newAccessToken, user.getId(), user.getEmail(), user.getRole());
     }
 
+    @Transactional
     public UserResponse updateProfile(String authorizationHeader, UpdateProfileRequest request) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
             throw new UnauthorizedException("Missing or invalid Authorization header");
@@ -103,21 +114,57 @@ public class AuthService {
             throw new UnauthorizedException("Invalid token type");
         }
         String email = extractUsernameOrThrow(token, "Invalid or expired token");
-        User user = userRepository.findByEmail(email)
+        User current = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+//        assertExpectedVersion(request.getExpectedVersion(), user.getVersion(), "User profile");
+        if (request.getExpectedVersion() == null) {
+            throw new BadRequestException("Expected version is required");
+        }
+
+        User user = new User();
+        user.setId(current.getId());
+        user.setVersion(request.getExpectedVersion());
+        user.setEmail(current.getEmail());
+        user.setPassword(current.getPassword());
+        user.setRole(current.getRole());
+        user.setActive(current.isActive());
+        user.setCreatedAt(current.getCreatedAt());
+        user.setOffice(current.getOffice());
+        user.setDepartment(current.getDepartment());
+        user.setPosition(current.getPosition());
         user.setFirstName(request.getFirstName().trim());
         user.setLastName(request.getLastName().trim());
         String normalizedPhone = request.getPhone() != null ? request.getPhone().trim() : "";
         user.setPhone(normalizedPhone.isEmpty() ? null : normalizedPhone);
-        userRepository.save(user);
-        return UserResponse.fromEntity(user);
+        User merged = mergeAndFlush(user);
+        return UserResponse.fromEntity(merged);
     }
 
-    public void logout(HttpServletResponse response) {
+//    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
+//        if (expectedVersion == null) {
+//            throw new BadRequestException("Expected version is required");
+//        }
+//        if (!Objects.equals(expectedVersion, currentVersion)) {
+//            throw new ConflictException(resourceName + " was modified by another user. Please refresh and retry.");
+//        }
+//    }
+
+    private User mergeAndFlush(User user) {
+        if (entityManager != null) {
+            User merged = entityManager.merge(user);
+            entityManager.flush();
+            return merged;
+        }
+        return userRepository.saveAndFlush(user);
+    }
+
+    public void logout(String refreshToken, HttpServletResponse response) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            jwtUtil.deleteToken(refreshToken);  // xóa khỏi Redis
+        }
         clearRefreshCookie(response);
     }
-
     private String extractUsernameOrThrow(String token, String errorMessage) {
         try {
             return jwtUtil.extractUsername(token);

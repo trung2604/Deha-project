@@ -7,6 +7,7 @@ import com.deha.HumanResourceManagement.dto.department.DepartmentResponse;
 import com.deha.HumanResourceManagement.entity.Department;
 import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.User;
+import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
@@ -18,6 +19,7 @@ import com.deha.HumanResourceManagement.repository.specification.DepartmentSpeci
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IOfficeService;
 import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -33,19 +35,21 @@ public class DepartmentService implements IDepartmentService {
     private final UserRepository userRepository;
     private final IOfficeService officeService;
     private final AccessScopeService accessScopeService;
+    private final EntityManager entityManager;
 
     public DepartmentService(
             DepartmentRepository departmentRepository,
             PositionRepository positionRepository,
             UserRepository userRepository,
             IOfficeService officeService,
-            AccessScopeService accessScopeService
+            AccessScopeService accessScopeService, EntityManager entityManager
     ) {
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.userRepository = userRepository;
         this.officeService = officeService;
         this.accessScopeService = accessScopeService;
+        this.entityManager = entityManager;
     }
 
     @Override
@@ -62,23 +66,51 @@ public class DepartmentService implements IDepartmentService {
         return DepartmentResponse.fromEntity(department);
     }
 
-    @Override
-    public DepartmentResponse updateDepartment(UUID id, DepartmentRequest departmentRequest){
-        Department department = departmentRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Department not found with id: " + id));
-        Office office = officeService.findById(departmentRequest.getOfficeId());
-        accessScopeService.assertCanManageOffice(office.getId());
-        boolean changedOffice = department.getOffice() == null || !department.getOffice().getId().equals(office.getId());
-        boolean changedName = department.getName() == null || !department.getName().equalsIgnoreCase(departmentRequest.getName());
-        if ((changedOffice || changedName)
-                && departmentRepository.existsByNameIgnoreCaseAndOffice_Id(departmentRequest.getName(), office.getId())) {
-            throw new ResourceAlreadyExistException("Department with the same name already exists.");
-        }
-        department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
-        department.assignOffice(office);
-        departmentRepository.save(department);
-        return DepartmentResponse.fromEntity(department);
+//    @Override
+//    @Transactional
+//    public DepartmentResponse updateDepartment(UUID id, DepartmentRequest departmentRequest){
+//        Department department = departmentRepository.findById(id).orElseThrow(
+//                () -> new ResourceNotFoundException("Department not found with id: " + id));
+//        assertExpectedVersion(departmentRequest.getExpectedVersion(), department.getVersion(), "Department");
+//        Office office = officeService.findById(departmentRequest.getOfficeId());
+//        accessScopeService.assertCanManageOffice(office.getId());
+//        boolean changedOffice = department.getOffice() == null || !department.getOffice().getId().equals(office.getId());
+//        boolean changedName = department.getName() == null || !department.getName().equalsIgnoreCase(departmentRequest.getName());
+//        if ((changedOffice || changedName)
+//                && departmentRepository.existsByNameIgnoreCaseAndOffice_Id(departmentRequest.getName(), office.getId())) {
+//            throw new ResourceAlreadyExistException("Department with the same name already exists.");
+//        }
+//        department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
+//        department.assignOffice(office);
+//        departmentRepository.saveAndFlush(department);
+//        return DepartmentResponse.fromEntity(department);
+//    }
+@Override
+@Transactional
+public DepartmentResponse updateDepartment(UUID id, DepartmentRequest departmentRequest) {
+    if (departmentRequest.getExpectedVersion() == null) {
+        throw new BadRequestException("Expected version is required");
     }
+    Department department = new Department();
+    department.setId(id);
+    department.setVersion(departmentRequest.getExpectedVersion());
+    Office office = officeService.findById(departmentRequest.getOfficeId());
+    accessScopeService.assertCanManageOffice(office.getId());
+    department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
+    department.assignOffice(office);
+    Department merged = entityManager.merge(department);
+    entityManager.flush();
+    return DepartmentResponse.fromEntity(merged);
+}
+
+//    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
+//        if (expectedVersion == null) {
+//            throw new BadRequestException("Expected version is required");
+//        }
+//        if (!Objects.equals(expectedVersion, currentVersion)) {
+//            throw new ConflictException(resourceName + " was modified by another user. Please refresh and retry.");
+//        }
+//    }
 
     @Override
     @Transactional

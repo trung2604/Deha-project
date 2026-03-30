@@ -14,7 +14,7 @@ public interface IOtRequestService {
 
     List<OtRequestResponse> listMy();
 
-    List<OtRequestResponse> listPendingForApproverScope();
+    List<OtRequestResponse> listPendingForScope();
 
     List<OtRequestResponse> listByApprovalScope();
 }

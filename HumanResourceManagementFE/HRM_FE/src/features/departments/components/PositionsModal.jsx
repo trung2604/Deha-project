@@ -199,7 +199,7 @@ export function PositionsModal({
                               onClick={() => {
                                 const trimmed = editingName.trim();
                                 if (!trimmed) return;
-                                Promise.resolve(onUpdate?.(p.id, trimmed)).then(() => {
+                                Promise.resolve(onUpdate?.(p, trimmed)).then(() => {
                                   setEditingId(null);
                                   setEditingName("");
                                 });

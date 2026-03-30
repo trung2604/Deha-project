@@ -61,7 +61,7 @@ public class AttendanceService implements IAttendanceService {
         if (office == null)
             throw new BadRequestException("User not assigned to any office");
 
-        String matchedIp = validateIpAndGetMatched(office, clientIps);
+        String matchedIp = matchAllowedIp(office, clientIps);
 
         if (attendanceLogRepo.existsByUserAndLogDate(user, LocalDate.now()))
             throw new BadRequestException("Already checked in today");
@@ -82,7 +82,7 @@ public class AttendanceService implements IAttendanceService {
                 .findByUserAndLogDateAndCheckOutTimeIsNull(user, LocalDate.now())
                 .orElseThrow(() -> new BadRequestException("No check-in record found for today"));
 
-        validateIpAndGetMatched(log.getOffice(), clientIps);
+        matchAllowedIp(log.getOffice(), clientIps);
         if (log.getCheckInTime() == null) {
             throw new BadRequestException("Not checked in yet");
         }
@@ -114,7 +114,7 @@ public class AttendanceService implements IAttendanceService {
 
     @Override
     @Transactional(readOnly = true)
-    public int calculateWorkedHoursUntilDeadline(User user, LocalDate logDate, LocalTime deadlineTime) {
+    public int calculateHoursUntil(User user, LocalDate logDate, LocalTime deadlineTime) {
         if (user == null || logDate == null || deadlineTime == null) {
             return 0;
         }
@@ -149,7 +149,7 @@ public class AttendanceService implements IAttendanceService {
 
         boolean changed = !Objects.equals(log.getWorkedHours(), newWorkedHours)
                 || !Objects.equals(log.getOtHours(), newOtHours)
-                || (newOtHours > 0 && log.getOtType() != otTypeResolver.resolve(log.getLogDate(), log.getCheckOutTime().toLocalTime()))
+                || (newOtHours > 0 && log.getOtType() != otTypeResolver.resolve(log.getLogDate(), log.getCheckOutTime().toLocalTime(), log.getOffice()))
                 || (newOtHours == 0 && log.getOtType() != null);
 
         if (!changed) {
@@ -159,7 +159,7 @@ public class AttendanceService implements IAttendanceService {
         log.setWorkedHours(newWorkedHours);
         log.setOtHours(newOtHours);
         if (newOtHours > 0) {
-            log.setOtType(otTypeResolver.resolve(log.getLogDate(), log.getCheckOutTime().toLocalTime()));
+            log.setOtType(otTypeResolver.resolve(log.getLogDate(), log.getCheckOutTime().toLocalTime(), log.getOffice()));
         } else {
             log.setOtType(null);
         }
@@ -168,7 +168,7 @@ public class AttendanceService implements IAttendanceService {
 
     @Override
     @Transactional
-    public int autoCheckoutOpenLogs(LocalDate date) {
+    public int autoCheckout(LocalDate date) {
         List<AttendanceLog> openLogs = attendanceLogRepo.findByLogDateAndCheckOutTimeIsNull(date);
         if (openLogs.isEmpty()) return 0;
         LocalDateTime now = LocalDateTime.now();
@@ -223,10 +223,10 @@ public class AttendanceService implements IAttendanceService {
     @Override
     @Transactional(readOnly = true)
     public void validateOfficeIpAccess(Office office, List<String> clientIps) {
-        validateIpAndGetMatched(office, clientIps);
+        matchAllowedIp(office, clientIps);
     }
 
-    private String validateIpAndGetMatched(Office office, List<String> clientIps) {
+    private String matchAllowedIp(Office office, List<String> clientIps) {
         Set<String> candidateIps = (clientIps == null ? List.<String>of() : clientIps).stream()
                 .map(this::normalizeIp)
                 .filter(s -> !s.isBlank())

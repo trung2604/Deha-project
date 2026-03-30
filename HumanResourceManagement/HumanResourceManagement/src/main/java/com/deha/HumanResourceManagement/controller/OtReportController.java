@@ -35,8 +35,8 @@ public class OtReportController extends ApiControllerSupport {
     }
 
     @GetMapping("/pending")
-    public ApiResponse listPendingForApproverScope() {
-        return success("Pending OT reports retrieved successfully", HttpStatus.OK, otReportService.listPendingForApproverScope());
+    public ApiResponse listPendingForScope() {
+        return success("Pending OT reports retrieved successfully", HttpStatus.OK, otReportService.listPendingForScope());
     }
 
     @PatchMapping("/{id}/decision")
