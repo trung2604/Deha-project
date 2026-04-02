@@ -42,12 +42,12 @@ public class PayrollCalculator {
                 .count();
     }
 
-    public int sumOtHours(List<AttendanceLog> logs) {
-        if (logs == null || logs.isEmpty()) return 0;
-        return logs.stream()
-                .mapToInt(l -> l.getOtHours() == null ? 0 : l.getOtHours())
-                .sum();
-    }
+//    public int sumOtHours(List<AttendanceLog> logs) {
+//        if (logs == null || logs.isEmpty()) return 0;
+//        return logs.stream()
+//                .mapToInt(l -> l.getOtHours() == null ? 0 : l.getOtHours())
+//                .sum();
+//    }
 
     public int sumRegularHours(List<AttendanceLog> logs) {
         if (logs == null || logs.isEmpty()) return 0;
@@ -65,9 +65,9 @@ public class PayrollCalculator {
         return hourlyRate.multiply(BigDecimal.valueOf(regularHours)).setScale(2, RoundingMode.HALF_UP);
     }
 
-    public BigDecimal calculateOtPay(List<AttendanceLog> logs, BigDecimal baseSalary, int workingDaysInMonth, int standardWorkHours) {
-        return calculateOtPayFromAttendanceLogs(logs, baseSalary, workingDaysInMonth, standardWorkHours, 1.5d, 2.0d, 3.0d, 0.3d);
-    }
+//    public BigDecimal calculateOtPay(List<AttendanceLog> logs, BigDecimal baseSalary, int workingDaysInMonth, int standardWorkHours) {
+//        return calculateOtPayFromAttendanceLogs(logs, baseSalary, workingDaysInMonth, standardWorkHours, 1.5d, 2.0d, 3.0d, 0.3d);
+//    }
 
     public BigDecimal calculateOtPayFromAttendanceLogs(
             List<AttendanceLog> logs,

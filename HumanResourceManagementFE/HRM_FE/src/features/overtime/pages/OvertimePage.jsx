@@ -39,6 +39,11 @@ function formatClockDate(dateValue) {
   });
 }
 
+const compactAlertStyle = {
+  paddingTop: 6,
+  paddingBottom: 6,
+};
+
 export function OvertimePage() {
   const { user } = useAuth();
   const canManageOvertimeApprovals = isManagerRole(user?.role) || isAdminRole(user?.role);
@@ -57,7 +62,7 @@ export function OvertimePage() {
   const [overtimeReports, setOvertimeReports] = useState([]);
   const [todayOvertimeSession, setTodayOvertimeSession] = useState(null);
   const [approvalScopeOvertimeRequests, setApprovalScopeOvertimeRequests] = useState([]);
-  const [approvalQueueOvertimeReports, setApprovalQueueOvertimeReports] = useState([]);
+  const [approvalScopeOvertimeReports, setApprovalScopeOvertimeReports] = useState([]);
 
   // Modals
   const [isOvertimeRequestModalOpen, setIsOvertimeRequestModalOpen] = useState(false);
@@ -84,7 +89,8 @@ export function OvertimePage() {
     try {
       const res = await attendanceService.getToday();
       if (!isSuccessResponse(res)) {
-        throw new Error(getResponseMessage(res, "Failed to load attendance"));
+        setTodayLog(null);
+        return;
       }
       setTodayLog(res?.data ?? null);
     } catch {
@@ -106,13 +112,13 @@ export function OvertimePage() {
         myOvertimeRequestsResponse,
         myOvertimeReportsResponse,
         approvalScopeOvertimeRequestsResponse,
-        pendingOvertimeReportsResponse,
+        approvalScopeOvertimeReportsResponse,
         todayOvertimeSessionResponse,
       ] = await Promise.all([
         canCreateOvertime ? overtimeService.getMyOvertimeRequests() : Promise.resolve({ data: [] }),
         canCreateOvertime ? overtimeService.getMyOvertimeReports() : Promise.resolve({ data: [] }),
         canManageOvertimeApprovals ? overtimeService.getOvertimeRequestsByApprovalScope() : Promise.resolve({ data: [] }),
-        canManageOvertimeApprovals ? overtimeService.getPendingOvertimeReports() : Promise.resolve({ data: [] }),
+        canManageOvertimeApprovals ? overtimeService.getOvertimeReportsByApprovalScope() : Promise.resolve({ data: [] }),
         canCreateOvertime ? overtimeService.getTodayOvertimeSession() : Promise.resolve({ data: null }),
       ]);
 
@@ -134,9 +140,9 @@ export function OvertimePage() {
           : []
       );
 
-      setApprovalQueueOvertimeReports(
-        canManageOvertimeApprovals && isSuccessResponse(pendingOvertimeReportsResponse) && Array.isArray(pendingOvertimeReportsResponse?.data)
-          ? pendingOvertimeReportsResponse.data
+      setApprovalScopeOvertimeReports(
+        canManageOvertimeApprovals && isSuccessResponse(approvalScopeOvertimeReportsResponse) && Array.isArray(approvalScopeOvertimeReportsResponse?.data)
+          ? approvalScopeOvertimeReportsResponse.data
           : []
       );
 
@@ -202,8 +208,7 @@ export function OvertimePage() {
   const hasReachedMinimumOtDuration = otElapsedSeconds >= minimumOtSeconds;
   const remainingOtSeconds = Math.max(0, minimumOtSeconds - otElapsedSeconds);
   const remainingOtTimeText = useMemo(() => formatDurationFromSeconds(remainingOtSeconds), [remainingOtSeconds]);
-  const eligibleOtHours = useMemo(() => Math.max(0, Math.floor(otElapsedSeconds / 3600)), [otElapsedSeconds]);
-  const autoReportedOtHours = eligibleOtHours;
+  const autoReportedOtHours = useMemo(() => Math.max(0, Math.floor(otElapsedSeconds / 3600)), [otElapsedSeconds]);
   const canCheckOutOvertimeSession = isOvertimeSessionCheckedIn && hasReachedMinimumOtDuration && !hasInvalidOtTimeline;
 
   const myPendingRequestCount = useMemo(
@@ -217,8 +222,8 @@ export function OvertimePage() {
   const approvalPendingCount = useMemo(
     () =>
       approvalScopeOvertimeRequests.filter((r) => isPendingStatus(r?.status)).length +
-      approvalQueueOvertimeReports.filter((r) => isPendingStatus(r?.status)).length,
-    [approvalScopeOvertimeRequests, approvalQueueOvertimeReports],
+      approvalScopeOvertimeReports.filter((r) => isPendingStatus(r?.status)).length,
+    [approvalScopeOvertimeRequests, approvalScopeOvertimeReports],
   );
   const approvedOtHours = useMemo(
     () =>
@@ -361,7 +366,7 @@ export function OvertimePage() {
     <div className="space-y-6">
       <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8E8E8", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
         <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#0A0A0A", marginBottom: "8px" }}>Overtime Center</h1>
-        <p style={{ fontSize: "14px", color: "#595959", margin: 0 }}>Submit requests, clock OT session, and track approvals in one place.</p>
+        <p style={{ fontSize: "14px", color: "#595959", margin: 0 }}>Submit requests, clock OT session, and review approval scope in one place.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mt-4">
           <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
@@ -388,23 +393,23 @@ export function OvertimePage() {
           <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
             <div className="flex items-center gap-2" style={{ color: "#595959", fontSize: "12px", fontWeight: 700 }}>
               <CheckCircle2 className="w-4 h-4" />
-              Queue For Approval
+              Pending In Scope
             </div>
             <div style={{ fontSize: "24px", fontWeight: 700, color: "#0A0A0A", marginTop: 6 }}>{canManageOvertimeApprovals ? approvalPendingCount : 0}</div>
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4" >
           {!hasTodayAttendanceLog ? (
-            <Alert type="warning" showIcon message="You need to check-in attendance today before submitting OT report." />
+            <Alert style={compactAlertStyle} type="warning" showIcon description="You need to check-in attendance today before submitting OT report." />
           ) : !hasApprovedOvertimeRequestForToday ? (
-            <Alert type="info" showIcon message="Step 1: Create and wait for an approved OT request for today." />
+            <Alert style={compactAlertStyle} type="info" showIcon description="Step 1: Create and wait for an approved OT request for today." />
           ) : isOvertimeSessionCheckedOut ? (
-            <Alert type="success" showIcon message="OT session completed today. You can submit or review your OT report." />
+            <Alert style={compactAlertStyle} type="success" showIcon description="OT session completed today. You can submit or review your OT report." />
           ) : isOvertimeSessionCheckedIn ? (
-            <Alert type="success" showIcon message="OT session is active. Check-out after completing overtime work." />
+            <Alert style={compactAlertStyle} type="success" showIcon description="OT session is active. Check-out after completing overtime work." />
           ) : (
-            <Alert type="info" showIcon message="Your request is approved. Continue with OT check-in." />
+            <Alert style={compactAlertStyle} type="info" showIcon description="Your request is approved. Continue with OT check-in." />
           )}
         </div>
       </div>
@@ -430,7 +435,7 @@ export function OvertimePage() {
         myOvertimeRequests={overtimeRequests}
         myOvertimeReports={overtimeReports}
         approvalScopeOvertimeRequests={approvalScopeOvertimeRequests}
-        approvalQueueOvertimeReports={approvalQueueOvertimeReports}
+        approvalScopeOvertimeReports={approvalScopeOvertimeReports}
         myOvertimeRequestStatusFilter={myOvertimeRequestStatusFilter}
         setMyOvertimeRequestStatusFilter={setMyOvertimeRequestStatusFilter}
         myOvertimeReportStatusFilter={myOvertimeReportStatusFilter}

@@ -27,6 +27,10 @@ const overtimeService = {
     return axios.get("/ot-reports/pending");
   },
 
+  getOvertimeReportsByApprovalScope: async () => {
+    return axios.get("/ot-reports");
+  },
+
   createOvertimeReport: async (data) => {
     return axios.post("/ot-reports", data);
   },

@@ -1,6 +1,7 @@
 package com.deha.HumanResourceManagement.repository;
 
 import com.deha.HumanResourceManagement.entity.Position;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -12,6 +13,7 @@ import java.util.UUID;
 public interface PositionRepository extends JpaRepository<Position, UUID> {
     boolean existsByName(String name);
 
+    @EntityGraph
     @Query("SELECT p FROM Position p WHERE p.department.id = :departmentId")
     List<Position> findAllByDepartmentId(UUID departmentId);
 
