@@ -16,6 +16,9 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,14 +31,14 @@ public class AuthService {
     private static final String REFRESH_COOKIE_NAME = "refresh_token";
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     @PersistenceContext
     private EntityManager entityManager;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
     }
 
@@ -45,10 +48,14 @@ public class AuthService {
             throw new BadRequestException("Email and password are required");
         }
 
-        User user = userRepository.findByEmail(request.getEmail().trim()).orElse(null);
-        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new UnauthorizedException("Invalid email or password");
-        }
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        request.getEmail(),
+                        request.getPassword()
+                )
+        );
+
+        User user = (User) authentication.getPrincipal();
         if (!user.isActive()) {
             throw new ForbiddenException("Account is inactive");
         }
@@ -137,8 +144,8 @@ public class AuthService {
         user.setLastName(request.getLastName().trim());
         String normalizedPhone = request.getPhone() != null ? request.getPhone().trim() : "";
         user.setPhone(normalizedPhone.isEmpty() ? null : normalizedPhone);
-        User merged = mergeAndFlush(user);
-        return UserResponse.fromEntity(merged);
+        userRepository.saveAndFlush(user);
+        return UserResponse.fromEntity(user);
     }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
@@ -150,14 +157,14 @@ public class AuthService {
 //        }
 //    }
 
-    private User mergeAndFlush(User user) {
-        if (entityManager != null) {
-            User merged = entityManager.merge(user);
-            entityManager.flush();
-            return merged;
-        }
-        return userRepository.saveAndFlush(user);
-    }
+//    private User mergeAndFlush(User user) {
+//        if (entityManager != null) {
+//            User merged = entityManager.merge(user);
+//            entityManager.flush();
+//            return merged;
+//        }
+//        return userRepository.saveAndFlush(user);
+//    }
 
     public void logout(String refreshToken, HttpServletResponse response) {
         if (refreshToken != null && !refreshToken.isBlank()) {

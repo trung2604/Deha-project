@@ -1,4 +1,5 @@
-import { Alert, Button, Select, Table, Tag } from "antd";
+import { useMemo, useState } from "react";
+import { Alert, Button, Input, Select, Table, Tag } from "antd";
 import { Clock, Plus, CheckCircle, FileText } from "lucide-react";
 import {
   getOtStatusMeta,
@@ -11,6 +12,22 @@ function renderOvertimeStatusTag(status) {
   const meta = getOtStatusMeta(status);
   return <Tag color={meta.color}>{meta.label}</Tag>;
 }
+
+function containsKeyword(record, keyword, fields) {
+  const normalizedKeyword = String(keyword || "").trim().toLowerCase();
+  if (!normalizedKeyword) return true;
+  const text = fields
+    .map((field) => record?.[field])
+    .filter((value) => value !== null && value !== undefined)
+    .join(" ")
+    .toLowerCase();
+  return text.includes(normalizedKeyword);
+}
+
+const compactAlertStyle = {
+  paddingTop: 6,
+  paddingBottom: 6,
+};
 
 export function OvertimeSection({
   canCreateOvertime,
@@ -33,7 +50,7 @@ export function OvertimeSection({
   myOvertimeRequests,
   myOvertimeReports,
   approvalScopeOvertimeRequests,
-  approvalQueueOvertimeReports,
+  approvalScopeOvertimeReports,
   myOvertimeRequestStatusFilter,
   setMyOvertimeRequestStatusFilter,
   myOvertimeReportStatusFilter,
@@ -52,21 +69,30 @@ export function OvertimeSection({
   onApproveReport,
   onRejectReport,
 }) {
-  const filteredMyOvertimeRequests = myOvertimeRequests.filter((r) =>
-    myOvertimeRequestStatusFilter === OT_FILTER_ALL ? true : r.status === myOvertimeRequestStatusFilter
-  );
+  const [myRequestKeyword, setMyRequestKeyword] = useState("");
+  const [myReportKeyword, setMyReportKeyword] = useState("");
+  const [pendingRequestKeyword, setPendingRequestKeyword] = useState("");
+  const [pendingReportKeyword, setPendingReportKeyword] = useState("");
 
-  const filteredMyOvertimeReports = myOvertimeReports.filter((r) =>
-    myOvertimeReportStatusFilter === OT_FILTER_ALL ? true : r.status === myOvertimeReportStatusFilter
-  );
+  const filteredMyOvertimeRequests = useMemo(() => myOvertimeRequests.filter((r) => {
+    const statusMatched = myOvertimeRequestStatusFilter === OT_FILTER_ALL ? true : r.status === myOvertimeRequestStatusFilter;
+    return statusMatched && containsKeyword(r, myRequestKeyword, ["logDate", "reason", "status"]);
+  }), [myOvertimeRequests, myOvertimeRequestStatusFilter, myRequestKeyword]);
 
-  const filteredApprovalScopeOvertimeRequests = approvalScopeOvertimeRequests.filter((r) =>
-    pendingOvertimeRequestStatusFilter === OT_FILTER_ALL ? true : r.status === pendingOvertimeRequestStatusFilter
-  );
+  const filteredMyOvertimeReports = useMemo(() => myOvertimeReports.filter((r) => {
+    const statusMatched = myOvertimeReportStatusFilter === OT_FILTER_ALL ? true : r.status === myOvertimeReportStatusFilter;
+    return statusMatched && containsKeyword(r, myReportKeyword, ["logDate", "reportNote", "status", "reportedOtHours"]);
+  }), [myOvertimeReports, myOvertimeReportStatusFilter, myReportKeyword]);
 
-  const filteredApprovalQueueOvertimeReports = approvalQueueOvertimeReports.filter((r) =>
-    pendingOvertimeReportStatusFilter === OT_FILTER_ALL ? true : r.status === pendingOvertimeReportStatusFilter
-  );
+  const filteredApprovalScopeOvertimeRequests = useMemo(() => approvalScopeOvertimeRequests.filter((r) => {
+    const statusMatched = pendingOvertimeRequestStatusFilter === OT_FILTER_ALL ? true : r.status === pendingOvertimeRequestStatusFilter;
+    return statusMatched && containsKeyword(r, pendingRequestKeyword, ["userName", "logDate", "reason", "status"]);
+  }), [approvalScopeOvertimeRequests, pendingOvertimeRequestStatusFilter, pendingRequestKeyword]);
+
+  const filteredApprovalScopeOvertimeReports = useMemo(() => approvalScopeOvertimeReports.filter((r) => {
+    const statusMatched = pendingOvertimeReportStatusFilter === OT_FILTER_ALL ? true : r.status === pendingOvertimeReportStatusFilter;
+    return statusMatched && containsKeyword(r, pendingReportKeyword, ["userName", "logDate", "reportNote", "status", "reportedOtHours"]);
+  }), [approvalScopeOvertimeReports, pendingOvertimeReportStatusFilter, pendingReportKeyword]);
 
   const overtimeActionHint = !hasApprovedOvertimeRequestForToday
     ? "You need an approved OT request before OT check-in."
@@ -109,7 +135,12 @@ export function OvertimeSection({
 
         <div className="section-content space-y-5" >
           {!hasTodayAttendanceLog && (
-            <Alert style={{ marginBottom: "16px" }} type="warning" showIcon message="Please check in attendance for today before submitting OT report." />
+            <Alert
+              style={{ ...compactAlertStyle, marginBottom: "16px" }}
+              type="warning"
+              showIcon
+              description="Please check in attendance for today before submitting OT report."
+            />
           )}
 
           {/* OT Session Controls */}
@@ -119,8 +150,8 @@ export function OvertimeSection({
               <Alert
                 type="warning"
                 showIcon
-                style={{ marginBottom: 12 }}
-                message="OT session time data looks invalid. Please refresh or contact admin."
+                style={{ ...compactAlertStyle, marginBottom: 12 }}
+                description="OT session time data looks invalid. Please refresh or contact admin."
               />
             )}
             <div className="flex items-center gap-3 flex-wrap">
@@ -213,6 +244,13 @@ export function OvertimeSection({
                 options={OT_STATUS_FILTER_OPTIONS}
                 size="middle"
               />
+              <Input
+                allowClear
+                placeholder="Search date/reason/status"
+                value={myRequestKeyword}
+                onChange={(event) => setMyRequestKeyword(event.target.value)}
+                style={{ width: 280, marginBottom: 14, marginLeft: 8 }}
+              />
               <Table
                 rowKey={(r) => r.id}
                 loading={loading}
@@ -220,9 +258,22 @@ export function OvertimeSection({
                 size="middle"
                 pagination={{ pageSize: 5 }}
                 columns={[
-                  { title: "Date", dataIndex: "logDate", key: "logDate", width: 100 },
+                  {
+                    title: "Date",
+                    dataIndex: "logDate",
+                    key: "logDate",
+                    width: 100,
+                    sorter: (a, b) => String(a?.logDate || "").localeCompare(String(b?.logDate || "")),
+                    defaultSortOrder: "descend",
+                  },
                   { title: "Reason", dataIndex: "reason", key: "reason", ellipsis: true },
-                  { title: "Status", key: "status", width: 120, render: (_, r) => renderOvertimeStatusTag(r.status) },
+                  {
+                    title: "Status",
+                    key: "status",
+                    width: 120,
+                    sorter: (a, b) => String(a?.status || "").localeCompare(String(b?.status || "")),
+                    render: (_, r) => renderOvertimeStatusTag(r.status),
+                  },
                 ]}
                 locale={{ emptyText: "No OT requests yet." }}
               />
@@ -242,6 +293,13 @@ export function OvertimeSection({
                 options={OT_STATUS_FILTER_OPTIONS}
                 size="middle"
               />
+              <Input
+                allowClear
+                placeholder="Search date/note/status"
+                value={myReportKeyword}
+                onChange={(event) => setMyReportKeyword(event.target.value)}
+                style={{ width: 280, marginBottom: 14, marginLeft: 8 }}
+              />
               <Table
                 rowKey={(r) => r.id}
                 loading={loading}
@@ -249,22 +307,42 @@ export function OvertimeSection({
                 size="middle"
                 pagination={{ pageSize: 5 }}
                 columns={[
-                  { title: "Date", dataIndex: "logDate", key: "logDate", width: 110 },
-                  { title: "OT Hours", dataIndex: "reportedOtHours", key: "reportedOtHours", width: 100, render: (v) => `${v ?? 0}h` },
+                  {
+                    title: "Date",
+                    dataIndex: "logDate",
+                    key: "logDate",
+                    width: 110,
+                    sorter: (a, b) => String(a?.logDate || "").localeCompare(String(b?.logDate || "")),
+                    defaultSortOrder: "descend",
+                  },
+                  {
+                    title: "OT Hours",
+                    dataIndex: "reportedOtHours",
+                    key: "reportedOtHours",
+                    width: 100,
+                    sorter: (a, b) => Number(a?.reportedOtHours || 0) - Number(b?.reportedOtHours || 0),
+                    render: (v) => `${v ?? 0}h`,
+                  },
                   { title: "Note", dataIndex: "reportNote", key: "reportNote", ellipsis: true },
-                  { title: "Status", key: "status", width: 120, render: (_, r) => renderOvertimeStatusTag(r.status) },
+                  {
+                    title: "Status",
+                    key: "status",
+                    width: 120,
+                    sorter: (a, b) => String(a?.status || "").localeCompare(String(b?.status || "")),
+                    render: (_, r) => renderOvertimeStatusTag(r.status),
+                  },
                 ]}
                 locale={{ emptyText: "No OT reports yet." }}
               />
             </div>
           )}
 
-          {/* Approval Queues */}
+          {/* Approval Scope */}
           {canManageOvertimeApprovals && (
             <>
               <div className="rounded-xl p-5" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
                 <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#0a0a0a", marginBottom: "12px", textTransform: "uppercase" }}>
-                  Pending OT Requests (Approval)
+                  OT Requests (Approval Scope)
                 </h4>
                 <Select
                   value={pendingOvertimeRequestStatusFilter}
@@ -273,6 +351,13 @@ export function OvertimeSection({
                     options={OT_STATUS_FILTER_OPTIONS}
                   size="middle"
                 />
+                <Input
+                  allowClear
+                  placeholder="Search user/date/reason"
+                  value={pendingRequestKeyword}
+                  onChange={(event) => setPendingRequestKeyword(event.target.value)}
+                  style={{ width: 280, marginBottom: 14, marginLeft: 8 }}
+                />
                 <Table
                   rowKey={(r) => r.id}
                   loading={loading}
@@ -280,10 +365,10 @@ export function OvertimeSection({
                   size="middle"
                   pagination={{ pageSize: 5 }}
                   columns={[
-                    { title: "User", dataIndex: "userName", key: "userName" },
-                    { title: "Date", dataIndex: "logDate", key: "logDate", width: 100 },
+                    { title: "User", dataIndex: "userName", key: "userName", sorter: (a, b) => String(a?.userName || "").localeCompare(String(b?.userName || "")) },
+                    { title: "Date", dataIndex: "logDate", key: "logDate", width: 100, sorter: (a, b) => String(a?.logDate || "").localeCompare(String(b?.logDate || "")), defaultSortOrder: "descend" },
                     { title: "Reason", dataIndex: "reason", key: "reason", ellipsis: true },
-                    { title: "Status", key: "status", width: 120, render: (_, r) => renderOvertimeStatusTag(r.status) },
+                    { title: "Status", key: "status", width: 120, sorter: (a, b) => String(a?.status || "").localeCompare(String(b?.status || "")), render: (_, r) => renderOvertimeStatusTag(r.status) },
                     {
                       title: "Action",
                       key: "action",
@@ -306,33 +391,40 @@ export function OvertimeSection({
                       },
                     },
                   ]}
-                  locale={{ emptyText: "No pending OT requests." }}
+                  locale={{ emptyText: "No OT requests in your approval scope." }}
                 />
               </div>
 
               <div className="rounded-xl p-5" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
                 <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#0a0a0a", marginBottom: "12px", textTransform: "uppercase" }}>
-                  Pending OT Reports (Approval)
+                  OT Reports (Approval Scope)
                 </h4>
                 <Select
                   value={pendingOvertimeReportStatusFilter}
                   onChange={setPendingOvertimeReportStatusFilter}
                   style={{ width: 220, marginBottom: 14 }}
-                    options={OT_STATUS_FILTER_OPTIONS}
+                      options={OT_STATUS_FILTER_OPTIONS}
                   size="middle"
+                />
+                <Input
+                  allowClear
+                  placeholder="Search user/date/note"
+                  value={pendingReportKeyword}
+                  onChange={(event) => setPendingReportKeyword(event.target.value)}
+                  style={{ width: 280, marginBottom: 14, marginLeft: 8 }}
                 />
                 <Table
                   rowKey={(r) => r.id}
                   loading={loading}
-                  dataSource={filteredApprovalQueueOvertimeReports}
+                  dataSource={filteredApprovalScopeOvertimeReports}
                   size="middle"
                   pagination={{ pageSize: 5 }}
                   columns={[
-                    { title: "User", dataIndex: "userName", key: "userName" },
-                      { title: "Date", dataIndex: "logDate", key: "logDate", width: 110 },
-                    { title: "OT Hours", dataIndex: "reportedOtHours", key: "reportedOtHours", width: 100, render: (v) => `${v ?? 0}h` },
+                    { title: "User", dataIndex: "userName", key: "userName", sorter: (a, b) => String(a?.userName || "").localeCompare(String(b?.userName || "")) },
+                      { title: "Date", dataIndex: "logDate", key: "logDate", width: 110, sorter: (a, b) => String(a?.logDate || "").localeCompare(String(b?.logDate || "")), defaultSortOrder: "descend" },
+                    { title: "OT Hours", dataIndex: "reportedOtHours", key: "reportedOtHours", width: 100, sorter: (a, b) => Number(a?.reportedOtHours || 0) - Number(b?.reportedOtHours || 0), render: (v) => `${v ?? 0}h` },
                     { title: "Note", dataIndex: "reportNote", key: "reportNote", ellipsis: true },
-                    { title: "Status", key: "status", width: 120, render: (_, r) => renderOvertimeStatusTag(r.status) },
+                    { title: "Status", key: "status", width: 120, sorter: (a, b) => String(a?.status || "").localeCompare(String(b?.status || "")), render: (_, r) => renderOvertimeStatusTag(r.status) },
                     {
                       title: "Action",
                       key: "action",
@@ -355,7 +447,7 @@ export function OvertimeSection({
                       },
                     },
                   ]}
-                  locale={{ emptyText: "No pending OT reports." }}
+                  locale={{ emptyText: "No OT reports in your approval scope." }}
                 />
               </div>
             </>

@@ -17,6 +17,7 @@ export const OT_STATUS_FILTER_OPTIONS = [
   { value: OT_STATUS.REJECTED, label: "Rejected" },
 ];
 
+
 export function isPendingStatus(status) {
   const normalized = String(status || "").toUpperCase();
   return normalized === OT_STATUS.PENDING || normalized.startsWith("PENDING");

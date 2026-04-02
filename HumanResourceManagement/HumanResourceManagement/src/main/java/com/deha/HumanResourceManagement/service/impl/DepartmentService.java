@@ -98,9 +98,8 @@ public DepartmentResponse updateDepartment(UUID id, DepartmentRequest department
     accessScopeService.assertCanManageOffice(office.getId());
     department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
     department.assignOffice(office);
-    Department merged = entityManager.merge(department);
-    entityManager.flush();
-    return DepartmentResponse.fromEntity(merged);
+    departmentRepository.saveAndFlush(department);
+    return DepartmentResponse.fromEntity(department);
 }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
