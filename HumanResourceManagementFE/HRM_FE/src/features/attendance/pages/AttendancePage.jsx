@@ -132,10 +132,25 @@ export function AttendancePage() {
 
   return (
     <div className="space-y-6">
+      <div className="glass-surface page-surface p-5 md:p-6 soft-ring">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h1 style={{ fontSize: "26px", fontWeight: 700, color: "#0A0A0A", margin: 0 }}>Attendance Hub</h1>
+            <p style={{ margin: "6px 0 0", color: "#59607a", fontSize: "14px" }}>
+              Track your attendance timeline with real-time status and department overview.
+            </p>
+          </div>
+          <div className="rounded-xl px-4 py-3" style={{ background: "linear-gradient(135deg, rgba(91,124,255,0.12), rgba(53,195,255,0.12))" }}>
+            <div style={{ fontSize: "12px", fontWeight: 700, color: "#47507a", textTransform: "uppercase" }}>Live Clock</div>
+            <div style={{ fontSize: "20px", fontWeight: 700, letterSpacing: 0.4 }}>{timeString}</div>
+          </div>
+        </div>
+      </div>
+
       <AttendanceHeader />
 
       {loading ? (
-        <div className="rounded-xl p-8" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+        <div className="rounded-xl p-8 glass-surface page-surface">
           <p style={{ color: "#8C8C8C", fontSize: "14px" }}>Loading attendance...</p>
         </div>
       ) : (
@@ -167,11 +182,7 @@ export function AttendancePage() {
         <div className="mt-6">
           {departmentTodayLoading ? (
             <div
-              className="rounded-xl p-8"
-              style={{
-                backgroundColor: "#FFFFFF",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              }}
+              className="rounded-xl p-8 glass-surface page-surface"
             >
               <p style={{ color: "#8C8C8C", fontSize: "14px" }}>
                 Loading department attendance...

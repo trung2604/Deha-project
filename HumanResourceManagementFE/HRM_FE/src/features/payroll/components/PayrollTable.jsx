@@ -123,6 +123,7 @@ export function PayrollTable({ loading, payrolls, onViewDetail }) {
           loading={loading}
           dataSource={payrolls}
           columns={columns}
+          scroll={{ x: 1180 }}
           pagination={{ pageSize: 10, size: "small" }}
           locale={{ emptyText: "No payroll records. Try generate payroll for selected filters." }}
           style={{ overflow: "hidden" }}

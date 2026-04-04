@@ -1,9 +1,8 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { isAdminRole } from "@/utils/role";
+import { isDepartmentManagerRole, isEmployeeRole, isOfficeManagerRole } from "@/utils/role";
 
-/** Only ADMIN can access wrapped routes; others go to profile */
-export function RequireAdmin({ children }) {
+export function RequireOvertimeAccess({ children }) {
   const { user, initializing } = useAuth();
 
   if (initializing) {
@@ -17,9 +16,15 @@ export function RequireAdmin({ children }) {
     );
   }
 
-  if (!isAdminRole(user?.role)) {
+  const allowed =
+    isEmployeeRole(user?.role) ||
+    isDepartmentManagerRole(user?.role) ||
+    isOfficeManagerRole(user?.role);
+
+  if (!allowed) {
     return <Navigate to="/profile" replace />;
   }
 
   return children;
 }
+

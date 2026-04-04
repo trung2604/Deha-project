@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -25,16 +26,19 @@ public class UserController extends ApiControllerSupport {
     }
 
     @PostMapping()
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public ApiResponse createUser(@RequestBody @Valid UserRequest userRequest) {
         return success("User created successfully", HttpStatus.CREATED, userService.createUser(userRequest));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public ApiResponse updateUser(@PathVariable UUID id, @RequestBody @Valid UpdateUserRequest UserRequest) {
         return success("User updated successfully", HttpStatus.OK, userService.updateUser(id, UserRequest));
     }
 
     @GetMapping()
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     public ApiResponse getAllUsers(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID officeId,
@@ -48,17 +52,20 @@ public class UserController extends ApiControllerSupport {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     public ApiResponse getUserById(@PathVariable UUID id) {
         return success("User retrieved successfully", HttpStatus.OK, userService.getUserById(id));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
     public ApiResponse deleteUser(@PathVariable UUID id) {
         userService.deleteUser(id);
         return success("User deleted successfully", HttpStatus.OK, null);
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     public ApiResponse searchUsers(
             @RequestParam String keyword,
             @RequestParam(required = false) UUID officeId,

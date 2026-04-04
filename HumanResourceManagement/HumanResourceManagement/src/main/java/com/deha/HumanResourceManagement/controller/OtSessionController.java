@@ -5,6 +5,7 @@ import com.deha.HumanResourceManagement.service.IOtSessionService;
 import com.deha.HumanResourceManagement.service.support.ClientIpResolverService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,6 +23,7 @@ public class OtSessionController extends ApiControllerSupport {
     }
 
     @PostMapping("/check-in")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER_DEPARTMENT')")
     public ApiResponse checkIn(HttpServletRequest request) {
         return success(
                 "OT checked in successfully",
@@ -31,6 +33,7 @@ public class OtSessionController extends ApiControllerSupport {
     }
 
     @PostMapping("/check-out")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER_DEPARTMENT')")
     public ApiResponse checkOut(HttpServletRequest request) {
         return success(
                 "OT checked out successfully",
@@ -40,6 +43,7 @@ public class OtSessionController extends ApiControllerSupport {
     }
 
     @GetMapping("/today")
+    @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER_DEPARTMENT')")
     public ApiResponse today() {
         return success("OT session retrieved successfully", HttpStatus.OK, otSessionService.today());
     }

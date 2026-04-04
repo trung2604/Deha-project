@@ -15,7 +15,7 @@ import com.deha.HumanResourceManagement.repository.DepartmentRepository;
 import com.deha.HumanResourceManagement.repository.OfficeRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.IOfficeService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -70,17 +70,22 @@ public class OfficeService implements IOfficeService {
     @Override
     @Transactional
     public OfficeResponse create(OfficeRequest request) {
+        User actor = accessScopeService.currentUserOrThrow();
+        if (!accessScopeService.isAdmin(actor)) {
+            throw new ForbiddenException("Only admin can create office");
+        }
         if (officeRepository.existsByNameIgnoreCase(request.getName().trim())) {
             throw new ConflictException("Office with the same name already exists");
         }
 
         List<String> normalizedIps = normalizeIpList(request.getIpWifiIps());
         if (normalizedIps.isEmpty()) {
-            throw new ConflictException("Office must have at least 1 WiFi IP");
+            throw new BadRequestException("Office must have at least 1 WiFi IP");
         }
 
         Office office = new Office();
         office.applyDetails(request.getName().trim(), request.getDescription());
+
         office.setStandardWorkHours(officePolicyService.standardWorkHours(null));
         office.setOtMinHours(officePolicyService.otMinHours(null));
         office.setLatestCheckoutTime(officePolicyService.latestCheckoutTime(null));
@@ -103,6 +108,10 @@ public class OfficeService implements IOfficeService {
     @Override
     @Transactional
     public OfficeResponse update(UUID id, OfficeRequest request) {
+        User actor = accessScopeService.currentUserOrThrow();
+        if (!accessScopeService.isAdmin(actor)) {
+            throw new ForbiddenException("Only admin can update office");
+        }
         Office current = findById(id);
 //        assertExpectedVersion(request.getExpectedVersion(), office.getVersion(), "Office");
         if (request.getExpectedVersion() == null) {
@@ -115,10 +124,11 @@ public class OfficeService implements IOfficeService {
 
         List<String> normalizedIps = normalizeIpList(request.getIpWifiIps());
         if (normalizedIps.isEmpty()) {
-            throw new ConflictException("Office must have at least 1 WiFi IP");
+            throw new BadRequestException("Office must have at least 1 WiFi IP");
         }
 
         Office office = buildDetachedOffice(current, request.getExpectedVersion());
+
         office.applyDetails(nextName, request.getDescription());
 
         Map<String, UUID> existingWifiIdByIp = current.getWifiIps().stream()
@@ -148,6 +158,10 @@ public class OfficeService implements IOfficeService {
     @Override
     @Transactional
     public void delete(UUID id) {
+        User actor = accessScopeService.currentUserOrThrow();
+        if (!accessScopeService.isAdmin(actor)) {
+            throw new ForbiddenException("Only admin can delete office");
+        }
         Office office = findById(id);
         long departments = departmentRepository.countByOffice_Id(id);
         if (departments > 0) {

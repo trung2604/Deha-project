@@ -11,10 +11,10 @@ import java.util.List;
 @Component
 public class OtRequestWorkflowService {
     public OtRequestStatus initialStatus(Role requesterRole) {
-        if (requesterRole == Role.ROLE_MANAGER_DEPARTMENT) {
+        if (requesterRole == Role.MANAGER_DEPARTMENT) {
             return OtRequestStatus.PENDING_OFFICE;
         }
-        if (requesterRole == Role.ROLE_EMPLOYEE) {
+        if (requesterRole == Role.EMPLOYEE) {
             return OtRequestStatus.PENDING_DEPARTMENT;
         }
         throw new ForbiddenException("You do not have permission to create OT request");
@@ -25,14 +25,14 @@ public class OtRequestWorkflowService {
             throw new BadRequestException("Only pending OT request can be decided");
         }
 
-        if (approverRole == Role.ROLE_MANAGER_DEPARTMENT) {
+        if (approverRole == Role.MANAGER_DEPARTMENT) {
             if (currentStatus != OtRequestStatus.PENDING && currentStatus != OtRequestStatus.PENDING_DEPARTMENT) {
                 throw new BadRequestException("Department manager can only decide PENDING OT requests");
             }
             return approved ? OtRequestStatus.APPROVED : OtRequestStatus.REJECTED;
         }
 
-        if (approverRole == Role.ROLE_MANAGER_OFFICE) {
+        if (approverRole == Role.MANAGER_OFFICE) {
             if (currentStatus != OtRequestStatus.PENDING_OFFICE) {
                 throw new BadRequestException("Office manager can only decide PENDING_OFFICE OT requests");
             }

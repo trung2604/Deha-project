@@ -10,7 +10,7 @@ import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.repository.OtSessionRepository;
 import com.deha.HumanResourceManagement.service.impl.OtSessionService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import org.junit.jupiter.api.Test;
 

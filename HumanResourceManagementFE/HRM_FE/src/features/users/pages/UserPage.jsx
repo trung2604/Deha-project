@@ -271,52 +271,28 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1
-            style={{
-              fontFamily: "DM Sans, sans-serif",
-              fontSize: "24px",
-              fontWeight: "600",
-              color: "#0A0A0A",
-            }}
-          >
-            Users
-          </h1>
-          <span
-            className="px-3 py-1 rounded-full"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(22, 119, 255, 0.14), rgba(22, 119, 255, 0.08))",
-              color: "#1677FF",
-              fontSize: "13px",
-              fontWeight: "600",
-              boxShadow: "inset 0 0 0 1px rgba(22,119,255,0.16)",
-            }}
-          >
-            {totalElements}
-          </span>
-        </div>
-        {canEditUsers && (
-          <button
-            onClick={() => {
-              setEditingUser(null);
-              setShowAddModal(true);
-            }}
-            className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95"
-            style={{
-              background:
-                "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
-              color: "#FFFFFF",
-              boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
-            }}
-          >
-            <Plus className="w-4 h-4" />
-            <span style={{ fontSize: "14px", fontWeight: "500" }}>
+      <div className="page-hero">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <h1 className="page-title">Users</h1>
+            <span className="metric-chip">{totalElements}</span>
+          </div>
+          {canEditUsers && (
+            <button
+              onClick={() => {
+                setEditingUser(null);
+                setShowAddModal(true);
+              }}
+              className="btn-primary-gradient"
+            >
+              <Plus className="w-4 h-4" />
               Add User
-            </span>
-          </button>
-        )}
+            </button>
+          )}
+        </div>
+        <p className="page-subtitle">
+          Manage employee accounts, role assignments, and workspace placement.
+        </p>
       </div>
 
       <UserFilters

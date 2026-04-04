@@ -8,6 +8,7 @@ import { RequireManagerOrAdmin } from "./components/RequireManagerOrAdmin";
 import { RequireOfficeManagerOrAdmin } from "./components/RequireOfficeManagerOrAdmin";
 import { RequireOfficeManager } from "./components/RequireOfficeManager";
 import { RequireDepartmentsViewAccess } from "./components/RequireDepartmentsViewAccess";
+import { RequireOvertimeAccess } from "./components/RequireOvertimeAccess";
 
 const Login = lazy(() => import("@/features/auth/pages/Login").then((m) => ({ default: m.Login })));
 const UsersPage = lazy(() => import("@/features/users/pages/UserPage").then((m) => ({ default: m.UsersPage })));
@@ -32,7 +33,7 @@ const Profile = lazy(() => import("@/features/profile/pages/Profile"));
 
 function RouteLoader() {
   return (
-    <div className="rounded-xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+    <div className="rounded-xl p-6 glass-surface page-surface soft-ring">
       <p style={{ margin: 0, color: "#8C8C8C", fontSize: "14px" }}>Loading page...</p>
     </div>
   );
@@ -101,7 +102,9 @@ export const router = createBrowserRouter([
       },
       {
         path: "overtime",
-        element: withSuspense(<OvertimePage />),
+        element: (
+          <RequireOvertimeAccess>{withSuspense(<OvertimePage />)}</RequireOvertimeAccess>
+        ),
       },
       {
         path: "payroll",

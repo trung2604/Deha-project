@@ -1,29 +1,32 @@
 package com.deha.HumanResourceManagement.service.support;
 
+import com.deha.HumanResourceManagement.config.security.CustomUserDetail;
+import com.deha.HumanResourceManagement.config.security.RolePermissionResolver;
 import com.deha.HumanResourceManagement.dto.auth.LoginRequest;
 import com.deha.HumanResourceManagement.dto.auth.LoginResponse;
 import com.deha.HumanResourceManagement.dto.user.UpdateProfileRequest;
 import com.deha.HumanResourceManagement.dto.user.UserResponse;
+import com.deha.HumanResourceManagement.entity.enums.Permission;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.exception.UnauthorizedException;
 import com.deha.HumanResourceManagement.repository.UserRepository;
-import com.deha.HumanResourceManagement.utils.JwtUtil;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import com.deha.HumanResourceManagement.config.security.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -33,13 +36,18 @@ public class AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final RolePermissionResolver rolePermissionResolver;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager, JwtUtil jwtUtil) {
+    public AuthService(
+            UserRepository userRepository,
+            AuthenticationManager authenticationManager,
+            JwtUtil jwtUtil,
+            RolePermissionResolver rolePermissionResolver
+    ) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
+        this.rolePermissionResolver = rolePermissionResolver;
     }
 
     public LoginResponse login(LoginRequest request, HttpServletResponse response) {
@@ -55,28 +63,43 @@ public class AuthService {
                 )
         );
 
-        User user = (User) authentication.getPrincipal();
+        CustomUserDetail principal = (CustomUserDetail) authentication.getPrincipal();
+        User user = principal != null ? principal.getUser() : null;
+
         if (!user.isActive()) {
             throw new ForbiddenException("Account is inactive");
         }
 
-        String accessToken = jwtUtil.generateToken(user.getEmail());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+        List<String> permissions = rolePermissionResolver.resolve(user.getRole()).stream()
+                .map(Permission::name)
+                .toList();
+        String accessToken = jwtUtil.generateAccessToken(
+                user.getEmail(),
+                List.of(user.getRole().name()),
+                permissions
+        );
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
         setRefreshCookie(response, refreshToken);
         return new LoginResponse(accessToken, user.getId(), user.getEmail(), user.getRole());
     }
 
-    public UserResponse me(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new UnauthorizedException("Missing or invalid Authorization header");
-        }
-
-        String token = authorizationHeader.substring(7);
-        String tokenType = extractTokenTypeOrThrow(token, "Invalid or expired token");
-        if (!"access".equals(tokenType)) {
-            throw new UnauthorizedException("Invalid token type");
-        }
-        String email = extractUsernameOrThrow(token, "Invalid or expired token");
+//    public UserResponse me(String authorizationHeader) {
+//        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+//            throw new UnauthorizedException("Missing or invalid Authorization header");
+//        }
+//
+//        String token = authorizationHeader.substring(7);
+//        String tokenType = extractTokenTypeOrThrow(token, "Invalid or expired token");
+//        if (!"access".equals(tokenType)) {
+//            throw new UnauthorizedException("Invalid token type");
+//        }
+//        String email = extractUsernameOrThrow("Invalid or expired token");
+//        User user = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+//        return UserResponse.fromEntity(user);
+//    }
+    public UserResponse me() {
+        String email = currentEmail();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return UserResponse.fromEntity(user);
@@ -89,7 +112,7 @@ public class AuthService {
 
         UUID userId;
         try {
-            userId = jwtUtil.validateAndGetUserId(refreshToken);
+            userId = jwtUtil.getUserIdFromRefreshToken(refreshToken);
         } catch (Exception e) {
             clearRefreshCookie(response);
             throw new UnauthorizedException("Invalid or expired refresh token");
@@ -104,27 +127,65 @@ public class AuthService {
 
         jwtUtil.deleteToken(refreshToken);
 
-        String newAccessToken = jwtUtil.generateToken(user.getEmail());
-        String newRefreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+        List<String> permissions = rolePermissionResolver.resolve(user.getRole()).stream()
+                .map(Permission::name)
+                .toList();
+        String newAccessToken = jwtUtil.generateAccessToken(
+                user.getEmail(),
+                List.of(user.getRole().name()),
+                permissions
+        );
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
         setRefreshCookie(response, newRefreshToken);
         return new LoginResponse(newAccessToken, user.getId(), user.getEmail(), user.getRole());
     }
 
+//    @Transactional
+//    public UserResponse updateProfile(String authorizationHeader, UpdateProfileRequest request) {
+//        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+//            throw new UnauthorizedException("Missing or invalid Authorization header");
+//        }
+//        String token = authorizationHeader.substring(7);
+//        String tokenType = extractTokenTypeOrThrow(token, "Invalid or expired token");
+//        if (!"access".equals(tokenType)) {
+//            throw new UnauthorizedException("Invalid token type");
+//        }
+//        String email = extractUsernameOrThrow("Invalid or expired token");
+//        User current = userRepository.findByEmail(email)
+//                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+//
+////        assertExpectedVersion(request.getExpectedVersion(), user.getVersion(), "User profile");
+//        if (request.getExpectedVersion() == null) {
+//            throw new BadRequestException("Expected version is required");
+//        }
+//
+//        User user = new User();
+//        user.setId(current.getId());
+//        user.setVersion(request.getExpectedVersion());
+//        user.setEmail(current.getEmail());
+//        user.setPassword(current.getPassword());
+//        user.setRole(current.getRole());
+//        user.setActive(current.isActive());
+//        user.setCreatedAt(current.getCreatedAt());
+//        user.setOffice(current.getOffice());
+//        user.setDepartment(current.getDepartment());
+//        user.setPosition(current.getPosition());
+//        user.setFirstName(request.getFirstName().trim());
+//        user.setLastName(request.getLastName().trim());
+//        String normalizedPhone = request.getPhone() != null ? request.getPhone().trim() : "";
+//        user.setPhone(normalizedPhone.isEmpty() ? null : normalizedPhone);
+//        userRepository.saveAndFlush(user);
+//        return UserResponse.fromEntity(user);
+//    }
+
     @Transactional
-    public UserResponse updateProfile(String authorizationHeader, UpdateProfileRequest request) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new UnauthorizedException("Missing or invalid Authorization header");
-        }
-        String token = authorizationHeader.substring(7);
-        String tokenType = extractTokenTypeOrThrow(token, "Invalid or expired token");
-        if (!"access".equals(tokenType)) {
-            throw new UnauthorizedException("Invalid token type");
-        }
-        String email = extractUsernameOrThrow(token, "Invalid or expired token");
+    public UserResponse updateProfile(UpdateProfileRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
         User current = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-//        assertExpectedVersion(request.getExpectedVersion(), user.getVersion(), "User profile");
+    //        assertExpectedVersion(request.getExpectedVersion(), user.getVersion(), "User profile");
         if (request.getExpectedVersion() == null) {
             throw new BadRequestException("Expected version is required");
         }
@@ -172,9 +233,10 @@ public class AuthService {
         }
         clearRefreshCookie(response);
     }
-    private String extractUsernameOrThrow(String token, String errorMessage) {
+    private String extractUsernameOrThrow(String errorMessage) {
         try {
-            return jwtUtil.extractUsername(token);
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            return auth.getName();
         } catch (Exception e) {
             throw new UnauthorizedException(errorMessage);
         }
@@ -208,6 +270,14 @@ public class AuthService {
                 .maxAge(Duration.ZERO)
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    public String currentEmail() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getName() == null) {
+            throw new UnauthorizedException("Missing authentication context");
+        }
+        return auth.getName();
     }
 }
 

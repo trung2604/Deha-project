@@ -20,8 +20,8 @@ export function UserFilters({
 }) {
   return (
     <div
-      className="rounded-xl p-4"
-      style={{ backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+      className="rounded-xl p-4 glass-surface page-surface"
+      style={{ boxShadow: '0 10px 22px rgba(35,57,110,0.1)' }}
     >
       <div className="flex flex-wrap items-center gap-3">
         <div className={`flex-1 min-w-[200px] relative ${isSearchPending ? 'search-input-pending' : ''}`}>
@@ -98,9 +98,9 @@ export function UserFilters({
 
         <Button
           onClick={onReset}
-          type="text"
+          type="default"
           size="middle"
-          style={{ color: '#1677FF', fontSize: '14px', fontWeight: '500', paddingInline: 8 }}
+          style={{ borderRadius: 10, color: '#5B7CFF', fontWeight: '600' }}
         >
           Reset
         </Button>

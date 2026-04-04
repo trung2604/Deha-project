@@ -19,7 +19,7 @@ import com.deha.HumanResourceManagement.service.impl.DepartmentService;
 import com.deha.HumanResourceManagement.service.impl.OfficeService;
 import com.deha.HumanResourceManagement.service.impl.PositionService;
 import com.deha.HumanResourceManagement.service.impl.SalaryContractService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;

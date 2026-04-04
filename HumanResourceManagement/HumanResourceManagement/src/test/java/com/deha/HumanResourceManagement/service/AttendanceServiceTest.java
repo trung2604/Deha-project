@@ -3,7 +3,7 @@ package com.deha.HumanResourceManagement.service;
 import com.deha.HumanResourceManagement.entity.AttendanceLog;
 import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.service.impl.AttendanceService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.strategy.OtTypeResolver;
 import org.junit.jupiter.api.BeforeEach;

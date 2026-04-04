@@ -18,7 +18,7 @@ import com.deha.HumanResourceManagement.repository.specification.UserSpecificati
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IOfficeService;
 import com.deha.HumanResourceManagement.service.IUserService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.data.domain.Page;
@@ -69,7 +69,7 @@ public class UserService implements IUserService {
         Department department = null;
         Position position = null;
 
-        if (targetRole == Role.ROLE_MANAGER_OFFICE) {
+        if (targetRole == Role.MANAGER_OFFICE) {
             if (deptProvided || posProvided) {
                 if (departmentId == null || positionId == null) {
                     throw new BadRequestException("Department and Position must be provided together or left empty for office manager");
@@ -78,7 +78,7 @@ public class UserService implements IUserService {
                 position = positionRepository.findById(positionId).orElseThrow(
                         () -> new ResourceNotFoundException("Position not found with id: " + positionId));
             }
-        } else if (targetRole == Role.ROLE_MANAGER_DEPARTMENT) {
+        } else if (targetRole == Role.MANAGER_DEPARTMENT) {
             if (!deptProvided) {
                 throw new BadRequestException("Department is required for department manager");
             }
@@ -133,7 +133,7 @@ public class UserService implements IUserService {
         Department department = null;
         Position position = null;
 
-        if (targetRole == Role.ROLE_MANAGER_OFFICE) {
+        if (targetRole == Role.MANAGER_OFFICE) {
             if (deptProvided || posProvided) {
                 if (departmentId == null || positionId == null) {
                     throw new BadRequestException("Department and Position must be provided together or left empty for office manager");
@@ -142,7 +142,7 @@ public class UserService implements IUserService {
                 position = positionRepository.findById(positionId).orElseThrow(
                         () -> new ResourceNotFoundException("Position not found with id: " + positionId));
             }
-        } else if (targetRole == Role.ROLE_MANAGER_DEPARTMENT) {
+        } else if (targetRole == Role.MANAGER_DEPARTMENT) {
             if (!deptProvided) {
                 throw new BadRequestException("Department is required for department manager");
             }
@@ -260,7 +260,7 @@ public class UserService implements IUserService {
     }
     private void guardManagerCannotAssignAdmin(Role targetRole) {
         User actor = accessScopeService.currentUserOrThrow();
-        if (accessScopeService.isManager(actor) && targetRole == Role.ROLE_ADMIN) {
+        if (accessScopeService.isManager(actor) && targetRole == Role.ADMIN) {
             throw new ForbiddenException("Manager cannot assign admin role");
         }
     }

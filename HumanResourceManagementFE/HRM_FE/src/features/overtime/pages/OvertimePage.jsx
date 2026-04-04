@@ -11,7 +11,7 @@ import {
   isSuccessResponse,
 } from "@/utils/apiResponse";
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { isAdminRole, isEmployeeRole, isDepartmentManagerRole, isManagerRole, isOfficeManagerRole } from "@/utils/role";
+import { isEmployeeRole, isDepartmentManagerRole, isManagerRole, isOfficeManagerRole } from "@/utils/role";
 import { OvertimeSection } from "../components/OvertimeSection";
 import { isPendingStatus, OT_FILTER_ALL, OT_STATUS } from "../constants/overtimeStatus.constants";
 
@@ -46,7 +46,7 @@ const compactAlertStyle = {
 
 export function OvertimePage() {
   const { user } = useAuth();
-  const canManageOvertimeApprovals = isManagerRole(user?.role) || isAdminRole(user?.role);
+  const canManageOvertimeApprovals = isManagerRole(user?.role);
   const isDepartmentManager = isDepartmentManagerRole(user?.role);
   const isOfficeManager = isOfficeManagerRole(user?.role);
   const canCreateOvertime = isEmployeeRole(user?.role) || isDepartmentManagerRole(user?.role);
@@ -356,7 +356,7 @@ export function OvertimePage() {
 
   if (loading) {
     return (
-      <div className="rounded-xl p-8" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+      <div className="rounded-xl p-8 glass-surface page-surface">
         <p style={{ color: "#8C8C8C", fontSize: "14px" }}>Loading overtime data...</p>
       </div>
     );
@@ -364,33 +364,33 @@ export function OvertimePage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8E8E8", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#0A0A0A", marginBottom: "8px" }}>Overtime Center</h1>
-        <p style={{ fontSize: "14px", color: "#595959", margin: 0 }}>Submit requests, clock OT session, and review approval scope in one place.</p>
+      <div className="page-hero">
+        <h1 className="page-title">Overtime Center</h1>
+        <p className="page-subtitle">Submit requests, clock OT sessions, and review approvals in one polished workspace.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mt-4">
-          <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
+          <div className="rounded-xl p-4 glass-surface hover-lift" style={{ border: "1px solid #E8E8E8" }}>
             <div className="flex items-center gap-2" style={{ color: "#595959", fontSize: "12px", fontWeight: 700 }}>
               <ClipboardList className="w-4 h-4" />
               Pending Requests
             </div>
             <div style={{ fontSize: "24px", fontWeight: 700, color: "#0A0A0A", marginTop: 6 }}>{myPendingRequestCount}</div>
           </div>
-          <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
+          <div className="rounded-xl p-4 glass-surface hover-lift" style={{ border: "1px solid #E8E8E8" }}>
             <div className="flex items-center gap-2" style={{ color: "#595959", fontSize: "12px", fontWeight: 700 }}>
               <Clock3 className="w-4 h-4" />
               Approved OT Hours
             </div>
             <div style={{ fontSize: "24px", fontWeight: 700, color: "#0A0A0A", marginTop: 6 }}>{approvedOtHours}h</div>
           </div>
-          <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
+          <div className="rounded-xl p-4 glass-surface hover-lift" style={{ border: "1px solid #E8E8E8" }}>
             <div className="flex items-center gap-2" style={{ color: "#595959", fontSize: "12px", fontWeight: 700 }}>
               <FileCheck2 className="w-4 h-4" />
               Pending Reports
             </div>
             <div style={{ fontSize: "24px", fontWeight: 700, color: "#0A0A0A", marginTop: 6 }}>{myPendingReportCount}</div>
           </div>
-          <div className="rounded-xl p-4" style={{ backgroundColor: "#FAFAFA", border: "1px solid #E8E8E8" }}>
+          <div className="rounded-xl p-4 glass-surface hover-lift" style={{ border: "1px solid #E8E8E8" }}>
             <div className="flex items-center gap-2" style={{ color: "#595959", fontSize: "12px", fontWeight: 700 }}>
               <CheckCircle2 className="w-4 h-4" />
               Pending In Scope

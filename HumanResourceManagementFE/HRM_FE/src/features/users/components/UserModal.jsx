@@ -6,6 +6,7 @@ import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
 import officeService from "@/features/offices/api/officeService";
 import { getDepartmentDirectoryPayload, getListData } from "@/utils/apiResponse";
+import { normalizeRole } from "@/utils/role";
 
 export function UserModal({ user, onClose, onSave, submitting }) {
   const isEdit = !!user?.id;
@@ -23,7 +24,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
     firstName: nextUser?.firstName ?? "",
     lastName: nextUser?.lastName ?? "",
     email: nextUser?.email ?? "",
-    role: nextUser?.role ?? "",
+    role: normalizeRole(nextUser?.role),
     password: "",
     officeId: nextUser?.officeId ?? nextUser?.office?.id ?? undefined,
     departmentId: nextUser?.departmentId ?? nextUser?.department?.id ?? undefined,
@@ -31,8 +32,8 @@ export function UserModal({ user, onClose, onSave, submitting }) {
   });
 
   const [formData, setFormData] = useState(() => toFormData(user));
-  const isOfficeManager = formData.role === "ROLE_MANAGER_OFFICE";
-  const isDepartmentManager = formData.role === "ROLE_MANAGER_DEPARTMENT";
+  const isOfficeManager = normalizeRole(formData.role) === "MANAGER_OFFICE";
+  const isDepartmentManager = normalizeRole(formData.role) === "MANAGER_DEPARTMENT";
   const isManager = isOfficeManager || isDepartmentManager; // used for optional department/position UI in this component
 
   useEffect(() => {
@@ -150,7 +151,7 @@ export function UserModal({ user, onClose, onSave, submitting }) {
       firstName: formData.firstName.trim(),
       lastName: formData.lastName.trim(),
       email: formData.email.trim(),
-      role: formData.role,
+      role: normalizeRole(formData.role),
       office: { id: formData.officeId },
       ...(hasDept ? { department: { id: formData.departmentId } } : {}),
       ...(hasPos ? { position: { id: formData.positionId } } : {}),
@@ -360,10 +361,10 @@ export function UserModal({ user, onClose, onSave, submitting }) {
                 style={{ width: "100%" }}
                 size="middle"
                 options={[
-                  { value: "ROLE_ADMIN", label: "ADMIN" },
-                  { value: "ROLE_MANAGER_OFFICE", label: "OFFICE MANAGER" },
-                  { value: "ROLE_MANAGER_DEPARTMENT", label: "DEPARTMENT MANAGER" },
-                  { value: "ROLE_EMPLOYEE", label: "EMPLOYEE" },
+                  { value: "ADMIN", label: "ADMIN" },
+                  { value: "MANAGER_OFFICE", label: "OFFICE MANAGER" },
+                  { value: "MANAGER_DEPARTMENT", label: "DEPARTMENT MANAGER" },
+                  { value: "EMPLOYEE", label: "EMPLOYEE" },
                 ]}
               />
             </div>

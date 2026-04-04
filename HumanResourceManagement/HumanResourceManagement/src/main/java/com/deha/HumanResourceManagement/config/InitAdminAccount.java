@@ -29,7 +29,7 @@ public class InitAdminAccount implements CommandLineRunner {
             admin.setLastName("System");
             admin.setEmail(adminEmail);
             admin.setPassword(passwordEncoder.encode("12345678"));
-            admin.setRole(Role.ROLE_ADMIN);
+            admin.setRole(Role.ADMIN);
             admin.setActive(true);
             admin.setCreatedAt(LocalDateTime.now());
 

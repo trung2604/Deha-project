@@ -18,7 +18,7 @@ import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.repository.specification.DepartmentSpecification;
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IOfficeService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;

@@ -4,6 +4,7 @@ import com.deha.HumanResourceManagement.dto.ApiResponse;
 import jakarta.persistence.OptimisticLockException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -50,6 +51,14 @@ public class GlobalExceptionHandler {
         res.setStatus(ex.getStatus().value());
         res.setMessage(ex.getMessage());
         return ResponseEntity.status(ex.getStatus()).body(res);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDenied(AccessDeniedException ex) {
+        ApiResponse res = new ApiResponse();
+        res.setStatus(HttpStatus.FORBIDDEN.value());
+        res.setMessage("Access denied");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(res);
     }
 
     @ExceptionHandler({ObjectOptimisticLockingFailureException.class, OptimisticLockException.class})

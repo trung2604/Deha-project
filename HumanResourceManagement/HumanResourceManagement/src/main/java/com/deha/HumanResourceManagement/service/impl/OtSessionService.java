@@ -12,7 +12,7 @@ import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.repository.OtSessionRepository;
 import com.deha.HumanResourceManagement.service.IAttendanceService;
 import com.deha.HumanResourceManagement.service.IOtSessionService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

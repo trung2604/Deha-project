@@ -10,7 +10,7 @@ import com.deha.HumanResourceManagement.exception.UnauthorizedException;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
 import com.deha.HumanResourceManagement.repository.OfficeWifiIpRepository;
 import com.deha.HumanResourceManagement.service.IAttendanceService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.strategy.OtTypeResolver;
 import org.springframework.dao.DataIntegrityViolationException;

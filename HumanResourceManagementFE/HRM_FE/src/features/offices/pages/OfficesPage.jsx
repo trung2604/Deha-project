@@ -126,36 +126,26 @@ export function OfficesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1
-          style={{
-            fontFamily: "DM Sans, sans-serif",
-            fontSize: 24,
-            fontWeight: 600,
-            color: "#0A0A0A",
-          }}
-        >
-          Offices
-        </h1>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95"
-          style={{
-            background: "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
-            color: "#FFFFFF",
-            boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
-          }}
-        >
-          <Plus className="w-4 h-4" />
-          Add Office
-        </button>
+      <div className="page-hero">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <h1 className="page-title">Offices</h1>
+            <span className="metric-chip">{offices.length}</span>
+          </div>
+          <button onClick={openCreate} className="btn-primary-gradient">
+            <Plus className="w-4 h-4" />
+            Add Office
+          </button>
+        </div>
+        <p className="page-subtitle">
+          Configure office profiles and allowed WiFi networks for attendance and OT access control.
+        </p>
       </div>
 
       <div
-        className="rounded-xl overflow-hidden"
+        className="rounded-xl overflow-hidden glass-surface page-surface"
         style={{
-          backgroundColor: "#FFFFFF",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          boxShadow: "0 10px 26px rgba(35,57,110,0.1)",
         }}
       >
         {loading ? (
@@ -163,7 +153,8 @@ export function OfficesPage() {
             Loading offices…
           </div>
         ) : (
-          <table className="w-full">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px]">
             <thead style={{ backgroundColor: "#F5F7FA" }}>
               <tr>
                 <th
@@ -239,7 +230,8 @@ export function OfficesPage() {
                 </tr>
               )}
             </tbody>
-          </table>
+            </table>
+          </div>
         )}
       </div>
 
