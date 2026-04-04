@@ -1,4 +1,4 @@
-package com.deha.HumanResourceManagement.service.support;
+package com.deha.HumanResourceManagement.config.security;
 
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.repository.UserRepository;
@@ -24,10 +24,6 @@ public class CustomUserDetailService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                List.of(new SimpleGrantedAuthority(user.getRole().name()))
-        );
+        return new CustomUserDetail(user);
     }
 }

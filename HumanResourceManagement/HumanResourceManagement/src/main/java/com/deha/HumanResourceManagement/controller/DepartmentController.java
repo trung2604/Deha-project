@@ -7,6 +7,7 @@ import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IPositionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -23,6 +24,7 @@ public class DepartmentController extends ApiControllerSupport {
     }
 
     @GetMapping()
+    @PreAuthorize("hasAuthority('DEPARTMENT_VIEW')")
     public ApiResponse getDepartments(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID officeId
@@ -31,37 +33,44 @@ public class DepartmentController extends ApiControllerSupport {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('DEPARTMENT_VIEW')")
     public ApiResponse getDepartmentById(@PathVariable UUID id) {
         return success("Department retrieved successfully", HttpStatus.OK, departmentService.getDepartmentDetailById(id));
     }
 
     @PostMapping()
+    @PreAuthorize("hasAuthority('DEPARTMENT_MANAGE')")
     public ApiResponse createDepartment(@RequestBody @Valid DepartmentRequest departmentRequest) {
         return success("Department created successfully", HttpStatus.CREATED, departmentService.createDepartment(departmentRequest));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('DEPARTMENT_MANAGE')")
     public ApiResponse updateDepartment(@PathVariable UUID id, @RequestBody @Valid DepartmentRequest departmentRequest) {
         return success("Department updated successfully", HttpStatus.OK, departmentService.updateDepartment(id, departmentRequest));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('DEPARTMENT_MANAGE')")
     public ApiResponse deleteDepartment(@PathVariable UUID id) {
         departmentService.deleteDepartment(id);
         return success("Department deleted successfully", HttpStatus.OK, null);
     }
 
     @GetMapping("/{departmentId}/positions")
+    @PreAuthorize("hasAuthority('POSITION_VIEW')")
     public ApiResponse getDepartmentPositions(@PathVariable UUID departmentId) {
         return success("Positions retrieved successfully", HttpStatus.OK, positionService.getAllPositionsOfDepartment(departmentId));
     }
 
     @PostMapping("/{departmentId}/positions")
+    @PreAuthorize("hasAuthority('POSITION_MANAGE')")
     public ApiResponse createDepartmentPosition(@PathVariable UUID departmentId, @RequestBody @Valid PositionRequest positionRequest) {
         return success("Position created successfully", HttpStatus.CREATED, positionService.createPosition(departmentId, positionRequest));
     }
 
     @PutMapping("/{departmentId}/positions/{positionId}")
+    @PreAuthorize("hasAuthority('POSITION_MANAGE')")
     public ApiResponse updateDepartmentPosition(
             @PathVariable UUID departmentId,
             @PathVariable UUID positionId,
@@ -71,6 +80,7 @@ public class DepartmentController extends ApiControllerSupport {
     }
 
     @DeleteMapping("/{departmentId}/positions/{positionId}")
+    @PreAuthorize("hasAuthority('POSITION_MANAGE')")
     public ApiResponse deleteDepartmentPosition(@PathVariable UUID departmentId, @PathVariable UUID positionId) {
         positionService.deletePositionInDepartment(departmentId, positionId);
         return success("Position deleted successfully", HttpStatus.OK, null);

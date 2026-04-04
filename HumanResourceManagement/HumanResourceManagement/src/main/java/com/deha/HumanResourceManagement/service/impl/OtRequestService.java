@@ -11,7 +11,7 @@ import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.service.IOtRequestService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.ot.workflow.OtRequestWorkflowService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

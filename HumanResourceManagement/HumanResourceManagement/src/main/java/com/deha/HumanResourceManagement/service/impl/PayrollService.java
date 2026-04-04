@@ -17,7 +17,7 @@ import com.deha.HumanResourceManagement.repository.OtReportRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.IAttendanceService;
 import com.deha.HumanResourceManagement.service.IPayrollService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.service.payroll.PayrollCalculator;
 import org.springframework.stereotype.Service;

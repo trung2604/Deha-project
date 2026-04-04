@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Building2, Building, Clock, Zap, LayoutDashboard, ReceiptText, UserCircle, Users } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
-import { canAccessNavItem } from '@/utils/role';
+import { canAccessNavItem, formatRoleLabel } from '@/utils/role';
 
 /**
  * roles: ADMIN | EMPLOYEE — who sees this item in the sidebar
@@ -10,7 +10,7 @@ import { canAccessNavItem } from '@/utils/role';
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
   { path: '/attendance', label: 'Attendance', icon: Clock, roles: ['MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
-  { path: '/overtime', label: 'Overtime', icon: Zap, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/overtime', label: 'Overtime', icon: Zap, roles: ['MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
   { path: '/payroll', label: 'Payroll', icon: ReceiptText, roles: ['ADMIN', 'MANAGER_OFFICE'] },
   { path: '/offices', label: 'Offices', icon: Building, roles: ['ADMIN'] },
   { path: '/office-policy', label: 'Office Policy', icon: Building, roles: ['MANAGER_OFFICE'] },
@@ -29,8 +29,8 @@ export function Sidebar({ isOpen, onClose }) {
         className="hidden lg:flex flex-col w-64 h-full border-r border-white/10"
         style={{
           background:
-            'linear-gradient(180deg, #111827 0%, #111827 35%, #0B1220 100%)',
-          boxShadow: '8px 0 30px rgba(17, 24, 39, 0.22)',
+            'linear-gradient(180deg, #111827 0%, #0F172A 44%, #0A1020 100%)',
+          boxShadow: '8px 0 30px rgba(17, 24, 39, 0.3)',
         }}
       >
         <SidebarContent location={location} onClose={onClose} user={user} />
@@ -42,8 +42,8 @@ export function Sidebar({ isOpen, onClose }) {
         }`}
         style={{
           background:
-            'linear-gradient(180deg, #111827 0%, #111827 35%, #0B1220 100%)',
-          boxShadow: '8px 0 30px rgba(17, 24, 39, 0.22)',
+            'linear-gradient(180deg, #111827 0%, #0F172A 44%, #0A1020 100%)',
+          boxShadow: '8px 0 30px rgba(17, 24, 39, 0.3)',
         }}
       >
         <SidebarContent location={location} onClose={onClose} user={user} />
@@ -87,11 +87,13 @@ function SidebarContent({ location, onClose, user }) {
               key={item.path}
               to={item.path}
               onClick={onClose}
-              className="flex items-center gap-3 px-3 h-12 mb-1 rounded-xl transition-all duration-200 relative group overflow-hidden"
+              className="flex items-center gap-3 px-3 h-12 mb-1 rounded-xl transition-all duration-200 relative group overflow-hidden hover-lift"
               style={{
                 color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.65)',
                 backgroundColor: isActive ? 'rgba(22, 119, 255, 0.16)' : 'transparent',
-                boxShadow: isActive ? 'inset 0 0 0 1px rgba(22,119,255,0.24)' : 'none',
+                boxShadow: isActive
+                  ? 'inset 0 0 0 1px rgba(22,119,255,0.24), 0 8px 20px rgba(22,119,255,0.12)'
+                  : 'none',
               }}
             >
               {isActive && (
@@ -137,13 +139,3 @@ function SidebarContent({ location, onClose, user }) {
   );
 }
 
-function formatRoleLabel(role) {
-  if (!role) return 'Employee';
-  const s = String(role);
-  if (s.includes('ADMIN')) return 'Administrator';
-  if (s.includes('MANAGER_DEPARTMENT')) return 'Department Manager';
-  if (s.includes('MANAGER_OFFICE')) return 'Office Manager';
-  if (s.includes('MANAGER')) return 'Manager'; // legacy
-  if (s.includes('EMPLOYEE')) return 'Employee';
-  return s.replace(/^ROLE_/, '');
-}

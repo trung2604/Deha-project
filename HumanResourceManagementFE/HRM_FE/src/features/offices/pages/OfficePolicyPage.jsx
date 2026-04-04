@@ -98,11 +98,16 @@ export function OfficePolicyPage() {
 
   return (
     <div className="space-y-6">
-      <h1 style={{ fontSize: 24, fontWeight: 600, color: "#0A0A0A" }}>Office Policy</h1>
+      <div className="page-hero">
+        <h1 className="page-title">Office Policy</h1>
+        <p className="page-subtitle">
+          Configure working-hour and OT policy used for attendance, overtime, and payroll calculations.
+        </p>
+      </div>
 
       <div
-        className="rounded-xl p-5"
-        style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
+        className="rounded-xl p-5 glass-surface page-surface"
+        style={{ boxShadow: "0 12px 28px rgba(35,57,110,0.12)" }}
       >
         {loading ? (
           <p style={{ color: "#8C8C8C" }}>Loading office policy...</p>
@@ -188,7 +193,7 @@ export function OfficePolicyPage() {
                 />
               </Form.Item>
             </div>
-            <Button type="primary" loading={saving} onClick={savePolicy}>
+            <Button type="primary" loading={saving} onClick={savePolicy} style={{ borderRadius: 12, height: 38 }}>
               Save Policy
             </Button>
           </Form>

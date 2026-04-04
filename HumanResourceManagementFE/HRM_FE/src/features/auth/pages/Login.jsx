@@ -49,17 +49,20 @@ export function Login() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-6"
-      style={{ backgroundColor: "#F5F7FA" }}
+      style={{
+        background:
+          "radial-gradient(circle at 15% 18%, rgba(91,124,255,0.2), transparent 42%), radial-gradient(circle at 82% 6%, rgba(53,195,255,0.16), transparent 36%), #F4F7FF",
+      }}
     >
       <div
-        className="w-full max-w-md rounded-xl p-8"
-        style={{ backgroundColor: "#FFFFFF", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}
+        className="w-full max-w-md rounded-2xl p-8 glass-surface page-surface"
+        style={{ boxShadow: "0 18px 40px rgba(40,62,122,0.16)" }}
       >
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: "#1677FF" }}
+              style={{ background: "linear-gradient(135deg, #5b7cff 0%, #7a5cff 100%)" }}
             >
               <span
                 style={{
@@ -141,13 +144,7 @@ export function Login() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full h-10 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
-            style={{
-              backgroundColor: "#1677FF",
-              color: "#FFFFFF",
-              fontSize: "14px",
-              fontWeight: "600",
-            }}
+            className="w-full btn-primary-gradient justify-center"
           >
             {submitting ? "Signing in..." : "Sign In"}
           </button>

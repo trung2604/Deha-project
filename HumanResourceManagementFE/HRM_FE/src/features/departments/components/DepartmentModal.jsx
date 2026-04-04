@@ -41,8 +41,8 @@ export function DepartmentModal({ open, department, offices = [], selectedOffice
     <>
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
       <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[560px] rounded-xl z-50"
-        style={{ backgroundColor: "#FFFFFF", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[560px] rounded-xl z-50 glass-surface page-surface"
+        style={{ boxShadow: "0 24px 46px rgba(35,57,110,0.24)" }}
       >
         <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "#E8E8E8" }}>
           <h3
@@ -124,13 +124,7 @@ export function DepartmentModal({ open, department, offices = [], selectedOffice
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 h-9 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
-              style={{
-                backgroundColor: "#1677FF",
-                color: "#FFFFFF",
-                fontSize: "14px",
-                fontWeight: "500",
-              }}
+              className="btn-primary-gradient"
             >
               {department ? "Update" : "Create"}
             </button>

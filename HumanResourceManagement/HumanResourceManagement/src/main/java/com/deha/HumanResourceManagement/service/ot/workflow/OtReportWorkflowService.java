@@ -11,10 +11,10 @@ import java.util.List;
 @Component
 public class OtReportWorkflowService {
     public OtReportStatus initialStatus(Role requesterRole) {
-        if (requesterRole == Role.ROLE_MANAGER_DEPARTMENT) {
+        if (requesterRole == Role.MANAGER_DEPARTMENT) {
             return OtReportStatus.PENDING_OFFICE;
         }
-        if (requesterRole == Role.ROLE_EMPLOYEE) {
+        if (requesterRole == Role.EMPLOYEE) {
             return OtReportStatus.PENDING_DEPARTMENT;
         }
         throw new ForbiddenException("You do not have permission to submit OT report");
@@ -25,14 +25,14 @@ public class OtReportWorkflowService {
             throw new BadRequestException("Only pending OT report can be decided");
         }
 
-        if (approverRole == Role.ROLE_MANAGER_DEPARTMENT) {
+        if (approverRole == Role.MANAGER_DEPARTMENT) {
             if (currentStatus != OtReportStatus.PENDING && currentStatus != OtReportStatus.PENDING_DEPARTMENT) {
                 throw new BadRequestException("Department manager can only decide PENDING OT reports");
             }
             return approved ? OtReportStatus.PENDING_OFFICE : OtReportStatus.REJECTED;
         }
 
-        if (approverRole == Role.ROLE_MANAGER_OFFICE) {
+        if (approverRole == Role.MANAGER_OFFICE) {
             if (currentStatus != OtReportStatus.PENDING_OFFICE) {
                 throw new BadRequestException("Office manager can only decide PENDING_OFFICE OT reports");
             }

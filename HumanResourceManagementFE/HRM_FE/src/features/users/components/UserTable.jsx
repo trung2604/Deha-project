@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
 import { Select, Spin } from "antd";
+import { formatRoleLabel } from "@/utils/role";
 
 const statusColors = {
   Active: { bg: "rgba(82, 196, 26, 0.1)", text: "#52C41A" },
@@ -43,15 +44,6 @@ export function UserTable({
     onSizeChange(nextSize);
   };
 
-  const formatRole = (role) => {
-    if (!role) return "-";
-    const r = String(role).replace(/^ROLE_/, "");
-    if (r === "MANAGER_OFFICE") return "Office Manager";
-    if (r === "MANAGER_DEPARTMENT") return "Department Manager";
-    if (r === "MANAGER") return "Manager"; // legacy
-    return r;
-  };
-
   const formatCreatedAt = (value) => {
     if (!value) return "-";
     const d = new Date(value);
@@ -70,10 +62,9 @@ export function UserTable({
 
   return (
     <div
-      className="rounded-xl overflow-hidden relative"
+      className="rounded-xl overflow-hidden relative glass-surface page-surface"
       style={{
-        backgroundColor: "#FFFFFF",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+        boxShadow: "0 12px 28px rgba(35,57,110,0.11)",
       }}
     >
       {refetchingOverlay && (
@@ -99,11 +90,107 @@ export function UserTable({
       )}
 
       <div
-        className="overflow-x-auto transition-opacity duration-300 ease-out"
+        className="md:hidden transition-opacity duration-300 ease-out"
         style={{ opacity: refetchingOverlay ? 0.55 : 1 }}
       >
-        <table className="w-full table-fixed">
-          <thead style={{ backgroundColor: "#F5F7FA" }}>
+        {showSkeletonOnly ? (
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-24 rounded-xl shimmer" />
+            ))}
+          </div>
+        ) : list.length === 0 ? (
+          <div className="px-4 py-12 text-center">
+            <p className="mb-1" style={{ color: "#0A0A0A", fontSize: "15px", fontWeight: 600 }}>
+              No users found
+            </p>
+            <p style={{ color: "#8C8C8C", fontSize: "13px" }}>
+              Try another keyword or change filters
+            </p>
+          </div>
+        ) : (
+          <div className="p-3 space-y-3">
+            {list.map((user) => {
+              const status = user.active ? "Active" : "Inactive";
+              const colors = statusColors[status] ?? {
+                bg: "rgba(0,0,0,0.04)",
+                text: "#595959",
+              };
+
+              return (
+                <div
+                  key={`${resultAnimVersion}-${user.id}`}
+                  className="rounded-xl border p-3 user-table-row-enter"
+                  style={{ borderColor: "#E8E8E8", backgroundColor: "rgba(255,255,255,0.88)" }}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0">
+                      <div style={{ color: "#0A0A0A", fontSize: "14px", fontWeight: 600 }} className="truncate">
+                        {fullName(user)}
+                      </div>
+                      <div style={{ color: "#595959", fontSize: "13px" }} className="truncate">
+                        {user.email ?? "-"}
+                      </div>
+                    </div>
+                    <span
+                      className="px-2 py-0.5 rounded-full whitespace-nowrap"
+                      style={{
+                        backgroundColor: colors.bg,
+                        color: colors.text,
+                        fontSize: "12px",
+                        fontWeight: "700",
+                      }}
+                    >
+                      {status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-1 mb-3" style={{ fontSize: "12px" }}>
+                    <span style={{ color: "#8C8C8C" }}>Role</span>
+                    <span style={{ color: "#0A0A0A" }} className="truncate" title={user.role ?? "-"}>
+                      {formatRoleLabel(user.role)}
+                    </span>
+                    <span style={{ color: "#8C8C8C" }}>Department</span>
+                    <span style={{ color: "#0A0A0A" }} className="truncate">{user.departmentName ?? "-"}</span>
+                    <span style={{ color: "#8C8C8C" }}>Position</span>
+                    <span style={{ color: "#0A0A0A" }} className="truncate">{user.positionName ?? "-"}</span>
+                    <span style={{ color: "#8C8C8C" }}>Created</span>
+                    <span style={{ color: "#595959" }}>{formatCreatedAt(user.createdAt)}</span>
+                  </div>
+
+                  {!readOnly && (
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onEdit(user)}
+                        className="p-2 rounded-lg transition-colors duration-150 hover:bg-blue-50"
+                        style={{ color: "#1677FF" }}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDelete(user)}
+                        className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50"
+                        style={{ color: "#FF4D4F" }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div
+        className="hidden md:block overflow-x-auto transition-opacity duration-300 ease-out"
+        style={{ opacity: refetchingOverlay ? 0.55 : 1 }}
+      >
+        <table className="w-full min-w-[1040px] table-fixed">
+          <thead style={{ background: "linear-gradient(135deg, #EEF3FF 0%, #F5F7FA 100%)" }}>
             <tr>
               <th
                 className="px-4 py-3 text-left uppercase tracking-wide"
@@ -191,9 +278,10 @@ export function UserTable({
                       <div
                         className="w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0 transition-transform duration-300 hover:scale-105"
                         style={{
-                          backgroundColor: "#1677FF",
+                          background: "linear-gradient(135deg, #5B7CFF 0%, #7A5CFF 100%)",
                           fontSize: "13px",
                           fontWeight: "600",
+                          boxShadow: "0 6px 14px rgba(91,124,255,0.22)",
                         }}
                       >
                         {`${(user.firstName ?? "").charAt(0)}${(user.lastName ?? "").charAt(0)}`.toUpperCase()}
@@ -222,7 +310,7 @@ export function UserTable({
                       style={{ color: "#595959", fontSize: "14px" }}
                       title={user.role ?? "-"}
                     >
-                      {formatRole(user.role)}
+                      {formatRoleLabel(user.role)}
                     </span>
                   </td>
                   <td className="px-4 py-4 truncate">
@@ -276,7 +364,7 @@ export function UserTable({
                         <button
                           type="button"
                           onClick={() => onEdit(user)}
-                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-blue-50"
+                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-blue-50 hover-lift"
                           style={{ color: "#1677FF" }}
                         >
                           <Edit className="w-4 h-4" />
@@ -284,7 +372,7 @@ export function UserTable({
                         <button
                           type="button"
                           onClick={() => onDelete(user)}
-                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50"
+                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50 hover-lift"
                           style={{ color: "#FF4D4F" }}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -301,14 +389,14 @@ export function UserTable({
 
       {!showSkeletonOnly && (
         <div
-          className="px-6 py-4 border-t flex items-center justify-between gap-4"
+          className="px-6 py-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-3"
           style={{ borderColor: "#E8E8E8" }}
         >
           <span style={{ color: "#595959", fontSize: "13px" }}>
             Showing {list.length} users{typeof totalElements === "number" ? ` (total: ${totalElements})` : ""}
           </span>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
             <Select
               value={currentSize}
               onChange={(value) => safeOnSizeChange(Number(value))}

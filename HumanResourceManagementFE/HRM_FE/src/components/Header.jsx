@@ -117,17 +117,16 @@ export function Header({ onMenuClick }) {
 
   return (
     <header
-      className="h-16 border-b flex items-center justify-between px-4 md:px-6 sticky top-0 z-20 backdrop-blur-md"
+      className="h-16 border-b flex items-center justify-between px-4 md:px-6 sticky top-0 z-20 glass-header"
       style={{
-        backgroundColor: 'rgba(255,255,255,0.82)',
-        borderColor: 'rgba(232,232,232,0.9)',
-        boxShadow: '0 8px 20px rgba(15, 23, 42, 0.04)',
+        borderColor: 'rgba(91, 124, 255, 0.12)',
+        boxShadow: '0 8px 20px rgba(41, 64, 122, 0.08)',
       }}
     >
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="lg:hidden header-icon-btn"
           style={{ color: '#0A0A0A' }}
         >
           <Menu className="w-5 h-5" />
@@ -173,7 +172,7 @@ export function Header({ onMenuClick }) {
           <>
             <div className="fixed inset-0 z-10" onClick={() => setSearchOpen(false)} />
             <div
-              className="absolute left-0 right-0 top-full mt-2 rounded-lg shadow-lg border overflow-hidden z-20"
+              className="absolute left-0 right-0 top-full mt-2 rounded-lg shadow-lg border overflow-hidden z-20 overlay-panel glass-surface"
               style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}
             >
               <div className="px-4 py-3 border-b" style={{ borderColor: '#E8E8E8' }}>
@@ -274,7 +273,7 @@ export function Header({ onMenuClick }) {
           <>
             <div className="fixed inset-0 z-10" onClick={() => setSearchOpen(false)} />
             <div
-              className="absolute left-0 right-0 top-full mt-2 rounded-lg shadow-lg border overflow-hidden z-20"
+              className="absolute left-0 right-0 top-full mt-2 rounded-lg shadow-lg border overflow-hidden z-20 overlay-panel glass-surface"
               style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}
             >
               <div className="px-4 py-8 text-center">
@@ -290,7 +289,7 @@ export function Header({ onMenuClick }) {
         <div className="relative">
           <button
             onClick={() => setNotificationOpen(!notificationOpen)}
-            className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            className="relative header-icon-btn"
             style={{ color: '#0A0A0A' }}
           >
             <Bell className="w-5 h-5" />
@@ -301,7 +300,7 @@ export function Header({ onMenuClick }) {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setNotificationOpen(false)} />
               <div
-                className="absolute right-0 top-full mt-2 w-96 rounded-lg shadow-lg border overflow-hidden z-20"
+                className="absolute right-0 top-full mt-2 w-96 rounded-lg shadow-lg border overflow-hidden z-20 overlay-panel glass-surface"
                 style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#E8E8E8' }}>
@@ -396,9 +395,10 @@ export function Header({ onMenuClick }) {
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            className="flex items-center gap-2 p-2 rounded-xl transition-colors"
+            style={{ backgroundColor: 'rgba(255,255,255,0.28)' }}
           >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: '#1677FF', fontSize: '12px', fontWeight: '600' }}>
+            <div className="header-avatar-chip">
               {initials.toUpperCase()}
             </div>
             <span className="hidden sm:block font-medium" style={{ color: '#0A0A0A', fontSize: '14px' }}>
@@ -410,19 +410,19 @@ export function Header({ onMenuClick }) {
           {dropdownOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-              <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg border overflow-hidden z-20" style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}>
+              <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg border overflow-hidden z-20 overlay-panel glass-surface" style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}>
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
                     navigate('/profile');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                  className="overlay-list-item text-left"
                 >
                   <User className="w-4 h-4" style={{ color: '#595959' }} />
                   <span style={{ color: '#0A0A0A', fontSize: '14px' }}>Profile</span>
                 </button>
                 <div className="border-t" style={{ borderColor: '#E8E8E8' }} />
-                <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left" onClick={handleLogout}>
+                <button className="overlay-list-item text-left" onClick={handleLogout}>
                   <LogOut className="w-4 h-4" style={{ color: '#FF4D4F' }} />
                   <span style={{ color: '#FF4D4F', fontSize: '14px' }}>Logout</span>
                 </button>

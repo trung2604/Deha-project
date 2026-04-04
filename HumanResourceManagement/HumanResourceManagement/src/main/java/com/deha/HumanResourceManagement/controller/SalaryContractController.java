@@ -5,6 +5,7 @@ import com.deha.HumanResourceManagement.dto.salarycontract.SalaryContractRequest
 import com.deha.HumanResourceManagement.service.impl.SalaryContractService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -19,16 +20,19 @@ public class SalaryContractController extends ApiControllerSupport {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SALARY_CONTRACT_MANAGE')")
     public ApiResponse create(@Valid @RequestBody SalaryContractRequest request) {
         return success("Salary contract created successfully", HttpStatus.CREATED, salaryContractService.create(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('SALARY_CONTRACT_MANAGE')")
     public ApiResponse update(@PathVariable UUID id, @Valid @RequestBody SalaryContractRequest request) {
         return success("Salary contract updated successfully", HttpStatus.OK, salaryContractService.update(id, request));
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('SALARY_CONTRACT_VIEW')")
     public ApiResponse listByUser(@RequestParam UUID userId) {
         return success("Salary contracts retrieved successfully", HttpStatus.OK, salaryContractService.getByUser(userId));
     }

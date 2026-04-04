@@ -7,6 +7,7 @@ import com.deha.HumanResourceManagement.service.support.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,9 +26,14 @@ public class AuthController extends ApiControllerSupport {
         return success("Login successful", HttpStatus.OK, authService.login(request, response));
     }
 
+//    @GetMapping("/me")
+//    public ApiResponse me(@RequestHeader(value = "Authorization", required = false) String authorization) {
+//        return success("User profile retrieved successfully", HttpStatus.OK, authService.me(authorization));
+//    }
     @GetMapping("/me")
-    public ApiResponse me(@RequestHeader(value = "Authorization", required = false) String authorization) {
-        return success("User profile retrieved successfully", HttpStatus.OK, authService.me(authorization));
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse me() {
+        return success("User profile retrieved successfully", HttpStatus.OK, authService.me());
     }
 
     @PostMapping("/refresh")
@@ -47,14 +53,20 @@ public class AuthController extends ApiControllerSupport {
         return success("Logged out successfully", HttpStatus.OK, null);
     }
 
+//    @PutMapping("/me")
+//    public ApiResponse updateProfile(
+//            @RequestHeader(value = "Authorization", required = false) String authorization,
+//            @RequestBody @Valid UpdateProfileRequest request
+//    ) {
+//        return success("Profile updated successfully", HttpStatus.OK, authService.updateProfile(authorization, request));
+//    }
     @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ApiResponse updateProfile(
-            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody @Valid UpdateProfileRequest request
     ) {
-        return success("Profile updated successfully", HttpStatus.OK, authService.updateProfile(authorization, request));
+        return success("Profile updated successfully", HttpStatus.OK, authService.updateProfile(request));
     }
-
     
 }
 

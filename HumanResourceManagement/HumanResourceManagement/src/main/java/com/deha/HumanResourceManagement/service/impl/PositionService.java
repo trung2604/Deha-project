@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.service.impl;
 
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.dto.position.PositionRequest;
 import com.deha.HumanResourceManagement.dto.position.PositionResponse;
 import com.deha.HumanResourceManagement.entity.Department;
@@ -7,6 +8,7 @@ import com.deha.HumanResourceManagement.entity.Position;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
+import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.DepartmentRepository;
@@ -14,7 +16,6 @@ import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IPositionService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
@@ -51,10 +52,7 @@ public class PositionService implements IPositionService {
     public List<PositionResponse> getAllPositionsOfDepartment(UUID departmentId) {
         Department department = departmentRepository.findById(departmentId).orElseThrow(
                 () -> new ResourceNotFoundException("Department not found with id: " + departmentId));
-        // Read-only permission:
-        // - ADMIN can view any department positions
-        // - OFFICE manager can view positions for departments in their office
-        // - DEPARTMENT manager can view positions only for their own department
+
         User actor = accessScopeService.currentUserOrThrow();
         if (accessScopeService.isAdmin(actor)) {
             // no-op
@@ -64,9 +62,9 @@ public class PositionService implements IPositionService {
         } else if (accessScopeService.isDepartmentManager(actor)) {
             accessScopeService.assertCanManageDepartment(departmentId);
         } else {
-            // Employees (and any unexpected roles) are not allowed to read department positions.
-            accessScopeService.assertCanManageDepartment(departmentId);
+            throw new ForbiddenException("You do not have permission to view positions");
         }
+
         return positionRepository.findAllByDepartmentId(departmentId).stream()
                 .map(PositionResponse::fromEntity)
                 .toList();
@@ -75,27 +73,62 @@ public class PositionService implements IPositionService {
     @Override
     public List<PositionResponse> getAllPositions() {
         User actor = accessScopeService.currentUserOrThrow();
-        UUID scopedOfficeId = accessScopeService.isAdmin(actor)
-                ? null
-                : (actor.getOffice() != null ? actor.getOffice().getId() : null);
-        return positionRepository.findAll().stream()
-                .filter(position -> scopedOfficeId == null
-                        || (position.getDepartment() != null
-                        && position.getDepartment().getOffice() != null
-                        && scopedOfficeId.equals(position.getDepartment().getOffice().getId())))
-                .map(PositionResponse::fromEntity)
-                .toList();
+
+        if (accessScopeService.isAdmin(actor)) {
+            return positionRepository.findAll().stream()
+                    .map(PositionResponse::fromEntity)
+                    .toList();
+        }
+
+        if (accessScopeService.isOfficeManager(actor)) {
+            UUID scopedOfficeId = actor.getOffice() != null ? actor.getOffice().getId() : null;
+            accessScopeService.assertCanManageOffice(scopedOfficeId);
+            return positionRepository.findAll().stream()
+                    .filter(position -> position.getDepartment() != null
+                            && position.getDepartment().getOffice() != null
+                            && scopedOfficeId != null
+                            && scopedOfficeId.equals(position.getDepartment().getOffice().getId()))
+                    .map(PositionResponse::fromEntity)
+                    .toList();
+        }
+
+        if (accessScopeService.isDepartmentManager(actor)) {
+            UUID departmentId = actor.getDepartment() != null ? actor.getDepartment().getId() : null;
+            accessScopeService.assertCanManageDepartment(departmentId);
+            return positionRepository.findAllByDepartmentId(departmentId).stream()
+                    .map(PositionResponse::fromEntity)
+                    .toList();
+        }
+
+        throw new ForbiddenException("You do not have permission to view positions");
     }
 
     @Override
     public PositionResponse getPositionById(UUID id) {
         Position position = positionRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Position not found with id: " + id));
+
+        User actor = accessScopeService.currentUserOrThrow();
+        if (accessScopeService.isAdmin(actor)) {
+            return PositionResponse.fromEntity(position);
+        }
+
         UUID officeId = position.getDepartment() != null && position.getDepartment().getOffice() != null
                 ? position.getDepartment().getOffice().getId()
                 : null;
-        accessScopeService.assertCanManageOffice(officeId);
-        return PositionResponse.fromEntity(position);
+
+        if (accessScopeService.isOfficeManager(actor)) {
+            accessScopeService.assertCanManageOffice(officeId);
+            return PositionResponse.fromEntity(position);
+        }
+
+        if (accessScopeService.isDepartmentManager(actor)) {
+            UUID departmentId = position.getDepartment() != null ? position.getDepartment().getId() : null;
+            accessScopeService.assertCanManageDepartment(departmentId);
+            return PositionResponse.fromEntity(position);
+        }
+
+        throw new ForbiddenException("You do not have permission to view this position");
     }
 
     @Override

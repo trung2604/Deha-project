@@ -32,7 +32,7 @@ function toDurationText(item) {
 export function AttendanceHistoryTable({ records, title = "Attendance History" }) {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const safeRecords = Array.isArray(records) ? records : [];
+  const safeRecords = useMemo(() => (Array.isArray(records) ? records : []), [records]);
 
   const hasUserColumn = useMemo(
     () => safeRecords.some((item) => item?.userName),
@@ -158,18 +158,20 @@ export function AttendanceHistoryTable({ records, title = "Attendance History" }
 
       {/* Table */}
       <div className="section-content">
-        <div className="flex flex-wrap gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
           <Input
             allowClear
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
             placeholder="Search by date, user, time, status..."
-            style={{ width: 300 }}
+            className="w-full sm:w-auto"
+            style={{ width: "100%", maxWidth: 320 }}
           />
           <Select
             value={statusFilter}
             onChange={setStatusFilter}
-            style={{ width: 180 }}
+            className="w-full sm:w-auto"
+            style={{ width: "100%", maxWidth: 200 }}
             options={[
               { value: "ALL", label: "All Statuses" },
               { value: "On Time", label: "On Time" },
@@ -183,6 +185,7 @@ export function AttendanceHistoryTable({ records, title = "Attendance History" }
           rowKey={(record) => record.id || `${record.logDate}-${record.userName || "me"}`}
           dataSource={filteredRecords}
           columns={columns}
+          scroll={{ x: hasUserColumn ? 980 : 840 }}
           pagination={{ pageSize: 10 }}
           locale={{
             emptyText: (

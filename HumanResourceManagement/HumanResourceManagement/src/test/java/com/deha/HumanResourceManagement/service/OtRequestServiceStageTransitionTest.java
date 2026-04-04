@@ -13,7 +13,7 @@ import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.service.impl.OtRequestService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.ot.workflow.OtRequestWorkflowService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;

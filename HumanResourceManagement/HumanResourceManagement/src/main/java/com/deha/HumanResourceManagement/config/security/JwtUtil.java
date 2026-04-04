@@ -1,11 +1,11 @@
-package com.deha.HumanResourceManagement.utils;
+package com.deha.HumanResourceManagement.config.security;
 
-import com.deha.HumanResourceManagement.config.RedisConfig;
-import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -14,13 +14,14 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static java.text.NumberFormat.Field.PREFIX;
-
 @Component
+@Data
 public class JwtUtil {
     private final SecretKey secretKey;
     private final long expirationMs;
@@ -52,23 +53,26 @@ public class JwtUtil {
         }
     }
 
-    public String generateToken(String username) {
+    public String generateAccessToken(String username, Collection<String> roles, Collection<String> permissions) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("typ", "access")
+                .claim("roles", roles == null ? List.of() : roles)
+                .claim("permissions", permissions == null ? List.of() : permissions)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(secretKey)
                 .compact();
     }
 
-    public String generateRefreshToken(String username) {
-        User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+    public String generateRefreshToken(UUID userId) {
         String token = UUID.randomUUID().toString();
-        String key = REFRESH_PREFIX + token;  // fix: dùng string constant
-        redisTemplate.opsForValue().set(key, user.getId().toString(),
-                refreshExpirationMs, TimeUnit.MILLISECONDS);
+        redisTemplate.opsForValue().set(
+                REFRESH_PREFIX + token,
+                userId.toString(),
+                refreshExpirationMs,
+                TimeUnit.MILLISECONDS
+        );
         return token;
     }
 
@@ -90,18 +94,16 @@ public class JwtUtil {
         return claims.get("typ", String.class);
     }
 
-    public UUID validateAndGetUserId(String token) {
-        String key = REFRESH_PREFIX + token;
-        Object userId = redisTemplate.opsForValue().get(key);
-        if (userId == null) throw new RuntimeException("Refresh token invalid or expired");
-        return UUID.fromString(userId.toString());
+    public UUID getUserIdFromRefreshToken(String token) {
+        String value = redisTemplate.opsForValue().get(REFRESH_PREFIX + token);
+        if (value == null) {
+            throw new JwtException("Refresh token invalid or expired");
+        }
+        return UUID.fromString(value);
     }
 
     public void deleteToken(String token) {
         redisTemplate.delete(REFRESH_PREFIX + token);  // fix
     }
 
-    public long getRefreshExpirationMs() {
-        return refreshExpirationMs;
-    }
 }

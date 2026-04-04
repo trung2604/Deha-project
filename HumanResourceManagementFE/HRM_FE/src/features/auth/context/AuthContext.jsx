@@ -2,16 +2,26 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import authService from "../api/authService";
 import { getResponseMessage, isSuccessResponse } from "@/utils/apiResponse";
+import { normalizeRole } from "@/utils/role";
 
 const AuthContext = createContext(null);
 
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "user_info";
 
+function normalizeAuthUser(user) {
+  if (!user || typeof user !== "object") return null;
+  const normalizedRole = normalizeRole(user.role);
+  return {
+    ...user,
+    role: normalizedRole || user.role,
+  };
+}
+
 function readStoredUser() {
   try {
     const raw = localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) : null;
+    return raw ? normalizeAuthUser(JSON.parse(raw)) : null;
   } catch {
     return null;
   }
@@ -40,7 +50,7 @@ export function AuthProvider({ children }) {
         return { ok: false, message: getResponseMessage(res, "Unable to refresh profile") };
       }
 
-      const profile = res.data ?? null;
+      const profile = normalizeAuthUser(res.data ?? null);
       setUser(profile);
       localStorage.setItem(USER_KEY, JSON.stringify(profile));
       return { ok: true, data: profile, message: res.message };
@@ -57,7 +67,7 @@ export function AuthProvider({ children }) {
           return { ok: false, message: getResponseMessage(res, "Update profile failed") };
         }
 
-        const profile = res.data ?? null;
+        const profile = normalizeAuthUser(res.data ?? null);
         setUser(profile);
         localStorage.setItem(USER_KEY, JSON.stringify(profile));
         return { ok: true, data: profile, message: res.message || "Profile updated successfully" };
@@ -106,6 +116,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
   }, []);
+
 
   useEffect(() => {
     let mounted = true;

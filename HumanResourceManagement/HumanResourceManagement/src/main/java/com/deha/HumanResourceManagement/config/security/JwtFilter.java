@@ -1,8 +1,7 @@
-package com.deha.HumanResourceManagement.config;
+package com.deha.HumanResourceManagement.config.security;
 
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.repository.UserRepository;
-import com.deha.HumanResourceManagement.utils.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -20,16 +20,16 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-@Component
+//@Component
 public class JwtFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
+    private final CustomUserDetailService customUserDetailService;
 
-    public JwtFilter(JwtUtil jwtUtil, UserRepository userRepository) {
+    public JwtFilter(JwtUtil jwtUtil, CustomUserDetailService customUserDetailService) {
         this.jwtUtil = jwtUtil;
-        this.userRepository = userRepository;
+        this.customUserDetailService = customUserDetailService;
     }
 
     @Override
@@ -51,21 +51,26 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
 
                 String username = jwtUtil.extractUsername(token);
-                User user = userRepository.findByEmail(username).orElse(null);
-                if (user == null || !user.isActive()) {
+                CustomUserDetail userDetail =
+                        (CustomUserDetail) customUserDetailService.loadUserByUsername(username);
+
+                if (!userDetail.isEnabled() || !userDetail.isAccountNonLocked()) {
+                    log.debug("User account is disabled or locked: {}", username);
                     SecurityContextHolder.clearContext();
-                } else {
-                    String roleName = user.getRole().name();
-                    String grantedRole = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
-                    Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-                    authorities.add(new SimpleGrantedAuthority(grantedRole));
-                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                            username,
-                            null,
-                            authorities
-                    );
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+                    filterChain.doFilter(request, response);
+                    return;
                 }
+
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetail,
+                                null,
+                                userDetail.getAuthorities()
+                        );
+
+
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (Exception e) {
                 log.debug("JWT authentication skipped due to invalid token: {}", e.getMessage());
                 SecurityContextHolder.clearContext();

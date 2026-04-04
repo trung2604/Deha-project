@@ -33,16 +33,20 @@ export default function Profile() {
   };
 
   return (
-    <div className="p-6">
-      <ProfileHeader />
+    <div className="space-y-6">
+      <div className="page-hero">
+        <ProfileHeader />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">
-          <ProfileSummaryCard user={user} />
+          <div className="glass-surface page-surface p-1">
+            <ProfileSummaryCard user={user} />
+          </div>
         </div>
 
         <div className="lg:col-span-2">
-          <div className="rounded-lg overflow-hidden" style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8E8E8" }}>
+          <div className="rounded-lg overflow-hidden glass-surface page-surface" style={{ border: "1px solid #E8E8E8" }}>
             <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
             <div className="p-6">

@@ -232,6 +232,7 @@ export function SalaryContractSection({
           loading={loading}
           dataSource={filteredContracts}
           columns={columns}
+          scroll={{ x: 860 }}
           pagination={{ pageSize: 8 }}
           locale={{ emptyText: "No contracts match current filter." }}
         />
