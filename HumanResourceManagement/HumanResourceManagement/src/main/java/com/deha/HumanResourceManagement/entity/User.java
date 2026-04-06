@@ -41,6 +41,9 @@ public class User {
     @Pattern(regexp = "^\\d{9,15}$", message = "Phone number must be 9-15 digits")
     private String phone;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     @Column(name = "password", nullable = false)
     private String password;
 

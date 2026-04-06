@@ -19,6 +19,7 @@ public class UserResponse {
     private String lastName;
     private String email;
     private String phone;
+    private String avatarUrl;
     private UUID officeId;
     private String officeName;
     private UUID departmentId;
@@ -37,6 +38,7 @@ public class UserResponse {
                 user.getLastName(),
                 user.getEmail(),
                 user.getPhone(),
+                user.getAvatarUrl(),
                 user.getOffice() != null ? user.getOffice().getId() : null,
                 user.getOffice() != null ? user.getOffice().getName() : null,
                 user.getDepartment() != null ? user.getDepartment().getId() : null,
