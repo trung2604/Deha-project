@@ -13,6 +13,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -75,6 +76,13 @@ public class UserController extends ApiControllerSupport {
             @PageableDefault(page = 0, size = 10, sort = "firstName") Pageable pageable) {
         Page<UserResponse> results = userService.getUsersWithFilters(keyword, officeId, departmentId, positionId, active, pageable);
         return success("Users retrieved successfully", HttpStatus.OK, PageResponse.fromPage(results));
+    }
+
+    @PostMapping("/me/avatar")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse uploadAvatar(@RequestParam("file") MultipartFile file) {
+        String avatarUrl = userService.uploadAvatar(file);
+        return success("Avatar uploaded successfully", HttpStatus.OK, avatarUrl);
     }
 
 }

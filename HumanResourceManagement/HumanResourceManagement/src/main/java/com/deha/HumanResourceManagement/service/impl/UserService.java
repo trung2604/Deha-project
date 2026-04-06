@@ -1,5 +1,7 @@
 package com.deha.HumanResourceManagement.service.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.deha.HumanResourceManagement.dto.user.UserRequest;
 import com.deha.HumanResourceManagement.dto.user.UserResponse;
 import com.deha.HumanResourceManagement.dto.user.UpdateUserRequest;
@@ -19,35 +21,37 @@ import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IOfficeService;
 import com.deha.HumanResourceManagement.service.IUserService;
 import com.deha.HumanResourceManagement.config.security.AccessScopeService;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class UserService implements IUserService {
+    private static final long MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
+
     private final UserRepository userRepository;
     private final IDepartmentService departmentService;
     private final IOfficeService officeService;
     private final PositionRepository positionRepository;
     private final AccessScopeService accessScopeService;
     private final PasswordEncoder passwordEncoder;
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final Cloudinary cloudinary;
 
 
-    public UserService(UserRepository userRepository, IDepartmentService departmentService, IOfficeService officeService, PositionRepository positionRepository, AccessScopeService accessScopeService, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, IDepartmentService departmentService, IOfficeService officeService, PositionRepository positionRepository, AccessScopeService accessScopeService, PasswordEncoder passwordEncoder, Cloudinary cloudinary) {
         this.userRepository = userRepository;
         this.departmentService = departmentService;
         this.officeService = officeService;
         this.positionRepository = positionRepository;
         this.accessScopeService = accessScopeService;
         this.passwordEncoder = passwordEncoder;
+        this.cloudinary = cloudinary;
     }
 
     @Override
@@ -167,6 +171,7 @@ public class UserService implements IUserService {
         user.setActive(current.isActive());
         user.setCreatedAt(current.getCreatedAt());
         user.setPhone(current.getPhone());
+        user.setAvatarUrl(current.getAvatarUrl());
 
         user.applyBasicInfo(
                 UserRequest.getFirstName(),
@@ -175,8 +180,8 @@ public class UserService implements IUserService {
                 UserRequest.getRole()
         );
         user.assignOfficeDepartmentAndPosition(office, department, position);
-        User merged = mergeAndFlush(user);
-        return UserResponse.fromEntity(merged);
+        userRepository.saveAndFlush(user);
+        return UserResponse.fromEntity(user);
     }
 
 //    public Page<UserResponse> getAllUsers(Pageable pageable) {
@@ -203,6 +208,55 @@ public class UserService implements IUserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         accessScopeService.assertCanManageOffice(user.getOffice() != null ? user.getOffice().getId() : null);
         userRepository.delete(user);
+    }
+
+    @Override
+    public String uploadAvatar(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new BadRequestException("Avatar file is required");
+        }
+        if (file.getSize() > MAX_AVATAR_SIZE_BYTES) {
+            throw new BadRequestException("Avatar file must be <= 2MB");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new BadRequestException("Only image files are allowed for avatar");
+        }
+        User actor = accessScopeService.currentUserOrThrow();
+        UUID userId = actor.getId();
+
+        try {
+            // Delete old avatar only when user has one, then upload a new file.
+            if (actor.getAvatarUrl() != null && !actor.getAvatarUrl().isBlank()) {
+                cloudinary.uploader().destroy(
+                        "avatars/" + userId,
+                        ObjectUtils.asMap(
+                                "resource_type", "image",
+                                "invalidate", true
+                        )
+                );
+            }
+
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "folder", "avatars",
+                            "public_id", userId.toString(),
+                            "overwrite", true,
+                            "resource_type", "image"
+                    )
+            );
+            Object secureUrl = uploadResult.get("secure_url");
+            if (secureUrl == null) {
+                throw new RuntimeException("Avatar upload failed: secure_url is missing");
+            }
+            String avatarUrl = secureUrl.toString();
+            actor.setAvatarUrl(avatarUrl);
+            userRepository.saveAndFlush(actor);
+            return avatarUrl;
+        } catch (Exception e) {
+            throw new RuntimeException("Avatar upload failed", e);
+        }
     }
 
 //    public Page<UserResponse> searchUsers(String keyword, Pageable pageable) {
@@ -274,14 +328,14 @@ public class UserService implements IUserService {
 //        }
 //    }
 
-    private User mergeAndFlush(User user) {
-        if (entityManager != null) {
-            User merged = entityManager.merge(user);
-            entityManager.flush();
-            return merged;
-        }
-        return userRepository.saveAndFlush(user);
-    }
+//    private User mergeAndFlush(User user) {
+//        if (entityManager != null) {
+//            User merged = entityManager.merge(user);
+//            entityManager.flush();
+//            return merged;
+//        }
+//        return userRepository.saveAndFlush(user);
+//    }
 }
 
 
