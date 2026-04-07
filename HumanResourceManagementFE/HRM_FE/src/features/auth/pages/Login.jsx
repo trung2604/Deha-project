@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../context/AuthContext";
+import authService from "../api/authService";
 import { isAdminRole, isOfficeManagerRole, isDepartmentManagerRole } from "@/utils/role";
 import { Checkbox, Form, Input } from "antd";
 
@@ -10,11 +11,78 @@ function defaultHomePath(user) {
   return "/profile";
 }
 
+function mapOAuthError(error) {
+  switch (error) {
+    case "account_not_found":
+      return "Tài khoản Google của bạn chưa được admin cấp trong hệ thống.";
+    case "account_inactive":
+      return "Tài khoản của bạn đang bị vô hiệu hóa.";
+    case "oauth2_failed":
+      return "Đăng nhập Google thất bại. Vui lòng thử lại.";
+    case "oauth2_email_missing":
+      return "Không lấy được email từ Google account.";
+    default:
+      return "Đăng nhập Google thất bại.";
+  }
+}
+
 export function Login() {
   const navigate = useNavigate();
-  const { isAuthenticated, user, login } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { isAuthenticated, user, login, exchangeOAuth2Code } = useAuth();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [oauthProcessing, setOauthProcessing] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    const runOAuthCallback = async () => {
+      const error = searchParams.get("error");
+      const code = searchParams.get("code");
+      if (!error && !code) return;
+
+      setOauthProcessing(true);
+
+      if (error) {
+        toast.error(mapOAuthError(error));
+        if (active) {
+          navigate("/login", { replace: true });
+          setOauthProcessing(false);
+        }
+        return;
+      }
+
+      if (!code) {
+        toast.error("Thiếu mã xác thực OAuth2.");
+        if (active) {
+          navigate("/login", { replace: true });
+          setOauthProcessing(false);
+        }
+        return;
+      }
+
+      const result = await exchangeOAuth2Code(code);
+      if (!active) return;
+
+      if (!result?.ok) {
+        toast.error(result?.message || "Đăng nhập Google thất bại");
+        navigate("/login", { replace: true });
+        setOauthProcessing(false);
+        return;
+      }
+
+      toast.success(result.message || "Đăng nhập Google thành công");
+      navigate(defaultHomePath(result.data), { replace: true });
+      setOauthProcessing(false);
+    };
+
+    runOAuthCallback();
+
+    return () => {
+      active = false;
+    };
+  }, [searchParams, exchangeOAuth2Code, navigate]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
@@ -44,6 +112,10 @@ export function Login() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    window.location.href = authService.getGoogleLoginUrl();
   };
 
   return (
@@ -97,7 +169,7 @@ export function Login() {
           requiredMark={false}
           onFinish={handleSubmit}
           initialValues={{ remember: false }}
-          disabled={submitting}
+          disabled={submitting || oauthProcessing}
           validateMessages={{
             required: "${label} is required",
             types: { email: "Please enter a valid email address" },
@@ -143,10 +215,28 @@ export function Login() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || oauthProcessing}
             className="w-full btn-primary-gradient justify-center"
           >
-            {submitting ? "Signing in..." : "Sign In"}
+            {submitting ? "Signing in..." : oauthProcessing ? "Processing Google sign-in..." : "Sign In"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={submitting || oauthProcessing}
+            className="w-full mt-3"
+            style={{
+              height: "38px",
+              borderRadius: "10px",
+              border: "1px solid #E8E8E8",
+              background: "#FFFFFF",
+              color: "#0A0A0A",
+              fontSize: "14px",
+              fontWeight: 500,
+            }}
+          >
+            Continue with Google
           </button>
         </Form>
       </div>

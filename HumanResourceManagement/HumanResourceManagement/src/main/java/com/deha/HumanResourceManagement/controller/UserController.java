@@ -85,4 +85,11 @@ public class UserController extends ApiControllerSupport {
         return success("Avatar uploaded successfully", HttpStatus.OK, avatarUrl);
     }
 
+    @DeleteMapping("/me/avatar")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse removeAvatar() {
+        userService.removeAvatar();
+        return success("Avatar removed successfully", HttpStatus.OK, null);
+    }
+
 }

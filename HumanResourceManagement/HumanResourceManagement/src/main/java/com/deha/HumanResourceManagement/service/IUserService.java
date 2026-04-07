@@ -20,6 +20,8 @@ public interface IUserService {
 
     String uploadAvatar(MultipartFile file);
 
+    void removeAvatar();
+
     Page<UserResponse> getUsersWithFilters(
             String keyword,
             UUID officeId,

@@ -81,7 +81,7 @@ export function OvertimeSection({
 
   const filteredMyOvertimeReports = useMemo(() => myOvertimeReports.filter((r) => {
     const statusMatched = myOvertimeReportStatusFilter === OT_FILTER_ALL ? true : r.status === myOvertimeReportStatusFilter;
-    return statusMatched && containsKeyword(r, myReportKeyword, ["logDate", "reportNote", "status", "reportedOtHours"]);
+    return statusMatched && containsKeyword(r, myReportKeyword, ["logDate", "reportNote", "status", "reportedOtHours", "evidenceFileName"]);
   }), [myOvertimeReports, myOvertimeReportStatusFilter, myReportKeyword]);
 
   const filteredApprovalScopeOvertimeRequests = useMemo(() => approvalScopeOvertimeRequests.filter((r) => {
@@ -91,7 +91,7 @@ export function OvertimeSection({
 
   const filteredApprovalScopeOvertimeReports = useMemo(() => approvalScopeOvertimeReports.filter((r) => {
     const statusMatched = pendingOvertimeReportStatusFilter === OT_FILTER_ALL ? true : r.status === pendingOvertimeReportStatusFilter;
-    return statusMatched && containsKeyword(r, pendingReportKeyword, ["userName", "logDate", "reportNote", "status", "reportedOtHours"]);
+    return statusMatched && containsKeyword(r, pendingReportKeyword, ["userName", "logDate", "reportNote", "status", "reportedOtHours", "evidenceFileName"]);
   }), [approvalScopeOvertimeReports, pendingOvertimeReportStatusFilter, pendingReportKeyword]);
 
   const overtimeActionHint = !hasApprovedOvertimeRequestForToday

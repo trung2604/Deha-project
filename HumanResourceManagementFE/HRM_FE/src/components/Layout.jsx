@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { useAuth } from '@/features/auth/context/AuthContext';
@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 export function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isAuthenticated, initializing } = useAuth();
+  const location = useLocation();
 
   if (initializing) {
     return (
@@ -23,7 +24,8 @@ export function Layout() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    const loginPath = `/login${location.search || ""}`;
+    return <Navigate to={loginPath} replace />;
   }
 
   return (

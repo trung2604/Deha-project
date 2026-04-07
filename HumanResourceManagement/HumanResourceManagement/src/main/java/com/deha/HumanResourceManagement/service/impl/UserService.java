@@ -27,6 +27,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.UUID;
@@ -34,6 +36,7 @@ import java.util.UUID;
 @Service
 public class UserService implements IUserService {
     private static final long MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final IDepartmentService departmentService;
@@ -224,10 +227,8 @@ public class UserService implements IUserService {
         }
         User actor = accessScopeService.currentUserOrThrow();
         UUID userId = actor.getId();
-
-        try {
-            // Delete old avatar only when user has one, then upload a new file.
-            if (actor.getAvatarUrl() != null && !actor.getAvatarUrl().isBlank()) {
+        if (actor.getAvatarUrl() != null && !actor.getAvatarUrl().isBlank()) {
+            try {
                 cloudinary.uploader().destroy(
                         "avatars/" + userId,
                         ObjectUtils.asMap(
@@ -235,8 +236,12 @@ public class UserService implements IUserService {
                                 "invalidate", true
                         )
                 );
+            } catch (Exception e) {
+                log.warn("Failed to remove old avatar before upload for user {}", userId, e);
             }
+        }
 
+        try {
             Map<?, ?> uploadResult = cloudinary.uploader().upload(
                     file.getBytes(),
                     ObjectUtils.asMap(
@@ -255,7 +260,34 @@ public class UserService implements IUserService {
             userRepository.saveAndFlush(actor);
             return avatarUrl;
         } catch (Exception e) {
-            throw new RuntimeException("Avatar upload failed", e);
+            log.error("Avatar upload failed for user {}", userId, e);
+            String reason = e.getMessage() != null && !e.getMessage().isBlank()
+                    ? e.getMessage()
+                    : "Unknown upload error";
+            throw new BadRequestException("Avatar upload failed: " + reason);
+        }
+    }
+
+    @Override
+    public void removeAvatar() {
+        User actor = accessScopeService.currentUserOrThrow();
+        if (actor.getAvatarUrl() == null || actor.getAvatarUrl().isBlank()) {
+            return;
+        }
+
+        UUID userId = actor.getId();
+        try {
+            cloudinary.uploader().destroy(
+                    "avatars/" + userId,
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "invalidate", true
+                    )
+            );
+            actor.setAvatarUrl(null);
+            userRepository.saveAndFlush(actor);
+        } catch (Exception e) {
+            throw new BadRequestException("Avatar remove failed. Please try again.");
         }
     }
 

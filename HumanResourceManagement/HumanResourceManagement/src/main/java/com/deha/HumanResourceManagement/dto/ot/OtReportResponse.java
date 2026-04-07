@@ -25,6 +25,9 @@ public class OtReportResponse {
     private Integer reportedOtHours;
     private String reportNote;
     private String evidenceFileName;
+    private String evidenceFileUrl;
+    private String evidenceFileMimeType;
+    private Long evidenceFileSizeBytes;
     private OtReportStatus status;
     private UUID approvedById;
     private String approvedByName;
@@ -49,6 +52,9 @@ public class OtReportResponse {
                 report.getReportedOtHours(),
                 report.getReportNote(),
                 report.getEvidenceFileName(),
+                report.getEvidenceFileUrl(),
+                report.getEvidenceFileMimeType(),
+                report.getEvidenceFileSizeBytes(),
                 report.getStatus(),
                 report.getApprovedBy() != null ? report.getApprovedBy().getId() : null,
                 report.getApprovedBy() != null ? (report.getApprovedBy().getFirstName() + " " + report.getApprovedBy().getLastName()).trim() : null,

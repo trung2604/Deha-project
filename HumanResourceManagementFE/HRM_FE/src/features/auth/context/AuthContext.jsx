@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
     try {
       const res = await authService.getMe();
       if (!isSuccessResponse(res)) {
-        const statusCode = Number(res?.statusCode ?? 0);
+        const statusCode = Number(res?.status ?? 0);
         if (statusCode === 401) {
           clearAuth();
         }
@@ -58,6 +58,30 @@ export function AuthProvider({ children }) {
       return { ok: false, message: "Unable to refresh profile" };
     }
   }, [clearAuth]);
+
+  const setSessionFromAuthResponse = useCallback(
+    async (res, fallbackMessage) => {
+      if (!isSuccessResponse(res)) {
+        return { ok: false, message: getResponseMessage(res, fallbackMessage) };
+      }
+
+      const nextToken = res.data?.token;
+      if (!nextToken) {
+        return { ok: false, message: "Token is missing in response" };
+      }
+
+      localStorage.setItem(TOKEN_KEY, nextToken);
+      setToken(nextToken);
+
+      const profileResult = await refreshProfile();
+      if (!profileResult.ok) {
+        return profileResult;
+      }
+
+      return { ok: true, data: profileResult.data, message: res.message || fallbackMessage };
+    },
+    [refreshProfile],
+  );
 
   const updateProfile = useCallback(
     async (payload) => {
@@ -78,28 +102,61 @@ export function AuthProvider({ children }) {
     [],
   );
 
-  const login = useCallback(
-    async (credentials) => {
+  const uploadAvatar = useCallback(
+    async (file) => {
       try {
-        const res = await authService.login(credentials);
+        const res = await authService.uploadAvatar(file);
         if (!isSuccessResponse(res)) {
-          return { ok: false, message: getResponseMessage(res, "Login failed") };
+          return { ok: false, message: getResponseMessage(res, "Upload avatar failed") };
         }
-
-        const nextToken = res.data?.token;
-        if (!nextToken) {
-          return { ok: false, message: "Token is missing in response" };
-        }
-
-        localStorage.setItem(TOKEN_KEY, nextToken);
-        setToken(nextToken);
 
         const profileResult = await refreshProfile();
         if (!profileResult.ok) {
           return profileResult;
         }
 
-        return { ok: true, data: profileResult.data, message: res.message || "Login successful" };
+        return {
+          ok: true,
+          data: profileResult.data,
+          message: res.message || "Avatar uploaded successfully",
+        };
+      } catch {
+        return { ok: false, message: "Upload avatar failed" };
+      }
+    },
+    [refreshProfile],
+  );
+
+  const removeAvatar = useCallback(
+    async () => {
+      try {
+        const res = await authService.removeAvatar();
+        if (!isSuccessResponse(res)) {
+          return { ok: false, message: getResponseMessage(res, "Remove avatar failed") };
+        }
+
+        const profileResult = await refreshProfile();
+        if (!profileResult.ok) {
+          return profileResult;
+        }
+
+        return {
+          ok: true,
+          data: profileResult.data,
+          message: res.message || "Avatar removed successfully",
+        };
+      } catch {
+        return { ok: false, message: "Remove avatar failed" };
+      }
+    },
+    [refreshProfile],
+  );
+
+  const login = useCallback(
+    async (credentials) => {
+      try {
+        const res = await authService.login(credentials);
+        return await setSessionFromAuthResponse(res, "Login successful");
       } catch (e) {
         const msg =
           e?.response?.data?.message ||
@@ -108,7 +165,23 @@ export function AuthProvider({ children }) {
         return { ok: false, message: msg };
       }
     },
-    [refreshProfile],
+    [setSessionFromAuthResponse],
+  );
+
+  const exchangeOAuth2Code = useCallback(
+    async (code) => {
+      try {
+        const res = await authService.exchangeOAuth2Code(code);
+        return await setSessionFromAuthResponse(res, "OAuth2 login successful");
+      } catch (e) {
+        const msg =
+          e?.response?.data?.message ||
+          e?.message ||
+          "OAuth2 exchange failed. Please try again.";
+        return { ok: false, message: msg };
+      }
+    },
+    [setSessionFromAuthResponse],
   );
 
   const logout = useCallback(() => {
@@ -144,11 +217,14 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(token),
       initializing,
       login,
+      exchangeOAuth2Code,
       logout,
       refreshProfile,
       updateProfile,
+      uploadAvatar,
+      removeAvatar,
     }),
-    [token, user, initializing, login, logout, refreshProfile, updateProfile],
+    [token, user, initializing, login, exchangeOAuth2Code, logout, refreshProfile, updateProfile, uploadAvatar, removeAvatar],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
