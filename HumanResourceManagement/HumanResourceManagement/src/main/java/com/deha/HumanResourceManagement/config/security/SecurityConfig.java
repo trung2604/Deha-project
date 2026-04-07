@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.config.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,6 +11,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -37,15 +42,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler, GoogleOAuth2FailureHandler googleOAuth2FailureHandler) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> {})
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .anyRequest().authenticated()
                 )
+                .oauth2Login(oauth2 -> oauth2
+                        .successHandler(googleOAuth2SuccessHandler)
+                        .failureHandler(googleOAuth2FailureHandler))
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt
                                 .decoder(jwtDecoder(jwtUtil))
@@ -115,5 +123,30 @@ public class SecurityConfig {
                     .collect(Collectors.toList());
         }
         return List.of(claim.toString());
+    }
+
+    @Bean
+    public ClientRegistrationRepository clientRegistrationRepository(
+            @Value("${spring.security.oauth2.client.registration.google.client-id}") String clientId,
+            @Value("${spring.security.oauth2.client.registration.google.client-secret}") String clientSecret,
+            @Value("${spring.security.oauth2.provider.google.authorization-uri}") String authorizationUri,
+            @Value("${spring.security.oauth2.provider.google.token-uri}") String tokenUri,
+            @Value("${spring.security.oauth2.provider.google.user-info-uri}") String userInfoUri
+    ) {
+        ClientRegistration google = ClientRegistration
+                .withRegistrationId("google")
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .redirectUri("{baseUrl}/login/oauth2/code/google")
+                .scope("email", "profile")
+                .authorizationUri(authorizationUri)
+                .tokenUri(tokenUri)
+                .userInfoUri(userInfoUri)
+                .userNameAttributeName("sub")
+                .clientName("Google")
+                .build();
+
+        return new InMemoryClientRegistrationRepository(google);
     }
 }

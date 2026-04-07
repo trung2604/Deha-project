@@ -56,6 +56,7 @@ function SidebarContent({ location, onClose, user }) {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
   const initials = ((user?.firstName?.[0] || '') + (user?.lastName?.[0] || '') || 'U').toUpperCase();
   const roleLabel = formatRoleLabel(user?.role);
+  const avatarUrl = user?.avatarUrl || '';
 
   const visibleItems = navItems.filter((item) => canAccessNavItem(item.roles, user?.role));
 
@@ -123,7 +124,15 @@ function SidebarContent({ location, onClose, user }) {
             className="w-8 h-8 rounded-full flex items-center justify-center text-white"
             style={{ backgroundColor: '#1677FF', fontSize: '12px', fontWeight: '600' }}
           >
-            {initials}
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={fullName}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              initials
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-white font-medium truncate" style={{ fontSize: '14px' }}>

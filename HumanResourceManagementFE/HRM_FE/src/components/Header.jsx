@@ -399,7 +399,15 @@ export function Header({ onMenuClick }) {
             style={{ backgroundColor: 'rgba(255,255,255,0.28)' }}
           >
             <div className="header-avatar-chip">
-              {initials.toUpperCase()}
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={fullName}
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : (
+                initials.toUpperCase()
+              )}
             </div>
             <span className="hidden sm:block font-medium" style={{ color: '#0A0A0A', fontSize: '14px' }}>
               {fullName}

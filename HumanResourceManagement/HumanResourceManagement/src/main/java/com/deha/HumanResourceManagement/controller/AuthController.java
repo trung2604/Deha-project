@@ -44,6 +44,14 @@ public class AuthController extends ApiControllerSupport {
         return success("Token refreshed successfully", HttpStatus.OK, authService.refresh(refreshToken, response));
     }
 
+    @PostMapping("/oauth2/exchange")
+    public ApiResponse exchangeOauth2Code(
+            @RequestParam("code") String code,
+            HttpServletResponse response
+    ) {
+        return success("OAuth2 exchange successful", HttpStatus.OK, authService.exchangeOAuth2Code(code, response));
+    }
+
     @PostMapping("/logout")
     public ApiResponse logout(
             @CookieValue(value = REFRESH_COOKIE_NAME, required = false) String refreshToken,

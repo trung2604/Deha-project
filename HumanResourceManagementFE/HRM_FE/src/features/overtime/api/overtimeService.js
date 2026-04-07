@@ -35,6 +35,20 @@ const overtimeService = {
     return axios.post("/ot-reports", data);
   },
 
+  createOvertimeReportWithEvidence: async ({ otSessionId, reportNote, file }) => {
+    const formData = new FormData();
+    formData.append("otSessionId", otSessionId);
+    formData.append("reportNote", reportNote);
+    if (file) {
+      formData.append("file", file);
+    }
+    return axios.post("/ot-reports", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
   decideOvertimeReport: async (id, data) => {
     return axios.patch(`/ot-reports/${id}/decision`, data);
   },

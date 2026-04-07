@@ -11,6 +11,7 @@ import { RequireDepartmentsViewAccess } from "./components/RequireDepartmentsVie
 import { RequireOvertimeAccess } from "./components/RequireOvertimeAccess";
 
 const Login = lazy(() => import("@/features/auth/pages/Login").then((m) => ({ default: m.Login })));
+const OAuth2Callback = lazy(() => import("@/features/auth/pages/OAuth2Callback").then((m) => ({ default: m.OAuth2Callback })));
 const UsersPage = lazy(() => import("@/features/users/pages/UserPage").then((m) => ({ default: m.UsersPage })));
 const DepartmentsPage = lazy(() =>
   import("@/features/departments/pages/DepartmentsPage").then((m) => ({ default: m.DepartmentsPage })),
@@ -55,6 +56,10 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: withSuspense(<Login />),
+  },
+  {
+    path: "/auth/callback",
+    element: withSuspense(<OAuth2Callback />),
   },
 //   {
 //     path: "/register",
