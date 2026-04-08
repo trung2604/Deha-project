@@ -6,6 +6,7 @@ import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.service.IAttendanceService;
 import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.ClientIpResolverService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Tag(name = "Attendance", description = "Attendance check-in/check-out and daily attendance tracking APIs")
 @RestController
 @RequestMapping("/api/attendance")
 public class AttendanceController extends ApiControllerSupport {

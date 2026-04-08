@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Checkbox, Form, Input } from "antd";
 import { useAuth } from "../context/AuthContext";
 import authService from "../api/authService";
-import { isAdminRole, isOfficeManagerRole, isDepartmentManagerRole } from "@/utils/role";
-import { Checkbox, Form, Input } from "antd";
+import { isAdminRole, isDepartmentManagerRole, isOfficeManagerRole } from "@/utils/role";
+import { AUTH_BG_STYLE, AUTH_CARD_STYLE, AUTH_LINK_BUTTON_STYLE, AUTH_OUTLINE_BUTTON_STYLE } from "../constants/authUi";
 
 function defaultHomePath(user) {
   if (isAdminRole(user?.role) || isOfficeManagerRole(user?.role) || isDepartmentManagerRole(user?.role)) return "/departments";
@@ -14,15 +15,15 @@ function defaultHomePath(user) {
 function mapOAuthError(error) {
   switch (error) {
     case "account_not_found":
-      return "Tài khoản Google của bạn chưa được admin cấp trong hệ thống.";
+      return "Your Google account has not been provisioned by an admin.";
     case "account_inactive":
-      return "Tài khoản của bạn đang bị vô hiệu hóa.";
+      return "Your account is inactive.";
     case "oauth2_failed":
-      return "Đăng nhập Google thất bại. Vui lòng thử lại.";
+      return "Google sign-in failed. Please try again.";
     case "oauth2_email_missing":
-      return "Không lấy được email từ Google account.";
+      return "Unable to retrieve email from your Google account.";
     default:
-      return "Đăng nhập Google thất bại.";
+      return "Google sign-in failed.";
   }
 }
 
@@ -54,7 +55,7 @@ export function Login() {
       }
 
       if (!code) {
-        toast.error("Thiếu mã xác thực OAuth2.");
+        toast.error("Missing OAuth2 authorization code.");
         if (active) {
           navigate("/login", { replace: true });
           setOauthProcessing(false);
@@ -66,19 +67,18 @@ export function Login() {
       if (!active) return;
 
       if (!result?.ok) {
-        toast.error(result?.message || "Đăng nhập Google thất bại");
+        toast.error(result?.message || "Google sign-in failed");
         navigate("/login", { replace: true });
         setOauthProcessing(false);
         return;
       }
 
-      toast.success(result.message || "Đăng nhập Google thành công");
+      toast.success(result.message || "Google sign-in successful");
       navigate(defaultHomePath(result.data), { replace: true });
       setOauthProcessing(false);
     };
 
     runOAuthCallback();
-
     return () => {
       active = false;
     };
@@ -119,48 +119,16 @@ export function Login() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{
-        background:
-          "radial-gradient(circle at 15% 18%, rgba(91,124,255,0.2), transparent 42%), radial-gradient(circle at 82% 6%, rgba(53,195,255,0.16), transparent 36%), #F4F7FF",
-      }}
-    >
-      <div
-        className="w-full max-w-md rounded-2xl p-8 glass-surface page-surface"
-        style={{ boxShadow: "0 18px 40px rgba(40,62,122,0.16)" }}
-      >
+    <div className="min-h-screen flex items-center justify-center p-6" style={AUTH_BG_STYLE}>
+      <div className="w-full max-w-md rounded-2xl p-8 glass-surface page-surface" style={AUTH_CARD_STYLE}>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, #5b7cff 0%, #7a5cff 100%)" }}
-            >
-              <span
-                style={{
-                  color: "#FFFFFF",
-                  fontSize: "20px",
-                  fontWeight: "700",
-                  fontFamily: "DM Sans, sans-serif",
-                }}
-              >
-                H
-              </span>
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #5b7cff 0%, #7a5cff 100%)" }}>
+              <span style={{ color: "#FFFFFF", fontSize: "20px", fontWeight: "700", fontFamily: "DM Sans, sans-serif" }}>H</span>
             </div>
-            <span
-              style={{
-                fontSize: "24px",
-                fontWeight: "700",
-                fontFamily: "DM Sans, sans-serif",
-                color: "#0A0A0A",
-              }}
-            >
-              HRM System
-            </span>
+            <span style={{ fontSize: "24px", fontWeight: "700", fontFamily: "DM Sans, sans-serif", color: "#0A0A0A" }}>HRM System</span>
           </div>
-          <p style={{ color: "#595959", fontSize: "14px" }}>
-            Sign in to your account to continue
-          </p>
+          <p style={{ color: "#595959", fontSize: "14px" }}>Sign in to continue using the system</p>
         </div>
 
         <Form
@@ -172,23 +140,18 @@ export function Login() {
           disabled={submitting || oauthProcessing}
           validateMessages={{
             required: "${label} is required",
-            types: { email: "Please enter a valid email address" },
+            types: { email: "Please enter a valid email" },
           }}
         >
           <Form.Item
-            label={<span style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: 500 }}>Email Address</span>}
+            label={<span style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: 500 }}>Email</span>}
             name="email"
             rules={[
               { required: true, message: "Please enter your email" },
-              { type: "email", message: "Please enter a valid email address" },
+              { type: "email", message: "Please enter a valid email" },
             ]}
           >
-            <Input
-              placeholder="you@company.com"
-              size="middle"
-              style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
-              autoComplete="email"
-            />
+            <Input placeholder="you@company.com" size="middle" style={{ borderColor: "#E8E8E8", fontSize: "14px" }} autoComplete="email" />
           </Form.Item>
 
           <Form.Item
@@ -198,7 +161,7 @@ export function Login() {
             validateTrigger={["onSubmit", "onChange"]}
           >
             <Input.Password
-              placeholder="••••••••"
+              placeholder="********"
               size="middle"
               style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
               autoComplete="current-password"
@@ -213,29 +176,17 @@ export function Login() {
             </div>
           </Form.Item>
 
-          <button
-            type="submit"
-            disabled={submitting || oauthProcessing}
-            className="w-full btn-primary-gradient justify-center"
-          >
-            {submitting ? "Signing in..." : oauthProcessing ? "Processing Google sign-in..." : "Sign In"}
+          <div style={{ marginTop: -8, marginBottom: 16, textAlign: "right" }}>
+            <button type="button" onClick={() => navigate("/forgot-password")} disabled={submitting || oauthProcessing} style={AUTH_LINK_BUTTON_STYLE}>
+              Forgot password?
+            </button>
+          </div>
+
+          <button type="submit" disabled={submitting || oauthProcessing} className="w-full btn-primary-gradient justify-center">
+            {submitting ? "Signing in..." : oauthProcessing ? "Processing Google sign-in..." : "Sign in"}
           </button>
 
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            disabled={submitting || oauthProcessing}
-            className="w-full mt-3"
-            style={{
-              height: "38px",
-              borderRadius: "10px",
-              border: "1px solid #E8E8E8",
-              background: "#FFFFFF",
-              color: "#0A0A0A",
-              fontSize: "14px",
-              fontWeight: 500,
-            }}
-          >
+          <button type="button" onClick={handleGoogleLogin} disabled={submitting || oauthProcessing} className="w-full mt-3" style={AUTH_OUTLINE_BUTTON_STYLE}>
             Continue with Google
           </button>
         </Form>

@@ -13,6 +13,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface OtRequestRepository extends JpaRepository<OtRequest, UUID> {
+    boolean existsByUser_Id(UUID userId);
+
     Optional<OtRequest> findByUserAndLogDate(User user, LocalDate logDate);
     Optional<OtRequest> findByUserAndLogDateAndStatus(User user, LocalDate logDate, OtRequestStatus status);
     List<OtRequest> findByOffice_IdAndLogDate(UUID officeId, LocalDate logDate);

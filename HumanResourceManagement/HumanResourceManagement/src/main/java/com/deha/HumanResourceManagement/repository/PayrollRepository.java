@@ -11,6 +11,8 @@ import java.util.UUID;
 
 @Repository
 public interface PayrollRepository extends JpaRepository<Payroll, UUID> {
+    boolean existsByUser_Id(UUID userId);
+
     Optional<Payroll> findByUserAndPayYearAndPayMonth(User user, Integer payYear, Integer payMonth);
 
     List<Payroll> findByPayYearAndPayMonthOrderByGeneratedAtDesc(Integer payYear, Integer payMonth);

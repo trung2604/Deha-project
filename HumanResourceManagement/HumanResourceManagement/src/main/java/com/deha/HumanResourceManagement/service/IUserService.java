@@ -18,6 +18,10 @@ public interface IUserService {
 
     void deleteUser(UUID id);
 
+    void deactivateUser(UUID id);
+
+    void resetUserPassword(UUID id, String newPassword);
+
     String uploadAvatar(MultipartFile file);
 
     void removeAvatar();

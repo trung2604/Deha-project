@@ -23,6 +23,26 @@ const authService = {
     return await axios.get("/auth/me");
   },
 
+  verifyEmail: async (token) => {
+    return await axios.get("/auth/verify", { params: { token }, _skipAuthRefresh: true });
+  },
+
+  forgotPassword: async (email) => {
+    return await axios.post("/auth/forgot-password", { email }, { _skipAuthRefresh: true });
+  },
+
+  verifyOtp: async ({ email, otp }) => {
+    return await axios.post("/auth/verify-otp", { email, otp }, { _skipAuthRefresh: true });
+  },
+
+  resetPassword: async ({ resetToken, newPassword }) => {
+    return await axios.post("/auth/reset-password", { resetToken, newPassword }, { _skipAuthRefresh: true });
+  },
+
+  changePassword: async ({ currentPassword, newPassword }) => {
+    return await axios.put("/auth/change-password", { currentPassword, newPassword });
+  },
+
   uploadAvatar: async (file) => {
     const formData = new FormData();
     formData.append("file", file);

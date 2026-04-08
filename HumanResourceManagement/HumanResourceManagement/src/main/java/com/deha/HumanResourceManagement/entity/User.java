@@ -109,10 +109,6 @@ public class User {
         this.position = position;
     }
 
-    public void activate() {
-        this.isActive = true;
-    }
-
     public void markCreatedNow() {
         this.createdAt = LocalDateTime.now();
     }

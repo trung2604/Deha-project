@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Edit, KeyRound, Trash2, X } from "lucide-react";
 import { Select, Spin } from "antd";
 import { formatRoleLabel } from "@/utils/role";
 
@@ -13,6 +14,7 @@ export function UserTable({
   users = [],
   onEdit,
   onDelete,
+  onResetPassword,
   readOnly = false,
   totalPages,
   totalElements,
@@ -21,6 +23,42 @@ export function UserTable({
   onPageChange,
   onSizeChange,
 }) {
+  const [previewUser, setPreviewUser] = useState(null);
+
+  function AvatarBadge({ user }) {
+    const [imgFailed, setImgFailed] = useState(false);
+    const initials = `${(user.firstName ?? "").charAt(0)}${(user.lastName ?? "").charAt(0)}`.toUpperCase() || "U";
+    const canShowImage = Boolean(user.avatarUrl) && !imgFailed;
+
+    return (
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0 transition-transform duration-300 hover:scale-105 overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, #5B7CFF 0%, #7A5CFF 100%)",
+          fontSize: "13px",
+          fontWeight: "600",
+          boxShadow: "0 6px 14px rgba(91,124,255,0.22)",
+          cursor: canShowImage ? "zoom-in" : "default",
+        }}
+        onClick={() => {
+          if (canShowImage) setPreviewUser(user);
+        }}
+        title={canShowImage ? "View avatar" : "No avatar"}
+      >
+        {canShowImage ? (
+          <img
+            src={user.avatarUrl}
+            alt={fullName(user)}
+            className="w-full h-full object-cover"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          initials
+        )}
+      </div>
+    );
+  }
+
   const list = Array.isArray(users) ? users : [];
   const showSkeletonOnly = loading && list.length === 0;
   const refetchingOverlay = loading && list.length > 0;
@@ -125,6 +163,9 @@ export function UserTable({
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="min-w-0">
+                      <div className="mb-2">
+                        <AvatarBadge user={user} />
+                      </div>
                       <div style={{ color: "#0A0A0A", fontSize: "14px", fontWeight: 600 }} className="truncate">
                         {fullName(user)}
                       </div>
@@ -171,10 +212,21 @@ export function UserTable({
                       <button
                         type="button"
                         onClick={() => onDelete(user)}
+                        disabled={!user.active}
                         className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50"
-                        style={{ color: "#FF4D4F" }}
+                        style={{ color: user.active ? "#FF4D4F" : "#A0A0A0", cursor: user.active ? "pointer" : "not-allowed" }}
+                        title={user.active ? "Delete user" : "User is already inactive"}
                       >
                         <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onResetPassword(user)}
+                        className="p-2 rounded-lg transition-colors duration-150 hover:bg-amber-50"
+                        style={{ color: "#FA8C16" }}
+                        title="Reset password"
+                      >
+                        <KeyRound className="w-4 h-4" />
                       </button>
                     </div>
                   )}
@@ -275,17 +327,7 @@ export function UserTable({
                 >
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
-                      <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center text-white shrink-0 transition-transform duration-300 hover:scale-105"
-                        style={{
-                          background: "linear-gradient(135deg, #5B7CFF 0%, #7A5CFF 100%)",
-                          fontSize: "13px",
-                          fontWeight: "600",
-                          boxShadow: "0 6px 14px rgba(91,124,255,0.22)",
-                        }}
-                      >
-                        {`${(user.firstName ?? "").charAt(0)}${(user.lastName ?? "").charAt(0)}`.toUpperCase()}
-                      </div>
+                      <AvatarBadge user={user} />
                       <div>
                         <div
                           style={{
@@ -372,10 +414,21 @@ export function UserTable({
                         <button
                           type="button"
                           onClick={() => onDelete(user)}
+                          disabled={!user.active}
                           className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50 hover-lift"
-                          style={{ color: "#FF4D4F" }}
+                          style={{ color: user.active ? "#FF4D4F" : "#A0A0A0", cursor: user.active ? "pointer" : "not-allowed" }}
+                          title={user.active ? "Delete user" : "User is already inactive"}
                         >
                           <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onResetPassword(user)}
+                          className="p-2 rounded-lg transition-colors duration-150 hover:bg-amber-50 hover-lift"
+                          style={{ color: "#FA8C16" }}
+                          title="Reset password"
+                        >
+                          <KeyRound className="w-4 h-4" />
                         </button>
                       </div>
                     )}
@@ -442,6 +495,37 @@ export function UserTable({
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {previewUser?.avatarUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          onClick={() => setPreviewUser(null)}
+        >
+          <div
+            className="w-full max-w-xl rounded-2xl overflow-hidden"
+            style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8E8E8" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #E8E8E8" }}>
+              <h3 style={{ color: "#0A0A0A", fontSize: "16px", fontWeight: 700, margin: 0 }}>
+                {fullName(previewUser)}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPreviewUser(null)}
+                className="p-2 rounded-lg"
+                style={{ color: "#595959", backgroundColor: "#F5F5F5" }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 flex items-center justify-center" style={{ backgroundColor: "#0A0A0A" }}>
+              <img src={previewUser.avatarUrl} alt={fullName(previewUser)} className="max-h-[70vh] w-auto rounded-lg object-contain" />
+            </div>
           </div>
         </div>
       )}

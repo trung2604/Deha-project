@@ -4,6 +4,7 @@ import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.office.OfficePolicyRequest;
 import com.deha.HumanResourceManagement.dto.office.OfficeRequest;
 import com.deha.HumanResourceManagement.service.IOfficeService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Tag(name = "Offices", description = "Office management and office policy APIs")
 @RestController
 @RequestMapping("/api/offices")
 public class OfficeController extends ApiControllerSupport {

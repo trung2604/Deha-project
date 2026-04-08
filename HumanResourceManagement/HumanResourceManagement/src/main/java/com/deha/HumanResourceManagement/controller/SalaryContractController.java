@@ -3,6 +3,7 @@ package com.deha.HumanResourceManagement.controller;
 import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.salarycontract.SalaryContractRequest;
 import com.deha.HumanResourceManagement.service.impl.SalaryContractService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Tag(name = "Salary Contracts", description = "Salary contract management APIs")
 @RestController
 @RequestMapping("/api/salary-contracts")
 public class SalaryContractController extends ApiControllerSupport {

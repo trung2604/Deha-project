@@ -12,6 +12,8 @@ import java.util.UUID;
 
 @Repository
 public interface AttendanceLogRepository extends JpaRepository<AttendanceLog, UUID> {
+    boolean existsByUser_Id(UUID userId);
+
     boolean existsByUserAndLogDate(User user, LocalDate logDate);
 
     Optional<AttendanceLog> findByUserAndLogDate(User user, LocalDate logDate);

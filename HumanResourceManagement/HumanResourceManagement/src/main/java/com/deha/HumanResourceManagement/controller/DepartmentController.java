@@ -5,6 +5,7 @@ import com.deha.HumanResourceManagement.dto.department.DepartmentRequest;
 import com.deha.HumanResourceManagement.dto.position.PositionRequest;
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IPositionService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Tag(name = "Departments", description = "Department directory and department/position management APIs")
 @RestController
 @RequestMapping("/api/departments")
 public class DepartmentController extends ApiControllerSupport {

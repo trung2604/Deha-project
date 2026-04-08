@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
+import { Modal } from "antd";
 import { toast } from "sonner";
 import { UserFilters } from "../components/UserFilters";
 import { UserTable } from "../components/UserTable";
 import { UserModal } from "@/features/users/components/UserModal";
 import { DeleteUserModal } from "@/features/users/components/DeleteUserModal";
+import { ResetUserPasswordModal } from "@/features/users/components/ResetUserPasswordModal";
 import UserService from "@/features/users/api/UserService";
 import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
@@ -19,6 +21,7 @@ import {
   getPageContent,
   getPageMeta,
   getResponseMessage,
+  isConflictResponse,
   isSuccessResponse,
 } from "@/utils/apiResponse";
 
@@ -44,6 +47,7 @@ export function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [resettingUser, setResettingUser] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [offices, setOffices] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -184,7 +188,28 @@ export function UsersPage() {
     async function run() {
       try {
         const res = await UserService.deleteUser(deletingUser.id);
-        if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to delete User"));
+        if (!isSuccessResponse(res)) {
+          if (isConflictResponse(res)) {
+            Modal.confirm({
+              title: "Cannot delete user",
+              content: `${getResponseMessage(res, "This user has related records.")} Do you want to deactivate this user instead?`,
+              okText: "Deactivate",
+              cancelText: "Cancel",
+              okButtonProps: { danger: true },
+              onOk: async () => {
+                const deactivateRes = await UserService.deactivateUser(deletingUser.id);
+                if (!isSuccessResponse(deactivateRes)) {
+                  toast.error(getResponseMessage(deactivateRes, "Failed to deactivate user"));
+                  return;
+                }
+                await reloadUsers();
+                toast.success(getResponseMessage(deactivateRes, "User deactivated successfully"));
+              },
+            });
+            return;
+          }
+          return toast.error(getResponseMessage(res, "Failed to delete User"));
+        }
         await reloadUsers();
         toast.success(getResponseMessage(res, "User deleted successfully"));
       } catch {
@@ -228,6 +253,21 @@ export function UsersPage() {
       toast.error("Failed to save User");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (newPassword) => {
+    if (!resettingUser?.id) return;
+    try {
+      const res = await UserService.resetUserPassword(resettingUser.id, newPassword);
+      if (!isSuccessResponse(res)) {
+        toast.error(getResponseMessage(res, "Failed to reset password"));
+        return;
+      }
+      toast.success(getResponseMessage(res, "User password reset successfully"));
+      setResettingUser(null);
+    } catch {
+      toast.error("Failed to reset password");
     }
   };
 
@@ -319,6 +359,7 @@ export function UsersPage() {
         users={filteredUsers}
         onEdit={setEditingUser}
         onDelete={setDeletingUser}
+        onResetPassword={setResettingUser}
         readOnly={readOnly}
         totalPages={totalPages}
         totalElements={totalElements}
@@ -348,6 +389,14 @@ export function UsersPage() {
           }
           onClose={() => setDeletingUser(null)}
           onConfirm={handleDeleteConfirm}
+        />
+      )}
+
+      {resettingUser && (
+        <ResetUserPasswordModal
+          user={resettingUser}
+          onClose={() => setResettingUser(null)}
+          onSubmit={handleResetPasswordSubmit}
         />
       )}
     </div>
