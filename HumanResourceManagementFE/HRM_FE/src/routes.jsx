@@ -12,6 +12,9 @@ import { RequireOvertimeAccess } from "./components/RequireOvertimeAccess";
 
 const Login = lazy(() => import("@/features/auth/pages/Login").then((m) => ({ default: m.Login })));
 const OAuth2Callback = lazy(() => import("@/features/auth/pages/OAuth2Callback").then((m) => ({ default: m.OAuth2Callback })));
+const VerifyEmail = lazy(() => import("@/features/auth/pages/VerifyEmail").then((m) => ({ default: m.VerifyEmail })));
+const ForgotPassword = lazy(() => import("@/features/auth/pages/ForgotPassword").then((m) => ({ default: m.ForgotPassword })));
+const ResetPassword = lazy(() => import("@/features/auth/pages/ResetPassword").then((m) => ({ default: m.ResetPassword })));
 const UsersPage = lazy(() => import("@/features/users/pages/UserPage").then((m) => ({ default: m.UsersPage })));
 const DepartmentsPage = lazy(() =>
   import("@/features/departments/pages/DepartmentsPage").then((m) => ({ default: m.DepartmentsPage })),
@@ -60,6 +63,18 @@ export const router = createBrowserRouter([
   {
     path: "/auth/callback",
     element: withSuspense(<OAuth2Callback />),
+  },
+  {
+    path: "/verify-email",
+    element: withSuspense(<VerifyEmail />),
+  },
+  {
+    path: "/forgot-password",
+    element: withSuspense(<ForgotPassword />),
+  },
+  {
+    path: "/reset-password",
+    element: withSuspense(<ResetPassword />),
   },
 //   {
 //     path: "/register",

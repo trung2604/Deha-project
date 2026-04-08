@@ -2,6 +2,7 @@ package com.deha.HumanResourceManagement.service.support;
 
 import com.deha.HumanResourceManagement.config.security.CustomUserDetail;
 import com.deha.HumanResourceManagement.config.security.RolePermissionResolver;
+import com.deha.HumanResourceManagement.dto.auth.ChangePasswordRequest;
 import com.deha.HumanResourceManagement.dto.auth.LoginRequest;
 import com.deha.HumanResourceManagement.dto.auth.LoginResponse;
 import com.deha.HumanResourceManagement.dto.user.UpdateProfileRequest;
@@ -24,6 +25,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final RolePermissionResolver rolePermissionResolver;
     private final RedisTemplate<String, String> redisTemplate;
+    private final PasswordEncoder passwordEncoder;
     private final boolean cookieSecure;
     private final long oauth2ExchangeCodeTtlMs;
 
@@ -51,6 +54,7 @@ public class AuthService {
             JwtUtil jwtUtil,
             RolePermissionResolver rolePermissionResolver,
             RedisTemplate<String, String> redisTemplate,
+            PasswordEncoder passwordEncoder,
             @Value("${app.oauth2.exchange-code-ttl-ms:60000}") long oauth2ExchangeCodeTtlMs,
             @Value("${app.cookie.secure:false}") boolean cookieSecure
     ) {
@@ -59,6 +63,7 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
         this.rolePermissionResolver = rolePermissionResolver;
         this.redisTemplate = redisTemplate;
+        this.passwordEncoder = passwordEncoder;
         this.oauth2ExchangeCodeTtlMs = oauth2ExchangeCodeTtlMs;
         this.cookieSecure = cookieSecure;
     }
@@ -272,6 +277,39 @@ public class AuthService {
         current.setPhone(normalizedPhone.isEmpty() ? null : normalizedPhone);
         userRepository.saveAndFlush(current);
         return UserResponse.fromEntity(current);
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest request, String refreshToken, HttpServletResponse response) {
+        if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+            throw new BadRequestException("Current password is required");
+        }
+        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            throw new BadRequestException("New password is required");
+        }
+        if (request.getNewPassword().length() < 8) {
+            throw new BadRequestException("Password must be at least 8 characters");
+        }
+
+        String email = currentEmail();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new BadRequestException("New password must be different from current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.saveAndFlush(user);
+
+        // Invalidate current refresh token to enforce re-login after password change.
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            jwtUtil.deleteToken(refreshToken);
+        }
+        clearRefreshCookie(response);
     }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {

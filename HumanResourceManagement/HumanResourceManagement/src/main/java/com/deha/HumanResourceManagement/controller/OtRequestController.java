@@ -4,6 +4,7 @@ import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.ot.OtDecisionRequest;
 import com.deha.HumanResourceManagement.dto.ot.OtRequestCreateRequest;
 import com.deha.HumanResourceManagement.service.IOtRequestService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Tag(name = "OT Requests", description = "Overtime request creation and approval workflow APIs")
 @RestController
 @RequestMapping("/api/ot-requests")
 public class OtRequestController extends ApiControllerSupport {

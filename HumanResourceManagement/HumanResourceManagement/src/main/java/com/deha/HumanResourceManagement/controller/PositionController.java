@@ -3,6 +3,7 @@ package com.deha.HumanResourceManagement.controller;
 import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.position.PositionRequest;
 import com.deha.HumanResourceManagement.service.IPositionService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Tag(name = "Positions", description = "Position catalog management APIs")
 @RestController
 @RequestMapping("/api/positions")
 public class PositionController extends ApiControllerSupport {

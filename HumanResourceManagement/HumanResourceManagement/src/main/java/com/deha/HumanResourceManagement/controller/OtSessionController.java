@@ -3,6 +3,7 @@ package com.deha.HumanResourceManagement.controller;
 import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.service.IOtSessionService;
 import com.deha.HumanResourceManagement.service.support.ClientIpResolverService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "OT Sessions", description = "Overtime check-in/check-out session APIs")
 @RestController
 @RequestMapping("/api/ot-sessions")
 public class OtSessionController extends ApiControllerSupport {

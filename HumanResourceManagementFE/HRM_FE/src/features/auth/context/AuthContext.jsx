@@ -102,6 +102,18 @@ export function AuthProvider({ children }) {
     [],
   );
 
+  const changePassword = useCallback(async (payload) => {
+    try {
+      const res = await authService.changePassword(payload);
+      if (!isSuccessResponse(res)) {
+        return { ok: false, message: getResponseMessage(res, "Change password failed") };
+      }
+      return { ok: true, message: res.message || "Password changed successfully" };
+    } catch {
+      return { ok: false, message: "Change password failed" };
+    }
+  }, []);
+
   const uploadAvatar = useCallback(
     async (file) => {
       try {
@@ -221,10 +233,11 @@ export function AuthProvider({ children }) {
       logout,
       refreshProfile,
       updateProfile,
+      changePassword,
       uploadAvatar,
       removeAvatar,
     }),
-    [token, user, initializing, login, exchangeOAuth2Code, logout, refreshProfile, updateProfile, uploadAvatar, removeAvatar],
+    [token, user, initializing, login, exchangeOAuth2Code, logout, refreshProfile, updateProfile, changePassword, uploadAvatar, removeAvatar],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

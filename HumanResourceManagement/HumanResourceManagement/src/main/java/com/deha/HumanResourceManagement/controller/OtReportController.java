@@ -4,6 +4,7 @@ import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.ot.OtDecisionRequest;
 import com.deha.HumanResourceManagement.dto.ot.OtReportCreateRequest;
 import com.deha.HumanResourceManagement.service.IOtReportService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
+@Tag(name = "OT Reports", description = "Overtime report submission and approval APIs")
 @RestController
 @RequestMapping("/api/ot-reports")
 public class OtReportController extends ApiControllerSupport {

@@ -3,6 +3,7 @@ package com.deha.HumanResourceManagement.controller;
 import com.deha.HumanResourceManagement.dto.ApiResponse;
 import com.deha.HumanResourceManagement.dto.payroll.GeneratePayrollRequest;
 import com.deha.HumanResourceManagement.service.IPayrollService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Tag(name = "Payroll", description = "Payroll generation and payroll retrieval APIs")
 @RestController
 @RequestMapping("/api/payrolls")
 public class PayrollController extends ApiControllerSupport {

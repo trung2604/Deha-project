@@ -12,18 +12,25 @@ import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.Position;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
+import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
+import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
+import com.deha.HumanResourceManagement.repository.OtRequestRepository;
+import com.deha.HumanResourceManagement.repository.OtSessionRepository;
+import com.deha.HumanResourceManagement.repository.PayrollRepository;
 import com.deha.HumanResourceManagement.repository.specification.UserSpecification;
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IOfficeService;
 import com.deha.HumanResourceManagement.service.IUserService;
 import com.deha.HumanResourceManagement.config.security.AccessScopeService;
+import com.deha.HumanResourceManagement.service.support.EmailVerificationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,19 +49,29 @@ public class UserService implements IUserService {
     private final IDepartmentService departmentService;
     private final IOfficeService officeService;
     private final PositionRepository positionRepository;
+    private final AttendanceLogRepository attendanceLogRepository;
+    private final OtRequestRepository otRequestRepository;
+    private final OtSessionRepository otSessionRepository;
+    private final PayrollRepository payrollRepository;
     private final AccessScopeService accessScopeService;
     private final PasswordEncoder passwordEncoder;
     private final Cloudinary cloudinary;
+    private final EmailVerificationService emailVerificationService;
 
 
-    public UserService(UserRepository userRepository, IDepartmentService departmentService, IOfficeService officeService, PositionRepository positionRepository, AccessScopeService accessScopeService, PasswordEncoder passwordEncoder, Cloudinary cloudinary) {
+    public UserService(UserRepository userRepository, IDepartmentService departmentService, IOfficeService officeService, PositionRepository positionRepository, AttendanceLogRepository attendanceLogRepository, OtRequestRepository otRequestRepository, OtSessionRepository otSessionRepository, PayrollRepository payrollRepository, AccessScopeService accessScopeService, PasswordEncoder passwordEncoder, Cloudinary cloudinary, EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
         this.departmentService = departmentService;
         this.officeService = officeService;
         this.positionRepository = positionRepository;
+        this.attendanceLogRepository = attendanceLogRepository;
+        this.otRequestRepository = otRequestRepository;
+        this.otSessionRepository = otSessionRepository;
+        this.payrollRepository = payrollRepository;
         this.accessScopeService = accessScopeService;
         this.passwordEncoder = passwordEncoder;
         this.cloudinary = cloudinary;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @Override
@@ -113,8 +130,9 @@ public class UserService implements IUserService {
         user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
         user.assignOfficeDepartmentAndPosition(office, department, position);
         user.markCreatedNow();
-        user.activate();
+        user.setActive(false);
         userRepository.save(user);
+        emailVerificationService.sendVerificationEmail(user);
         return UserResponse.fromEntity(user);
     }
 
@@ -210,7 +228,58 @@ public class UserService implements IUserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         accessScopeService.assertCanManageOffice(user.getOffice() != null ? user.getOffice().getId() : null);
-        userRepository.delete(user);
+
+        if (hasRelatedUserRecords(user.getId())) {
+            throw new ConflictException("Cannot delete user because related records already exist (attendance/overtime/payroll). Deactivate the user instead.");
+        }
+
+        try {
+            userRepository.delete(user);
+            userRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ConflictException("Cannot delete user because related records already exist (attendance/overtime/payroll). Deactivate the user instead.");
+        }
+    }
+
+    @Override
+    public void deactivateUser(UUID id) {
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        accessScopeService.assertCanManageOffice(target.getOffice() != null ? target.getOffice().getId() : null);
+
+        User actor = accessScopeService.currentUserOrThrow();
+        if (accessScopeService.isManager(actor) && target.getRole() == Role.ADMIN) {
+            throw new ForbiddenException("Manager cannot deactivate admin user");
+        }
+
+        if (!target.isActive()) {
+            return;
+        }
+
+        target.setActive(false);
+        userRepository.saveAndFlush(target);
+    }
+
+    @Override
+    public void resetUserPassword(UUID id, String newPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new BadRequestException("New password is required");
+        }
+        if (newPassword.length() < 8) {
+            throw new BadRequestException("Password must be at least 8 characters");
+        }
+
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        accessScopeService.assertCanManageOffice(target.getOffice() != null ? target.getOffice().getId() : null);
+
+        User actor = accessScopeService.currentUserOrThrow();
+        if (accessScopeService.isManager(actor) && target.getRole() == Role.ADMIN) {
+            throw new ForbiddenException("Manager cannot reset admin password");
+        }
+
+        target.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.saveAndFlush(target);
     }
 
     @Override
@@ -319,6 +388,14 @@ public class UserService implements IUserService {
             scopedOfficeId = officeId;
             scopedDepartmentId = departmentId;
 
+        } else if (accessScopeService.isOfficeManager(actor)) {
+            scopedOfficeId = actor.getOffice() != null ? actor.getOffice().getId() : null;
+            scopedDepartmentId = departmentId;
+
+            if (scopedOfficeId == null) {
+                throw new ForbiddenException("Office manager must be assigned to an office");
+            }
+
         } else if (accessScopeService.isDepartmentManager(actor)) {
 
             scopedOfficeId = actor.getOffice() != null ? actor.getOffice().getId() : null;
@@ -329,8 +406,7 @@ public class UserService implements IUserService {
             }
 
         } else {
-            scopedOfficeId = actor.getOffice().getId();
-            scopedDepartmentId = departmentId;
+            throw new ForbiddenException("You do not have permission to view users");
         }
 
         Specification<User> spec = Specification
@@ -349,6 +425,13 @@ public class UserService implements IUserService {
         if (accessScopeService.isManager(actor) && targetRole == Role.ADMIN) {
             throw new ForbiddenException("Manager cannot assign admin role");
         }
+    }
+
+    private boolean hasRelatedUserRecords(UUID userId) {
+        return attendanceLogRepository.existsByUser_Id(userId)
+                || otRequestRepository.existsByUser_Id(userId)
+                || otSessionRepository.existsByUser_Id(userId)
+                || payrollRepository.existsByUser_Id(userId);
     }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
