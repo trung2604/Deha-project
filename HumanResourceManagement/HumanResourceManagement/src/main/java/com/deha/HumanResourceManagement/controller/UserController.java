@@ -32,7 +32,7 @@ public class UserController extends ApiControllerSupport {
     }
 
     @PostMapping()
-    @PreAuthorize("hasAuthority('USER_MANAGE')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     @Operation(summary = "Create user", description = "Create new user account and trigger activation email flow")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "User created"),
@@ -45,7 +45,7 @@ public class UserController extends ApiControllerSupport {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('USER_MANAGE')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     @Operation(summary = "Update user", description = "Update user profile, role, and organization assignment")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User updated"),
@@ -58,7 +58,7 @@ public class UserController extends ApiControllerSupport {
     }
 
     @GetMapping()
-    @PreAuthorize("hasAuthority('USER_VIEW')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE','MANAGER_DEPARTMENT')")
     @Operation(summary = "List users", description = "Get users with keyword/filter/pagination based on caller scope")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Users retrieved"),
@@ -77,7 +77,7 @@ public class UserController extends ApiControllerSupport {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('USER_VIEW')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE','MANAGER_DEPARTMENT')")
     @Operation(summary = "Get user by id", description = "Get user detail by id with access-scope enforcement")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User retrieved"),
@@ -89,7 +89,7 @@ public class UserController extends ApiControllerSupport {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('USER_MANAGE')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     @Operation(summary = "Delete user", description = "Delete user when no dependent attendance/overtime/payroll records exist")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User deleted"),
@@ -102,7 +102,7 @@ public class UserController extends ApiControllerSupport {
     }
 
     @PatchMapping("/{id}/deactivate")
-    @PreAuthorize("hasAuthority('USER_MANAGE')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     @Operation(summary = "Deactivate user", description = "Set user as inactive without deleting historical records")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User deactivated"),
@@ -115,7 +115,7 @@ public class UserController extends ApiControllerSupport {
     }
 
     @PostMapping("/{id}/reset-password")
-    @PreAuthorize("hasAuthority('USER_MANAGE')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     @Operation(summary = "Reset user password", description = "Admin/manager reset password for target user in allowed scope")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset"),
@@ -128,7 +128,7 @@ public class UserController extends ApiControllerSupport {
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAuthority('USER_VIEW')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE','MANAGER_DEPARTMENT')")
     @Operation(summary = "Search users", description = "Search users by keyword with optional organization/status filters")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Users retrieved"),

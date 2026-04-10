@@ -34,6 +34,10 @@ const OvertimePage = lazy(() =>
 );
 const PayrollPage = lazy(() => import("@/features/payroll/pages/PayrollPage").then((m) => ({ default: m.PayrollPage })));
 const Profile = lazy(() => import("@/features/profile/pages/Profile"));
+const ChatPage = lazy(() => import("@/features/chat/pages/ChatPage.jsx").then((m) => ({ default: m.ChatPage })));
+const NotificationsPage = lazy(() =>
+  import("@/features/notifications/pages/NotificationsPage").then((m) => ({ default: m.NotificationsPage })),
+);
 
 function RouteLoader() {
   return (
@@ -132,11 +136,18 @@ export const router = createBrowserRouter([
           <RequireOfficeManagerOrAdmin>{withSuspense(<PayrollPage />)}</RequireOfficeManagerOrAdmin>
         ),
       },
+      {
+        path: "chat",
+        element: withSuspense(<ChatPage />),
+      },
+      {
+        path: "notifications",
+        element: withSuspense(<NotificationsPage />),
+      },
     //   { path: "leave-requests", Component: LeaveRequests },
     //   { path: "salary", Component: Salary },
     //   { path: "activity-logs", Component: ActivityLogs },
       { path: "profile", element: withSuspense(<Profile />) },
-    //   { path: "notifications", Component: Notifications },
     ],
   },
 ]);

@@ -23,38 +23,38 @@ public class OfficeController extends ApiControllerSupport {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('OFFICE_VIEW')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse getAll() {
         return success("Offices retrieved successfully", HttpStatus.OK, officeService.getAll());
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('OFFICE_MANAGE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse create(@RequestBody @Valid OfficeRequest request) {
         return success("Office created successfully", HttpStatus.CREATED, officeService.create(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('OFFICE_MANAGE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse update(@PathVariable UUID id, @RequestBody @Valid OfficeRequest request) {
         return success("Office updated successfully", HttpStatus.OK, officeService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('OFFICE_MANAGE')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse delete(@PathVariable UUID id) {
         officeService.delete(id);
         return success("Office deleted successfully", HttpStatus.OK, null);
     }
 
     @GetMapping("/my-policy")
-    @PreAuthorize("hasAuthority('OFFICE_POLICY_VIEW')")
+    @PreAuthorize("hasRole('MANAGER_OFFICE')")
     public ApiResponse myPolicy() {
         return success("Office policy retrieved successfully", HttpStatus.OK, officeService.getMyPolicy());
     }
 
     @PutMapping("/my-policy")
-    @PreAuthorize("hasAuthority('OFFICE_POLICY_UPDATE')")
+    @PreAuthorize("hasRole('MANAGER_OFFICE')")
     public ApiResponse updateMyPolicy(@RequestBody @Valid OfficePolicyRequest request) {
         return success("Office policy updated successfully", HttpStatus.OK, officeService.updateMyPolicy(request));
     }

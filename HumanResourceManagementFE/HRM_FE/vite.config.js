@@ -8,6 +8,12 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 export default defineConfig({
+  // Some browser bundles (e.g. sockjs-client) still reference Node's `global`.
+  // Map it to `globalThis` so realtime features work in Vite dev/prod.
+  define: {
+    global: 'globalThis',
+  },
+
   plugins: [
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them

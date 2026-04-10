@@ -16,6 +16,7 @@ import com.deha.HumanResourceManagement.repository.DepartmentRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.repository.specification.DepartmentSpecification;
+import com.deha.HumanResourceManagement.service.IChatService;
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IOfficeService;
 import com.deha.HumanResourceManagement.config.security.AccessScopeService;
@@ -34,6 +35,7 @@ public class DepartmentService implements IDepartmentService {
     private final PositionRepository positionRepository;
     private final UserRepository userRepository;
     private final IOfficeService officeService;
+    private final IChatService chatService;
     private final AccessScopeService accessScopeService;
     private final EntityManager entityManager;
 
@@ -42,17 +44,20 @@ public class DepartmentService implements IDepartmentService {
             PositionRepository positionRepository,
             UserRepository userRepository,
             IOfficeService officeService,
+            IChatService chatService,
             AccessScopeService accessScopeService, EntityManager entityManager
     ) {
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.userRepository = userRepository;
         this.officeService = officeService;
+        this.chatService = chatService;
         this.accessScopeService = accessScopeService;
         this.entityManager = entityManager;
     }
 
     @Override
+    @Transactional
     public DepartmentResponse createDepartment(DepartmentRequest departmentRequest){
         Office office = officeService.findById(departmentRequest.getOfficeId());
         accessScopeService.assertCanManageOffice(office.getId());
@@ -63,6 +68,7 @@ public class DepartmentService implements IDepartmentService {
         department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
         department.assignOffice(office);
         departmentRepository.save(department);
+        chatService.createDepartmentRoom(department);
         return DepartmentResponse.fromEntity(department);
     }
 

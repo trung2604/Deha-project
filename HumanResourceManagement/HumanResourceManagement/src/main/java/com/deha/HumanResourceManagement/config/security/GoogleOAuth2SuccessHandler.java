@@ -10,6 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -23,6 +24,9 @@ public class GoogleOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
     @Value("${app.oauth2.redirect-uri}")
     private String redirectUri;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     public GoogleOAuth2SuccessHandler(
             UserRepository userRepository,
@@ -38,13 +42,14 @@ public class GoogleOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
             HttpServletResponse response,
             Authentication authentication
     ) throws IOException {
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+            String callbackBase = resolveCallbackBase();
+            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
         Object emailAttr = oAuth2User.getAttributes().get("email");
         String email = emailAttr != null ? emailAttr.toString() : null;
         if (email == null || email.isBlank()) {
             getRedirectStrategy().sendRedirect(request, response,
-                    redirectUri + "?error=oauth2_email_missing");
+                    withQuery(callbackBase, "error", "oauth2_email_missing"));
             return;
         }
 
@@ -53,19 +58,48 @@ public class GoogleOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
         if (user == null) {
             getRedirectStrategy().sendRedirect(request, response,
-                    redirectUri + "?error=account_not_found");
+                    withQuery(callbackBase, "error", "account_not_found"));
             return;
         }
 
         if (!user.isActive()) {
             getRedirectStrategy().sendRedirect(request, response,
-                    redirectUri + "?error=account_inactive");
+                    withQuery(callbackBase, "error", "account_inactive"));
             return;
         }
 
         String code = authService.createOAuth2ExchangeCode(user.getId());
 
         getRedirectStrategy().sendRedirect(request, response,
-                redirectUri + "?code=" + URLEncoder.encode(code, StandardCharsets.UTF_8));
+                withQuery(callbackBase, "code", URLEncoder.encode(code, StandardCharsets.UTF_8)));
+    }
+
+    private String resolveCallbackBase() {
+        if (redirectUri == null || redirectUri.isBlank()) {
+            return fallbackCallbackUrl();
+        }
+
+        String normalized = redirectUri.toLowerCase();
+        if (normalized.contains("/login/oauth2/code/google")) {
+            // Prevent infinite redirects when REDIRECT_URI points to backend OAuth callback URL.
+            return fallbackCallbackUrl();
+        }
+
+        return redirectUri;
+    }
+
+    private String fallbackCallbackUrl() {
+        if (frontendUrl == null || frontendUrl.isBlank()) {
+            return "/auth/callback";
+        }
+        return frontendUrl.endsWith("/") ? frontendUrl + "auth/callback" : frontendUrl + "/auth/callback";
+    }
+
+    private String withQuery(String baseUrl, String key, String value) {
+        return UriComponentsBuilder.fromUriString(baseUrl)
+                .replaceQuery(null)
+                .queryParam(key, value)
+                .build(true)
+                .toUriString();
     }
 }

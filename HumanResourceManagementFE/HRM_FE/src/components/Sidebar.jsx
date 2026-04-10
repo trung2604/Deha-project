@@ -1,12 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, Building, Clock, Zap, LayoutDashboard, ReceiptText, UserCircle, Users } from 'lucide-react';
+import { Building2, Building, Clock, Zap, LayoutDashboard, ReceiptText, UserCircle, Users, Bell, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { canAccessNavItem, formatRoleLabel } from '@/utils/role';
 
-/**
- * roles: ADMIN | EMPLOYEE — who sees this item in the sidebar
- * (Backend: Users / Departments APIs are ADMIN-only; Profile & auth are for all authenticated users.)
- */
 const navItems = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
   { path: '/attendance', label: 'Attendance', icon: Clock, roles: ['MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
@@ -16,6 +12,8 @@ const navItems = [
   { path: '/office-policy', label: 'Office Policy', icon: Building, roles: ['MANAGER_OFFICE'] },
   { path: '/users', label: 'Users', icon: Users, roles: ['ADMIN', 'MANAGER_OFFICE'] },
   { path: '/departments', label: 'Departments', icon: Building2, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT'] },
+  { path: '/chat', label: 'Chat', icon: MessageSquare, roles: ['MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/notifications', label: 'Notifications', icon: Bell, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
   { path: '/profile', label: 'Profile', icon: UserCircle, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
 ];
 

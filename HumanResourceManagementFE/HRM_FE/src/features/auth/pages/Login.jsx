@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Checkbox, Form, Input } from "antd";
 import { useAuth } from "../context/AuthContext";
@@ -12,77 +12,11 @@ function defaultHomePath(user) {
   return "/profile";
 }
 
-function mapOAuthError(error) {
-  switch (error) {
-    case "account_not_found":
-      return "Your Google account has not been provisioned by an admin.";
-    case "account_inactive":
-      return "Your account is inactive.";
-    case "oauth2_failed":
-      return "Google sign-in failed. Please try again.";
-    case "oauth2_email_missing":
-      return "Unable to retrieve email from your Google account.";
-    default:
-      return "Google sign-in failed.";
-  }
-}
-
 export function Login() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { isAuthenticated, user, login, exchangeOAuth2Code } = useAuth();
+  const { isAuthenticated, user, login } = useAuth();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
-  const [oauthProcessing, setOauthProcessing] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-
-    const runOAuthCallback = async () => {
-      const error = searchParams.get("error");
-      const code = searchParams.get("code");
-      if (!error && !code) return;
-
-      setOauthProcessing(true);
-
-      if (error) {
-        toast.error(mapOAuthError(error));
-        if (active) {
-          navigate("/login", { replace: true });
-          setOauthProcessing(false);
-        }
-        return;
-      }
-
-      if (!code) {
-        toast.error("Missing OAuth2 authorization code.");
-        if (active) {
-          navigate("/login", { replace: true });
-          setOauthProcessing(false);
-        }
-        return;
-      }
-
-      const result = await exchangeOAuth2Code(code);
-      if (!active) return;
-
-      if (!result?.ok) {
-        toast.error(result?.message || "Google sign-in failed");
-        navigate("/login", { replace: true });
-        setOauthProcessing(false);
-        return;
-      }
-
-      toast.success(result.message || "Google sign-in successful");
-      navigate(defaultHomePath(result.data), { replace: true });
-      setOauthProcessing(false);
-    };
-
-    runOAuthCallback();
-    return () => {
-      active = false;
-    };
-  }, [searchParams, exchangeOAuth2Code, navigate]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
@@ -137,7 +71,7 @@ export function Login() {
           requiredMark={false}
           onFinish={handleSubmit}
           initialValues={{ remember: false }}
-          disabled={submitting || oauthProcessing}
+          disabled={submitting}
           validateMessages={{
             required: "${label} is required",
             types: { email: "Please enter a valid email" },
@@ -177,16 +111,16 @@ export function Login() {
           </Form.Item>
 
           <div style={{ marginTop: -8, marginBottom: 16, textAlign: "right" }}>
-            <button type="button" onClick={() => navigate("/forgot-password")} disabled={submitting || oauthProcessing} style={AUTH_LINK_BUTTON_STYLE}>
+            <button type="button" onClick={() => navigate("/forgot-password")} disabled={submitting} style={AUTH_LINK_BUTTON_STYLE}>
               Forgot password?
             </button>
           </div>
 
-          <button type="submit" disabled={submitting || oauthProcessing} className="w-full btn-primary-gradient justify-center">
-            {submitting ? "Signing in..." : oauthProcessing ? "Processing Google sign-in..." : "Sign in"}
+          <button type="submit" disabled={submitting} className="w-full btn-primary-gradient justify-center">
+            {submitting ? "Signing in..." : "Sign in"}
           </button>
 
-          <button type="button" onClick={handleGoogleLogin} disabled={submitting || oauthProcessing} className="w-full mt-3" style={AUTH_OUTLINE_BUTTON_STYLE}>
+          <button type="button" onClick={handleGoogleLogin} disabled={submitting} className="w-full mt-3" style={AUTH_OUTLINE_BUTTON_STYLE}>
             Continue with Google
           </button>
         </Form>

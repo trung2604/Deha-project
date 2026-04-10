@@ -33,7 +33,7 @@ class OtSessionServiceCheckoutValidationTest {
 
         User actor = new User();
         actor.setId(UUID.randomUUID());
-        actor.setRole(Role.ROLE_EMPLOYEE);
+        actor.setRole(Role.EMPLOYEE);
         actor.setOffice(office);
 
         OtSession session = new OtSession();
@@ -80,7 +80,7 @@ class OtSessionServiceCheckoutValidationTest {
 
         User actor = new User();
         actor.setId(UUID.randomUUID());
-        actor.setRole(Role.ROLE_EMPLOYEE);
+        actor.setRole(Role.EMPLOYEE);
         actor.setOffice(office);
 
         OtSession session = new OtSession();

@@ -1,13 +1,11 @@
 package com.deha.HumanResourceManagement.service.support;
 
 import com.deha.HumanResourceManagement.config.security.CustomUserDetail;
-import com.deha.HumanResourceManagement.config.security.RolePermissionResolver;
 import com.deha.HumanResourceManagement.dto.auth.ChangePasswordRequest;
 import com.deha.HumanResourceManagement.dto.auth.LoginRequest;
 import com.deha.HumanResourceManagement.dto.auth.LoginResponse;
 import com.deha.HumanResourceManagement.dto.user.UpdateProfileRequest;
 import com.deha.HumanResourceManagement.dto.user.UserResponse;
-import com.deha.HumanResourceManagement.entity.enums.Permission;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
@@ -42,7 +40,6 @@ public class AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
-    private final RolePermissionResolver rolePermissionResolver;
     private final RedisTemplate<String, String> redisTemplate;
     private final PasswordEncoder passwordEncoder;
     private final boolean cookieSecure;
@@ -52,7 +49,6 @@ public class AuthService {
             UserRepository userRepository,
             AuthenticationManager authenticationManager,
             JwtUtil jwtUtil,
-            RolePermissionResolver rolePermissionResolver,
             RedisTemplate<String, String> redisTemplate,
             PasswordEncoder passwordEncoder,
             @Value("${app.oauth2.exchange-code-ttl-ms:60000}") long oauth2ExchangeCodeTtlMs,
@@ -61,7 +57,6 @@ public class AuthService {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
-        this.rolePermissionResolver = rolePermissionResolver;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
         this.oauth2ExchangeCodeTtlMs = oauth2ExchangeCodeTtlMs;
@@ -91,13 +86,9 @@ public class AuthService {
             throw new ForbiddenException("Account is inactive");
         }
 
-        List<String> permissions = rolePermissionResolver.resolve(user.getRole()).stream()
-                .map(Permission::name)
-                .toList();
         String accessToken = jwtUtil.generateAccessToken(
                 user.getEmail(),
-                List.of(user.getRole().name()),
-                permissions
+                List.of(user.getRole().name())
         );
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
         setRefreshCookie(response, refreshToken);
@@ -148,13 +139,9 @@ public class AuthService {
 
         jwtUtil.deleteToken(refreshToken);
 
-        List<String> permissions = rolePermissionResolver.resolve(user.getRole()).stream()
-                .map(Permission::name)
-                .toList();
         String newAccessToken = jwtUtil.generateAccessToken(
                 user.getEmail(),
-                List.of(user.getRole().name()),
-                permissions
+                List.of(user.getRole().name())
         );
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getId());
         setRefreshCookie(response, newRefreshToken);
@@ -200,13 +187,9 @@ public class AuthService {
             throw new ForbiddenException("Account is inactive");
         }
 
-        List<String> permissions = rolePermissionResolver.resolve(user.getRole()).stream()
-                .map(Permission::name)
-                .toList();
         String accessToken = jwtUtil.generateAccessToken(
                 user.getEmail(),
-                List.of(user.getRole().name()),
-                permissions
+                List.of(user.getRole().name())
         );
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
         setRefreshCookie(response, refreshToken);

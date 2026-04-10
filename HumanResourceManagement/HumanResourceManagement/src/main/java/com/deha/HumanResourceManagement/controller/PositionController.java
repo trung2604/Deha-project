@@ -22,25 +22,25 @@ public class PositionController extends ApiControllerSupport {
     }
 
     @GetMapping()
-    @PreAuthorize("hasAuthority('POSITION_VIEW')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE','MANAGER_DEPARTMENT')")
     public ApiResponse getAllPositions() {
         return success("Positions retrieved successfully", HttpStatus.OK, positionService.getAllPositions());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('POSITION_VIEW')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE','MANAGER_DEPARTMENT')")
     public ApiResponse getPositionById(@PathVariable UUID id) {
         return success("Position retrieved successfully", HttpStatus.OK, positionService.getPositionById(id));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('POSITION_MANAGE')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse updatePosition(@PathVariable UUID id, @RequestParam UUID departmentId, @RequestBody @Valid PositionRequest positionRequest) {
         return success("Position updated successfully", HttpStatus.OK, positionService.updatePosition(id, departmentId, positionRequest));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('POSITION_MANAGE')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse deletePosition(@PathVariable UUID id) {
         positionService.deletePosition(id);
         return success("Position deleted successfully", HttpStatus.OK, null);

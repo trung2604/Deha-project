@@ -53,12 +53,11 @@ public class JwtUtil {
         }
     }
 
-    public String generateAccessToken(String username, Collection<String> roles, Collection<String> permissions) {
+    public String generateAccessToken(String username, Collection<String> roles) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("typ", "access")
                 .claim("roles", roles == null ? List.of() : roles)
-                .claim("permissions", permissions == null ? List.of() : permissions)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(secretKey)
