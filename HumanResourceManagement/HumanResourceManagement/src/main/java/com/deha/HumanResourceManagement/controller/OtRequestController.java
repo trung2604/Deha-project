@@ -23,7 +23,7 @@ public class OtRequestController extends ApiControllerSupport {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('OT_REQUEST_APPROVAL_VIEW')")
+    @PreAuthorize("hasAnyRole('MANAGER_DEPARTMENT','MANAGER_OFFICE')")
     public ApiResponse listByApprovalScope() {
         return success("OT requests retrieved successfully", HttpStatus.OK, otRequestService.listByApprovalScope());
     }
@@ -41,13 +41,13 @@ public class OtRequestController extends ApiControllerSupport {
     }
 
     @GetMapping("/pending")
-    @PreAuthorize("hasAuthority('OT_REQUEST_APPROVAL_VIEW')")
+    @PreAuthorize("hasAnyRole('MANAGER_DEPARTMENT','MANAGER_OFFICE')")
     public ApiResponse listPendingForScope() {
         return success("Pending OT requests retrieved successfully", HttpStatus.OK, otRequestService.listPendingForScope());
     }
 
     @PatchMapping("/{id}/decision")
-    @PreAuthorize("hasAuthority('OT_REQUEST_APPROVE')")
+    @PreAuthorize("hasAnyRole('MANAGER_DEPARTMENT','MANAGER_OFFICE')")
     public ApiResponse decide(@PathVariable UUID id, @Valid @RequestBody OtDecisionRequest request) {
         return success("OT request decision updated successfully", HttpStatus.OK, otRequestService.decide(id, request));
     }

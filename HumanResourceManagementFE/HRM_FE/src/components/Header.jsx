@@ -5,19 +5,19 @@ import {
   Bell,
   Building2,
   Calendar,
-  CheckCircle,
   ChevronDown,
-  Clock,
   LogOut,
   Menu,
   Search,
+  MessageSquareText,
   User,
   Users,
-  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { Input } from 'antd';
+import { getResponseMessage } from '@/utils/apiResponse';
+import { useNotifications } from '@/features/notifications/context/NotificationContext';
 
 const breadcrumbMap = {
   '/': ['Dashboard'],
@@ -31,29 +31,42 @@ const breadcrumbMap = {
   '/activity-logs': ['Activity Logs'],
   '/profile': ['Profile'],
   '/notifications': ['Notifications'],
+  '/chat': ['Chat'],
 };
 
 const notificationIcons = {
-  success: CheckCircle,
-  warning: AlertCircle,
-  error: XCircle,
-  info: Clock,
+  NEW_MESSAGE: MessageSquareText,
+  SYSTEM: AlertCircle,
+  DEFAULT: Bell,
 };
 
 const notificationColors = {
-  success: { bg: 'rgba(82, 196, 26, 0.1)', text: '#52C41A' },
-  warning: { bg: 'rgba(250, 140, 22, 0.1)', text: '#FA8C16' },
-  error: { bg: 'rgba(255, 77, 79, 0.1)', text: '#FF4D4F' },
-  info: { bg: 'rgba(22, 119, 255, 0.1)', text: '#1677FF' },
+  NEW_MESSAGE: { bg: 'rgba(22, 119, 255, 0.1)', text: '#1677FF' },
+  SYSTEM: { bg: 'rgba(250, 140, 22, 0.1)', text: '#FA8C16' },
+  DEFAULT: { bg: 'rgba(22, 119, 255, 0.1)', text: '#1677FF' },
 };
+
+function formatNotificationTime(value) {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '--';
+  return date.toLocaleString();
+}
 
 export function Header({ onMenuClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    isNotificationsLoading,
+    refreshNotifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+  } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [displayedCount, setDisplayedCount] = useState(5);
@@ -64,7 +77,6 @@ export function Header({ onMenuClick }) {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
   const initials = (user?.firstName?.[0] || '') + (user?.lastName?.[0] || '') || 'U';
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
   const displayedNotifications = notifications.slice(0, displayedCount);
   const hasMore = displayedCount < notifications.length;
 
@@ -86,6 +98,11 @@ export function Header({ onMenuClick }) {
     return () => setDisplayedCount(5);
   }, [notificationOpen]);
 
+  useEffect(() => {
+    if (!notificationOpen) return;
+    refreshNotifications();
+  }, [notificationOpen, refreshNotifications]);
+
   const searchResults = { users: [], departments: [], leaveRequests: [] };
   const totalResults = 0;
 
@@ -100,12 +117,33 @@ export function Header({ onMenuClick }) {
     setSearchTerm('');
   };
 
-  const markAsRead = (id) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  const markAsRead = async (id) => {
+    const target = notifications.find((n) => n.id === id);
+    if (!target || target.read) return;
+    const result = await markNotificationRead(id);
+    if (!result.ok) {
+      toast.error(getResponseMessage(result.response, 'Failed to mark as read'));
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    const result = await markAllNotificationsRead();
+    if (!result.ok) {
+      toast.error(getResponseMessage(result.response, 'Failed to mark all as read'));
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification) return;
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+    setNotificationOpen(false);
+    if (notification.type === 'NEW_MESSAGE') {
+      navigate(notification.referenceId ? `/chat?roomId=${notification.referenceId}` : '/chat');
+      return;
+    }
+    navigate('/notifications');
   };
 
   const handleLogout = () => {
@@ -318,7 +356,11 @@ export function Header({ onMenuClick }) {
                 </div>
 
                 <div className="max-h-96 overflow-y-auto" ref={notificationListRef} onScroll={handleNotificationScroll}>
-                  {notifications.length === 0 ? (
+                  {isNotificationsLoading ? (
+                    <div className="px-4 py-6 text-center">
+                      <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: '#1677FF', borderTopColor: 'transparent' }} />
+                    </div>
+                  ) : notifications.length === 0 ? (
                     <div className="px-4 py-8 text-center">
                       <Bell className="w-12 h-12 mx-auto mb-2" style={{ color: '#E8E8E8' }} />
                       <p style={{ color: '#595959', fontSize: '14px' }}>No notifications</p>
@@ -326,13 +368,13 @@ export function Header({ onMenuClick }) {
                   ) : (
                     <>
                       {displayedNotifications.map((notification) => {
-                        const Icon = notificationIcons[notification.type];
-                        const colors = notificationColors[notification.type];
+                        const Icon = notificationIcons[notification.type] || notificationIcons.DEFAULT;
+                        const colors = notificationColors[notification.type] || notificationColors.DEFAULT;
 
                         return (
                           <div
                             key={notification.id}
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => handleNotificationClick(notification)}
                             className="px-4 py-3 border-b hover:bg-gray-50 transition-colors cursor-pointer"
                             style={{
                               borderColor: '#E8E8E8',
@@ -351,10 +393,10 @@ export function Header({ onMenuClick }) {
                                   {!notification.read && <div className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ backgroundColor: '#1677FF' }} />}
                                 </div>
                                 <p className="mb-1" style={{ color: '#595959', fontSize: '12px', lineHeight: '1.4' }}>
-                                  {notification.message}
+                                  {notification.body}
                                 </p>
                                 <span style={{ color: '#8C8C8C', fontSize: '11px', fontFamily: 'JetBrains Mono, monospace' }}>
-                                  {notification.time}
+                                  {formatNotificationTime(notification.createdAt)}
                                 </span>
                               </div>
                             </div>

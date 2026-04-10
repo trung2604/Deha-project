@@ -41,7 +41,7 @@ class AttendanceServiceDepartmentTodayTest {
 
         User actor = new User();
         actor.setId(UUID.randomUUID());
-        actor.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        actor.setRole(Role.MANAGER_DEPARTMENT);
         actor.setOffice(office);
         actor.setDepartment(department);
 
@@ -91,7 +91,7 @@ class AttendanceServiceDepartmentTodayTest {
 
         User actor = new User();
         actor.setId(UUID.randomUUID());
-        actor.setRole(Role.ROLE_MANAGER_OFFICE);
+        actor.setRole(Role.MANAGER_OFFICE);
         actor.setOffice(office);
         actor.setDepartment(null);
 

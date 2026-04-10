@@ -81,7 +81,7 @@ class OtReportServiceCreateValidationTest {
 
 		User actor = new User();
 		actor.setId(UUID.randomUUID());
-		actor.setRole(Role.ROLE_EMPLOYEE);
+		actor.setRole(Role.EMPLOYEE);
 		actor.setOffice(office);
 
 		LocalDate logDate = LocalDate.now();

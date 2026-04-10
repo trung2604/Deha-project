@@ -15,25 +15,25 @@ class OtRequestWorkflowServiceTest {
 
     @Test
     void initialStatus_employee_shouldBePendingDepartment() {
-        OtRequestStatus status = workflowService.initialStatus(Role.ROLE_EMPLOYEE);
+        OtRequestStatus status = workflowService.initialStatus(Role.EMPLOYEE);
         assertEquals(OtRequestStatus.PENDING_DEPARTMENT, status);
     }
 
     @Test
     void initialStatus_departmentManager_shouldBePendingOffice() {
-        OtRequestStatus status = workflowService.initialStatus(Role.ROLE_MANAGER_DEPARTMENT);
+        OtRequestStatus status = workflowService.initialStatus(Role.MANAGER_DEPARTMENT);
         assertEquals(OtRequestStatus.PENDING_OFFICE, status);
     }
 
     @Test
     void initialStatus_officeManager_shouldThrowForbidden() {
-        assertThrows(ForbiddenException.class, () -> workflowService.initialStatus(Role.ROLE_MANAGER_OFFICE));
+        assertThrows(ForbiddenException.class, () -> workflowService.initialStatus(Role.MANAGER_OFFICE));
     }
 
     @Test
     void nextStatus_departmentManagerApprovePendingDepartment_shouldBeApproved() {
         OtRequestStatus next = workflowService.nextStatus(
-                Role.ROLE_MANAGER_DEPARTMENT,
+                Role.MANAGER_DEPARTMENT,
                 OtRequestStatus.PENDING_DEPARTMENT,
                 true
         );
@@ -43,7 +43,7 @@ class OtRequestWorkflowServiceTest {
     @Test
     void nextStatus_departmentManagerRejectPending_shouldBeRejected() {
         OtRequestStatus next = workflowService.nextStatus(
-                Role.ROLE_MANAGER_DEPARTMENT,
+                Role.MANAGER_DEPARTMENT,
                 OtRequestStatus.PENDING,
                 false
         );
@@ -53,7 +53,7 @@ class OtRequestWorkflowServiceTest {
     @Test
     void nextStatus_officeManagerApprovePendingOffice_shouldBeApproved() {
         OtRequestStatus next = workflowService.nextStatus(
-                Role.ROLE_MANAGER_OFFICE,
+                Role.MANAGER_OFFICE,
                 OtRequestStatus.PENDING_OFFICE,
                 true
         );
@@ -63,7 +63,7 @@ class OtRequestWorkflowServiceTest {
     @Test
     void nextStatus_departmentManagerOnPendingOffice_shouldThrowBadRequest() {
         assertThrows(BadRequestException.class, () -> workflowService.nextStatus(
-                Role.ROLE_MANAGER_DEPARTMENT,
+                Role.MANAGER_DEPARTMENT,
                 OtRequestStatus.PENDING_OFFICE,
                 true
         ));
@@ -72,7 +72,7 @@ class OtRequestWorkflowServiceTest {
     @Test
     void nextStatus_onTerminalStatus_shouldThrowBadRequest() {
         assertThrows(BadRequestException.class, () -> workflowService.nextStatus(
-                Role.ROLE_MANAGER_DEPARTMENT,
+                Role.MANAGER_DEPARTMENT,
                 OtRequestStatus.APPROVED,
                 true
         ));
@@ -81,7 +81,7 @@ class OtRequestWorkflowServiceTest {
     @Test
     void nextStatus_employeeAsApprover_shouldThrowForbidden() {
         assertThrows(ForbiddenException.class, () -> workflowService.nextStatus(
-                Role.ROLE_EMPLOYEE,
+                Role.EMPLOYEE,
                 OtRequestStatus.PENDING_DEPARTMENT,
                 true
         ));

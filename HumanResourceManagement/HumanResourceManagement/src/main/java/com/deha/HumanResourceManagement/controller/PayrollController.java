@@ -22,13 +22,13 @@ public class PayrollController extends ApiControllerSupport {
     }
 
     @PostMapping("/generate")
-    @PreAuthorize("hasAuthority('PAYROLL_GENERATE')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse generate(@Valid @RequestBody GeneratePayrollRequest request) {
         return success("Payroll generated successfully", HttpStatus.OK, payrollService.generate(request));
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('PAYROLL_VIEW')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse listByPeriodAndScope(
             @RequestParam Integer year,
             @RequestParam Integer month,
@@ -38,7 +38,7 @@ public class PayrollController extends ApiControllerSupport {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('PAYROLL_VIEW')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse getPayrollDetailById(@PathVariable UUID id) {
         return success("Payroll retrieved successfully", HttpStatus.OK, payrollService.getPayrollDetailById(id));
     }

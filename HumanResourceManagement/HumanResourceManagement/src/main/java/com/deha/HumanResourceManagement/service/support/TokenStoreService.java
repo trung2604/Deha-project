@@ -1,4 +1,4 @@
-package com.deha.HumanResourceManagement.config.security;
+package com.deha.HumanResourceManagement.service.support;
 
 import io.jsonwebtoken.JwtException;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -24,8 +24,6 @@ public class TokenStoreService {
     public TokenStoreService(RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
-
-    // ─── Email verification token ─────────────────────────────────────────────
 
     public String generateVerifyToken(UUID userId) {
         return store(VERIFY_PREFIX, userId.toString(), VERIFY_TTL_HOURS, TimeUnit.HOURS);

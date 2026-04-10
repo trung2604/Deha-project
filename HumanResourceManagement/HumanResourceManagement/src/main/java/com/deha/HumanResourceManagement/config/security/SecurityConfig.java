@@ -63,7 +63,8 @@ public class SecurityConfig {
                                 "/api/auth/verify-otp",
                                 "/api/auth/reset-password",
                                 "/oauth2/authorization/google",
-                                "/login/oauth2/code/google"
+                                "/login/oauth2/code/google",
+                                "/ws/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
@@ -105,19 +106,12 @@ public class SecurityConfig {
 
     private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
         List<String> roles = claimAsStringList(jwt, "roles");
-        List<String> permissions = claimAsStringList(jwt, "permissions");
 
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.addAll(
                 roles.stream()
                         .filter(s -> !s.isBlank())
                         .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
-                        .map(SimpleGrantedAuthority::new)
-                        .toList()
-        );
-        authorities.addAll(
-                permissions.stream()
-                        .filter(s -> !s.isBlank())
                         .map(SimpleGrantedAuthority::new)
                         .toList()
         );
@@ -145,9 +139,9 @@ public class SecurityConfig {
     public ClientRegistrationRepository clientRegistrationRepository(
             @Value("${spring.security.oauth2.client.registration.google.client-id}") String clientId,
             @Value("${spring.security.oauth2.client.registration.google.client-secret}") String clientSecret,
-            @Value("${spring.security.oauth2.provider.google.authorization-uri}") String authorizationUri,
-            @Value("${spring.security.oauth2.provider.google.token-uri}") String tokenUri,
-            @Value("${spring.security.oauth2.provider.google.user-info-uri}") String userInfoUri
+            @Value("${spring.security.oauth2.client.provider.google.authorization-uri}") String authorizationUri,
+            @Value("${spring.security.oauth2.client.provider.google.token-uri}") String tokenUri,
+            @Value("${spring.security.oauth2.client.provider.google.user-info-uri}") String userInfoUri
     ) {
         ClientRegistration google = ClientRegistration
                 .withRegistrationId("google")

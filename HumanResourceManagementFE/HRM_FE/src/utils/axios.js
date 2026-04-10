@@ -28,6 +28,9 @@ let pendingRequests = [];
 function clearSessionAndRedirect() {
   localStorage.removeItem("auth_token");
   localStorage.removeItem("user_info");
+  if (window.location.pathname === "/login") {
+    return;
+  }
   window.location.href = "/login";
 }
 
