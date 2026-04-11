@@ -37,7 +37,6 @@ public class DepartmentService implements IDepartmentService {
     private final IOfficeService officeService;
     private final IChatService chatService;
     private final AccessScopeService accessScopeService;
-    private final EntityManager entityManager;
 
     public DepartmentService(
             DepartmentRepository departmentRepository,
