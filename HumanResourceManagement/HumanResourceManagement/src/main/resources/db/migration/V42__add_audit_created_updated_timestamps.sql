@@ -1,0 +1,42 @@
+ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE attendance_logs ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE chat_rooms ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE departments ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE departments ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE offices ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE offices ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE office_wifi_ips ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE office_wifi_ips ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE ot_requests ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE ot_requests ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE ot_reports ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE ot_reports ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE ot_sessions ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE ot_sessions ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE payrolls ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE payrolls ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE positions ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE salary_contracts ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE salary_contracts ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS audit_created_at TIMESTAMP;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS audit_updated_at TIMESTAMP;
+

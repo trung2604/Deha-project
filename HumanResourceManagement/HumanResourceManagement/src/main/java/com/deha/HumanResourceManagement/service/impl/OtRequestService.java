@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.service.impl;
 
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.dto.ot.OtDecisionRequest;
 import com.deha.HumanResourceManagement.dto.ot.OtRequestCreateRequest;
 import com.deha.HumanResourceManagement.dto.ot.OtRequestResponse;
@@ -9,9 +10,9 @@ import com.deha.HumanResourceManagement.entity.enums.OtRequestStatus;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.ot.OtRequestMapper;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.service.IOtRequestService;
-import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.ot.workflow.OtRequestWorkflowService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -30,17 +31,20 @@ public class OtRequestService implements IOtRequestService {
     private final OtRequestRepository otRequestRepository;
     private final AccessScopeService accessScopeService;
     private final OtRequestWorkflowService otRequestWorkflowService;
+    private final OtRequestMapper otRequestMapper;
     @PersistenceContext
     private EntityManager entityManager;
 
     public OtRequestService(
             OtRequestRepository otRequestRepository,
             AccessScopeService accessScopeService,
-            OtRequestWorkflowService otRequestWorkflowService
+            OtRequestWorkflowService otRequestWorkflowService,
+            OtRequestMapper otRequestMapper
     ) {
         this.otRequestRepository = otRequestRepository;
         this.accessScopeService = accessScopeService;
         this.otRequestWorkflowService = otRequestWorkflowService;
+        this.otRequestMapper = otRequestMapper;
     }
 
     @Override
@@ -72,7 +76,7 @@ public class OtRequestService implements IOtRequestService {
 
         entity.setStatus(otRequestWorkflowService.initialStatus(actor.getRole()));
         otRequestRepository.save(entity);
-        return OtRequestResponse.fromEntity(entity);
+        return otRequestMapper.toResponse(entity);
     }
 
     @Override
@@ -119,7 +123,7 @@ public class OtRequestService implements IOtRequestService {
         entity.setApprovedAt(LocalDateTime.now());
         entity.setDecisionNote(request.getDecisionNote());
         OtRequest merged = mergeAndFlush(entity);
-        return OtRequestResponse.fromEntity(merged);
+        return otRequestMapper.toResponse(merged);
     }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
@@ -146,7 +150,7 @@ public class OtRequestService implements IOtRequestService {
         User actor = accessScopeService.currentUserOrThrow();
         return otRequestRepository.findByUser_IdOrderByLogDateDesc(actor.getId())
                 .stream()
-                .map(OtRequestResponse::fromEntity)
+                .map(otRequestMapper::toResponse)
                 .toList();
     }
 
@@ -163,7 +167,7 @@ public class OtRequestService implements IOtRequestService {
                 pendingRequests.addAll(otRequestRepository.findByUser_Department_IdAndStatusOrderByLogDateDesc(approverDepartmentId, status));
             }
             pendingRequests.sort(Comparator.comparing(OtRequest::getLogDate).reversed());
-            return pendingRequests.stream().map(OtRequestResponse::fromEntity).toList();
+            return pendingRequests.stream().map(otRequestMapper::toResponse).toList();
         }
 
         if (accessScopeService.isOfficeManager(currentApprover)) {
@@ -174,7 +178,7 @@ public class OtRequestService implements IOtRequestService {
                 pendingRequests.addAll(otRequestRepository.findByOffice_IdAndStatusOrderByLogDateDesc(approverOfficeId, status));
             }
             pendingRequests.sort(Comparator.comparing(OtRequest::getLogDate).reversed());
-            return pendingRequests.stream().map(OtRequestResponse::fromEntity).toList();
+            return pendingRequests.stream().map(otRequestMapper::toResponse).toList();
         }
 
         throw new ForbiddenException("You do not have permission to view pending OT requests");
@@ -188,14 +192,14 @@ public class OtRequestService implements IOtRequestService {
             return otRequestRepository
                     .findAllByUser_Department_IdOrderByLogDateDesc(currentApprover.getDepartment().getId())
                     .stream()
-                    .map(OtRequestResponse::fromEntity)
+                    .map(otRequestMapper::toResponse)
                     .toList();
         }
         if (accessScopeService.isOfficeManager(currentApprover)) {
             return otRequestRepository
                     .findAllByOffice_IdOrderByLogDateDesc(currentApprover.getOffice().getId())
                     .stream()
-                    .map(OtRequestResponse::fromEntity)
+                    .map(otRequestMapper::toResponse)
                     .toList();
         }
         return List.of();

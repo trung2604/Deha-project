@@ -1,10 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Building2, Building, Clock, Zap, LayoutDashboard, ReceiptText, UserCircle, Users, Bell, MessageSquare } from 'lucide-react';
+import { Building2, Building, Clock, Zap, LayoutDashboard, ReceiptText, UserCircle, Users, MessageSquare, Activity } from 'lucide-react';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { canAccessNavItem, formatRoleLabel } from '@/utils/role';
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'MANAGER_OFFICE'] },
   { path: '/attendance', label: 'Attendance', icon: Clock, roles: ['MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
   { path: '/overtime', label: 'Overtime', icon: Zap, roles: ['MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
   { path: '/payroll', label: 'Payroll', icon: ReceiptText, roles: ['ADMIN', 'MANAGER_OFFICE'] },
@@ -13,7 +13,7 @@ const navItems = [
   { path: '/users', label: 'Users', icon: Users, roles: ['ADMIN', 'MANAGER_OFFICE'] },
   { path: '/departments', label: 'Departments', icon: Building2, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT'] },
   { path: '/chat', label: 'Chat', icon: MessageSquare, roles: ['MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
-  { path: '/notifications', label: 'Notifications', icon: Bell, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
+  { path: '/audit-logs', label: 'Activity Logs', icon: Activity, roles: ['ADMIN', 'MANAGER_OFFICE'] },
   { path: '/profile', label: 'Profile', icon: UserCircle, roles: ['ADMIN', 'MANAGER_OFFICE', 'MANAGER_DEPARTMENT', 'EMPLOYEE'] },
 ];
 
@@ -75,10 +75,8 @@ function SidebarContent({ location, onClose, user }) {
       <nav className="flex-1 py-6 px-3 overflow-y-auto">
         {visibleItems.map((item) => {
           const isActive =
-            item.path === '/'
-              ? location.pathname === '/'
-              : location.pathname === item.path ||
-                (item.path === '/departments' && location.pathname.startsWith('/departments'));
+            location.pathname === item.path ||
+            (item.path === '/departments' && location.pathname.startsWith('/departments'));
           const Icon = item.icon;
 
           return (

@@ -1,15 +1,14 @@
 package com.deha.HumanResourceManagement.dto.chat;
 
-import com.deha.HumanResourceManagement.entity.ChatRoom;
-import com.deha.HumanResourceManagement.entity.Department;
-import com.deha.HumanResourceManagement.entity.Office;
 import com.deha.HumanResourceManagement.entity.enums.ChatRoomType;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-@Getter
+@Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class ChatRoomResponse {
     private UUID id;
@@ -18,41 +17,19 @@ public class ChatRoomResponse {
     private OfficeSummary office;
     private DepartmentSummary department;
 
-    public static ChatRoomResponse fromEntity(ChatRoom room) {
-        if (room == null) return null;
-
-        Office office = room.getOffice();
-        Department department = room.getDepartment();
-
-        OfficeSummary officeSummary = office == null
-                ? null
-                : new OfficeSummary(office.getId(), office.getName());
-
-        DepartmentSummary departmentSummary = department == null
-                ? null
-                : new DepartmentSummary(department.getId(), department.getName());
-
-        return new ChatRoomResponse(
-                room.getId(),
-                room.getType(),
-                room.getName(),
-                officeSummary,
-                departmentSummary
-        );
-    }
-
-    @Getter
+    @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class OfficeSummary {
         private UUID id;
         private String name;
     }
 
-    @Getter
+    @Data
+    @NoArgsConstructor
     @AllArgsConstructor
     public static class DepartmentSummary {
         private UUID id;
         private String name;
     }
 }
-

@@ -12,7 +12,7 @@ import java.util.UUID;
 @Table(name = "chat_messages",
         indexes = @Index(name = "idx_msg_room_sent", columnList = "room_id, sent_at DESC"))
 @Getter @Setter
-public class ChatMessage {
+public class ChatMessage extends AuditableByUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

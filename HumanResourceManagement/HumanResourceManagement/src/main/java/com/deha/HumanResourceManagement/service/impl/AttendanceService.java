@@ -6,6 +6,7 @@ import com.deha.HumanResourceManagement.entity.OfficeWifiIp;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.CheckoutSource;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
+import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.UnauthorizedException;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
 import com.deha.HumanResourceManagement.repository.OfficeWifiIpRepository;
@@ -212,6 +213,39 @@ public class AttendanceService implements IAttendanceService {
         accessScopeService.assertCanManageDepartment(departmentId);
 
         List<AttendanceLog> logs = attendanceLogRepo.findByLogDateAndUser_Department_Id(LocalDate.now(), departmentId);
+        for (AttendanceLog log : logs) {
+            if (synchronizeDerivedFields(log)) {
+                attendanceLogRepo.save(log);
+            }
+        }
+        return logs;
+    }
+
+    @Override
+    @Transactional
+    public List<AttendanceLog> getOfficeTodayLogsOrEmpty(User actor, UUID officeId) {
+        if (actor == null) {
+            throw new UnauthorizedException("Missing authentication context");
+        }
+
+        List<AttendanceLog> logs;
+        if (accessScopeService.isAdmin(actor)) {
+            logs = officeId != null
+                    ? attendanceLogRepo.findByLogDateAndOffice_Id(LocalDate.now(), officeId)
+                    : attendanceLogRepo.findByLogDate(LocalDate.now());
+        } else if (accessScopeService.isOfficeManager(actor)) {
+            UUID actorOfficeId = actor.getOffice() != null ? actor.getOffice().getId() : null;
+            if (actorOfficeId == null) {
+                throw new ForbiddenException("Office manager is not assigned to any office");
+            }
+            if (officeId != null && !actorOfficeId.equals(officeId)) {
+                throw new ForbiddenException("Office manager can only view attendance in their own office");
+            }
+            logs = attendanceLogRepo.findByLogDateAndOffice_Id(LocalDate.now(), actorOfficeId);
+        } else {
+            throw new ForbiddenException("Only admin or office manager can view office attendance");
+        }
+
         for (AttendanceLog log : logs) {
             if (synchronizeDerivedFields(log)) {
                 attendanceLogRepo.save(log);

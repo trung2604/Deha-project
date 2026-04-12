@@ -40,13 +40,14 @@ function formatTime(value) {
 }
 
 function normalizeMessage(message) {
+  const fallbackSentAt = new Date().toISOString();
   return {
     id: message?.id,
     roomId: message?.roomId,
     senderId: message?.senderId,
     senderName: message?.senderName || "Unknown",
     content: message?.content || "",
-    sentAt: message?.sentAt || null,
+    sentAt: message?.sentAt || fallbackSentAt,
   };
 }
 

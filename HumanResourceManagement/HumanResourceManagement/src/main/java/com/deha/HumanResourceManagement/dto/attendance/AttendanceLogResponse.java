@@ -1,6 +1,5 @@
 package com.deha.HumanResourceManagement.dto.attendance;
 
-import com.deha.HumanResourceManagement.entity.AttendanceLog;
 import com.deha.HumanResourceManagement.entity.enums.CheckoutSource;
 import com.deha.HumanResourceManagement.entity.enums.OtType;
 import lombok.AllArgsConstructor;
@@ -29,25 +28,4 @@ public class AttendanceLogResponse {
     private CheckoutSource checkoutSource;
     private Boolean autoCheckedOut;
     private String clientIp;
-
-    public static AttendanceLogResponse fromEntity(AttendanceLog log) {
-        if (log == null) return null;
-        return new AttendanceLogResponse(
-                log.getId(),
-                log.getVersion(),
-                log.getUser() != null ? log.getUser().getId() : null,
-                log.getUser() != null ? (log.getUser().getFirstName() + " " + log.getUser().getLastName()).trim() : null,
-                log.getOffice() != null ? log.getOffice().getId() : null,
-                log.getLogDate(),
-                log.getCheckInTime(),
-                log.getCheckOutTime(),
-                log.getWorkedHours(),
-                log.getOtHours(),
-                log.getOtType(),
-                log.getCheckoutSource(),
-                log.getAutoCheckedOut(),
-                log.getClientIp()
-        );
-    }
 }
-

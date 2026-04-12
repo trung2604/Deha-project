@@ -21,6 +21,7 @@ import { useNotifications } from '@/features/notifications/context/NotificationC
 
 const breadcrumbMap = {
   '/': ['Dashboard'],
+  '/dashboard': ['Dashboard'],
   '/users': ['Users'],
   '/offices': ['Offices'],
   '/departments': ['Departments'],
@@ -29,6 +30,7 @@ const breadcrumbMap = {
   '/leave-requests': ['Leave Requests'],
   '/salary': ['Salary'],
   '/activity-logs': ['Activity Logs'],
+  '/audit-logs': ['Activity Logs'],
   '/profile': ['Profile'],
   '/notifications': ['Notifications'],
   '/chat': ['Chat'],

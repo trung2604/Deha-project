@@ -33,6 +33,8 @@ const OvertimePage = lazy(() =>
   import("@/features/overtime/pages/OvertimePage").then((m) => ({ default: m.OvertimePage })),
 );
 const PayrollPage = lazy(() => import("@/features/payroll/pages/PayrollPage").then((m) => ({ default: m.PayrollPage })));
+const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const AuditLogsPage = lazy(() => import("@/features/auditLogs/pages/AuditLogsPage").then((m) => ({ default: m.AuditLogsPage })));
 const Profile = lazy(() => import("@/features/profile/pages/Profile"));
 const ChatPage = lazy(() => import("@/features/chat/pages/ChatPage.jsx").then((m) => ({ default: m.ChatPage })));
 const NotificationsPage = lazy(() =>
@@ -91,6 +93,12 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: IndexRedirect },
       {
+        path: "dashboard",
+        element: (
+          <RequireOfficeManagerOrAdmin>{withSuspense(<DashboardPage />)}</RequireOfficeManagerOrAdmin>
+        ),
+      },
+      {
         path: "offices",
         element: (
           <RequireAdmin>{withSuspense(<OfficesPage />)}</RequireAdmin>
@@ -143,6 +151,12 @@ export const router = createBrowserRouter([
       {
         path: "notifications",
         element: withSuspense(<NotificationsPage />),
+      },
+      {
+        path: "audit-logs",
+        element: (
+          <RequireOfficeManagerOrAdmin>{withSuspense(<AuditLogsPage />)}</RequireOfficeManagerOrAdmin>
+        ),
       },
     //   { path: "leave-requests", Component: LeaveRequests },
     //   { path: "salary", Component: Salary },

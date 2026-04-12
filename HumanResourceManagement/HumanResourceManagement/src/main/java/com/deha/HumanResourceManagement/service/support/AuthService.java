@@ -12,6 +12,7 @@ import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.exception.UnauthorizedException;
+import com.deha.HumanResourceManagement.mapper.coreorg.UserMapper;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.config.security.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
@@ -44,6 +45,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final boolean cookieSecure;
     private final long oauth2ExchangeCodeTtlMs;
+    private final UserMapper userMapper;
 
     public AuthService(
             UserRepository userRepository,
@@ -51,6 +53,7 @@ public class AuthService {
             JwtUtil jwtUtil,
             RedisTemplate<String, String> redisTemplate,
             PasswordEncoder passwordEncoder,
+            UserMapper userMapper,
             @Value("${app.oauth2.exchange-code-ttl-ms:60000}") long oauth2ExchangeCodeTtlMs,
             @Value("${app.cookie.secure:false}") boolean cookieSecure
     ) {
@@ -59,6 +62,7 @@ public class AuthService {
         this.jwtUtil = jwtUtil;
         this.redisTemplate = redisTemplate;
         this.passwordEncoder = passwordEncoder;
+        this.userMapper = userMapper;
         this.oauth2ExchangeCodeTtlMs = oauth2ExchangeCodeTtlMs;
         this.cookieSecure = cookieSecure;
     }
@@ -114,7 +118,7 @@ public class AuthService {
         String email = currentEmail();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return UserResponse.fromEntity(user);
+        return userMapper.toResponse(user);
     }
 
     public LoginResponse refresh(String refreshToken, HttpServletResponse response) {
@@ -259,7 +263,7 @@ public class AuthService {
         String normalizedPhone = request.getPhone() != null ? request.getPhone().trim() : "";
         current.setPhone(normalizedPhone.isEmpty() ? null : normalizedPhone);
         userRepository.saveAndFlush(current);
-        return UserResponse.fromEntity(current);
+        return userMapper.toResponse(current);
     }
 
     @Transactional
