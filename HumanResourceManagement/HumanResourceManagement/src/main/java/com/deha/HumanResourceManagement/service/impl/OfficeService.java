@@ -11,6 +11,7 @@ import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.coreorg.OfficeMapper;
 import com.deha.HumanResourceManagement.repository.DepartmentRepository;
 import com.deha.HumanResourceManagement.repository.OfficeRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
@@ -37,6 +38,7 @@ public class OfficeService implements IOfficeService {
     private final UserRepository userRepository;
     private final AccessScopeService accessScopeService;
     private final OfficePolicyService officePolicyService;
+    private final OfficeMapper officeMapper;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -45,19 +47,21 @@ public class OfficeService implements IOfficeService {
             DepartmentRepository departmentRepository,
             UserRepository userRepository,
             AccessScopeService accessScopeService,
-            OfficePolicyService officePolicyService
+            OfficePolicyService officePolicyService,
+            OfficeMapper officeMapper
     ) {
         this.officeRepository = officeRepository;
         this.departmentRepository = departmentRepository;
         this.userRepository = userRepository;
         this.accessScopeService = accessScopeService;
         this.officePolicyService = officePolicyService;
+        this.officeMapper = officeMapper;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OfficeResponse> getAll() {
-        return officeRepository.findAll().stream().map(OfficeResponse::fromEntity).toList();
+        return officeRepository.findAll().stream().map(officeMapper::toResponse).toList();
     }
 
     @Override
@@ -102,7 +106,7 @@ public class OfficeService implements IOfficeService {
         }
 
         officeRepository.save(office);
-        return OfficeResponse.fromEntity(office);
+        return officeMapper.toResponse(office);
     }
 
     @Override
@@ -152,7 +156,7 @@ public class OfficeService implements IOfficeService {
         }
 
         Office merged = mergeAndFlush(office);
-        return OfficeResponse.fromEntity(merged);
+        return officeMapper.toResponse(merged);
     }
 
     @Override
@@ -185,7 +189,7 @@ public class OfficeService implements IOfficeService {
             throw new ResourceNotFoundException("Office policy not found for current user");
         }
         Office office = findById(actor.getOffice().getId());
-        return OfficePolicyResponse.fromEntity(office);
+        return officeMapper.toPolicyResponse(office);
     }
 
     @Override
@@ -214,7 +218,7 @@ public class OfficeService implements IOfficeService {
         office.setOtHolidayMultiplier(request.getOtHolidayMultiplier());
         office.setOtNightBonusMultiplier(request.getOtNightBonusMultiplier());
         Office merged = mergeAndFlush(office);
-        return OfficePolicyResponse.fromEntity(merged);
+        return officeMapper.toPolicyResponse(merged);
     }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {

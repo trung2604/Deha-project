@@ -12,7 +12,10 @@ export function createRealtimeClient({ token, onConnect, onDisconnect, onError }
   }
 
   const client = new Client({
-    webSocketFactory: () => new SockJS(`${wsEndpointFromApiBase()}?token=${encodeURIComponent(token)}`),
+    webSocketFactory: () => new SockJS(wsEndpointFromApiBase()),
+    connectHeaders: {
+      Authorization: `Bearer ${token}`,
+    },
     reconnectDelay: 5000,
     debug: () => {},
   });

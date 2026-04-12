@@ -31,5 +31,7 @@ public interface OtReportRepository extends JpaRepository<OtReport, UUID> {
     List<OtReport> findAllByAttendanceLog_User_Office_IdOrderByAttendanceLog_LogDateDesc(UUID officeId);
 
     List<OtReport> findByAttendanceLog_User_IdOrderByAttendanceLog_LogDateDesc(UUID userId);
+
+    List<OtReport> findByOtSession_IdOrderByAttendanceLog_LogDateDesc(UUID otSessionId);
 }
 

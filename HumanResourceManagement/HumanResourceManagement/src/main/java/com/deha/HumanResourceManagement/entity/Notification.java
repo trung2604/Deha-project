@@ -13,7 +13,7 @@ import java.util.UUID;
 @Table(name = "notifications",
         indexes = @Index(name = "idx_notif_user_read", columnList = "user_id, is_read, created_at DESC"))
 @Getter @Setter
-public class Notification {
+public class Notification extends AuditableByUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

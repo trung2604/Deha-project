@@ -1,6 +1,5 @@
 package com.deha.HumanResourceManagement.dto.payroll;
 
-import com.deha.HumanResourceManagement.entity.Payroll;
 import com.deha.HumanResourceManagement.entity.enums.PayrollStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -31,27 +30,4 @@ public class PayrollResponse {
     private BigDecimal netSalary;
     private PayrollStatus status;
     private LocalDateTime generatedAt;
-
-    public static PayrollResponse fromEntity(Payroll payroll) {
-        return new PayrollResponse(
-                payroll.getId(),
-                payroll.getVersion(),
-                payroll.getUser() != null ? payroll.getUser().getId() : null,
-                payroll.getUser() != null ? (payroll.getUser().getFirstName() + " " + payroll.getUser().getLastName()).trim() : null,
-                payroll.getOffice() != null ? payroll.getOffice().getId() : null,
-                payroll.getPayYear(),
-                payroll.getPayMonth(),
-                payroll.getBaseSalarySnapshot(),
-                payroll.getWorkingDaysInMonth(),
-                payroll.getPresentDays(),
-                payroll.getRegularHours(),
-                payroll.getRegularPay(),
-                payroll.getOtHours(),
-                payroll.getOtPay(),
-                payroll.getNetSalary(),
-                payroll.getStatus(),
-                payroll.getGeneratedAt()
-        );
-    }
 }
-

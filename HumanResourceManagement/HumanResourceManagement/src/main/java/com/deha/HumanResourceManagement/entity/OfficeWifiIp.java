@@ -2,6 +2,7 @@ package com.deha.HumanResourceManagement.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
@@ -12,7 +13,8 @@ import java.util.UUID;
         uniqueConstraints = @UniqueConstraint(columnNames = {"office_id", "ip_wifi"})
 )
 @Data
-public class OfficeWifiIp {
+@EqualsAndHashCode(callSuper = false)
+public class OfficeWifiIp extends AuditableByUser {
 
     @Id
     @UuidGenerator

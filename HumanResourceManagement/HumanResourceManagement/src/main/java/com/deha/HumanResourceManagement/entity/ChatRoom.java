@@ -10,7 +10,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "chat_rooms")
 @Getter @Setter
-public class ChatRoom {
+public class ChatRoom extends AuditableByUser {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

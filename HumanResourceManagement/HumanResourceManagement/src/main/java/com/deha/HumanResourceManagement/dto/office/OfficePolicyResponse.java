@@ -1,6 +1,5 @@
 package com.deha.HumanResourceManagement.dto.office;
 
-import com.deha.HumanResourceManagement.entity.Office;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,22 +23,4 @@ public class OfficePolicyResponse {
     private Double otWeekendMultiplier;
     private Double otHolidayMultiplier;
     private Double otNightBonusMultiplier;
-
-    public static OfficePolicyResponse fromEntity(Office office) {
-        if (office == null) return null;
-        return new OfficePolicyResponse(
-                office.getId(),
-                office.getVersion(),
-                office.getName(),
-                office.getStandardWorkHours(),
-                office.getOtMinHours(),
-                office.getLatestCheckoutTime(),
-                office.getNightStartTime(),
-                office.getNightEndTime(),
-                office.getOtWeekdayMultiplier(),
-                office.getOtWeekendMultiplier(),
-                office.getOtHolidayMultiplier(),
-                office.getOtNightBonusMultiplier()
-        );
-    }
 }

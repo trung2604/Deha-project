@@ -15,6 +15,7 @@ import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.coreorg.UserMapper;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
@@ -57,9 +58,24 @@ public class UserService implements IUserService {
     private final PasswordEncoder passwordEncoder;
     private final Cloudinary cloudinary;
     private final EmailVerificationService emailVerificationService;
+    private final UserMapper userMapper;
 
 
-    public UserService(UserRepository userRepository, IDepartmentService departmentService, IOfficeService officeService, PositionRepository positionRepository, AttendanceLogRepository attendanceLogRepository, OtRequestRepository otRequestRepository, OtSessionRepository otSessionRepository, PayrollRepository payrollRepository, AccessScopeService accessScopeService, PasswordEncoder passwordEncoder, Cloudinary cloudinary, EmailVerificationService emailVerificationService) {
+    public UserService(
+            UserRepository userRepository,
+            IDepartmentService departmentService,
+            IOfficeService officeService,
+            PositionRepository positionRepository,
+            AttendanceLogRepository attendanceLogRepository,
+            OtRequestRepository otRequestRepository,
+            OtSessionRepository otSessionRepository,
+            PayrollRepository payrollRepository,
+            AccessScopeService accessScopeService,
+            PasswordEncoder passwordEncoder,
+            Cloudinary cloudinary,
+            EmailVerificationService emailVerificationService,
+            UserMapper userMapper
+    ) {
         this.userRepository = userRepository;
         this.departmentService = departmentService;
         this.officeService = officeService;
@@ -72,6 +88,7 @@ public class UserService implements IUserService {
         this.passwordEncoder = passwordEncoder;
         this.cloudinary = cloudinary;
         this.emailVerificationService = emailVerificationService;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -133,7 +150,7 @@ public class UserService implements IUserService {
         user.setActive(false);
         userRepository.save(user);
         emailVerificationService.sendVerificationEmail(user);
-        return UserResponse.fromEntity(user);
+        return userMapper.toResponse(user);
     }
 
     @Override
@@ -202,7 +219,7 @@ public class UserService implements IUserService {
         );
         user.assignOfficeDepartmentAndPosition(office, department, position);
         userRepository.saveAndFlush(user);
-        return UserResponse.fromEntity(user);
+        return userMapper.toResponse(user);
     }
 
 //    public Page<UserResponse> getAllUsers(Pageable pageable) {
@@ -220,7 +237,7 @@ public class UserService implements IUserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         accessScopeService.assertCanAccessUser(user);
-        return UserResponse.fromEntity(user);
+        return userMapper.toResponse(user);
     }
 
     @Override
@@ -418,7 +435,7 @@ public class UserService implements IUserService {
 
         Page<User> users = userRepository.findAll(spec, pageable);
 
-        return users.map(UserResponse::fromEntity);
+        return users.map(userMapper::toResponse);
     }
     private void guardManagerCannotAssignAdmin(Role targetRole) {
         User actor = accessScopeService.currentUserOrThrow();
@@ -452,6 +469,5 @@ public class UserService implements IUserService {
 //        return userRepository.saveAndFlush(user);
 //    }
 }
-
 
 

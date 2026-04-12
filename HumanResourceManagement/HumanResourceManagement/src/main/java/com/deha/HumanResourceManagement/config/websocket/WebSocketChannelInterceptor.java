@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.config.websocket;
 
+import com.deha.HumanResourceManagement.config.security.JwtUtil;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.ChatRoom;
 import com.deha.HumanResourceManagement.entity.enums.ChatRoomType;
@@ -27,12 +28,20 @@ import java.util.UUID;
 @Component
 public class WebSocketChannelInterceptor implements ChannelInterceptor {
 
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final UserRepository userRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final JwtUtil jwtUtil;
 
-    public WebSocketChannelInterceptor(UserRepository userRepository, ChatRoomRepository chatRoomRepository) {
+    public WebSocketChannelInterceptor(
+            UserRepository userRepository,
+            ChatRoomRepository chatRoomRepository,
+            JwtUtil jwtUtil
+    ) {
         this.userRepository = userRepository;
         this.chatRoomRepository = chatRoomRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     @Override
@@ -41,9 +50,13 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
                 MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
         if (accessor != null) {
             if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-                User user = resolveUser(accessor);
+                User user = resolveUserFromConnect(accessor);
                 UsernamePasswordAuthenticationToken auth = buildAuthentication(user);
                 accessor.setUser(auth);
+                Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
+                if (sessionAttributes != null) {
+                    sessionAttributes.put("email", user.getEmail());
+                }
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
 
@@ -63,7 +76,36 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
         return message;
     }
 
+    private User resolveUserFromConnect(StompHeaderAccessor accessor) {
+        String rawAuthorization = accessor.getFirstNativeHeader("Authorization");
+        if (rawAuthorization == null || rawAuthorization.isBlank()) {
+            rawAuthorization = accessor.getFirstNativeHeader("authorization");
+        }
+
+        String token = extractBearerToken(rawAuthorization);
+        try {
+            String tokenType = jwtUtil.extractTokenType(token);
+            if (!"access".equals(tokenType)) {
+                throw new UnauthorizedException("Invalid websocket token type");
+            }
+
+            String email = jwtUtil.extractUsername(token);
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> new UnauthorizedException("User not found"));
+        } catch (UnauthorizedException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new UnauthorizedException("Invalid websocket token");
+        }
+    }
+
     private User resolveUser(StompHeaderAccessor accessor) {
+        if (accessor.getUser() != null && accessor.getUser().getName() != null) {
+            String emailFromPrincipal = accessor.getUser().getName();
+            return userRepository.findByEmail(emailFromPrincipal)
+                    .orElseThrow(() -> new UnauthorizedException("User not found"));
+        }
+
         Map<String, Object> sessionAttributes = accessor.getSessionAttributes();
         if (sessionAttributes == null) throw new UnauthorizedException("No session attributes");
 
@@ -72,6 +114,22 @@ public class WebSocketChannelInterceptor implements ChannelInterceptor {
 
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UnauthorizedException("User not found"));
+    }
+
+    private String extractBearerToken(String authorizationHeader) {
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            throw new UnauthorizedException("Missing websocket Authorization header");
+        }
+
+        if (!authorizationHeader.startsWith(BEARER_PREFIX)) {
+            throw new UnauthorizedException("Invalid websocket Authorization format");
+        }
+
+        String token = authorizationHeader.substring(BEARER_PREFIX.length()).trim();
+        if (token.isEmpty()) {
+            throw new UnauthorizedException("Missing websocket token");
+        }
+        return token;
     }
 
     private UsernamePasswordAuthenticationToken buildAuthentication(User user) {

@@ -8,6 +8,7 @@ import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.NotificationType;
 import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.notification.NotificationMapper;
 import com.deha.HumanResourceManagement.repository.NotificationRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.INotificationService;
@@ -26,15 +27,18 @@ public class NotificationService implements INotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationMapper notificationMapper;
 
     public NotificationService(
             NotificationRepository notificationRepository,
             UserRepository userRepository,
-            SimpMessagingTemplate messagingTemplate
+            SimpMessagingTemplate messagingTemplate,
+            NotificationMapper notificationMapper
     ) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
+        this.notificationMapper = notificationMapper;
     }
 
     @Override
@@ -48,10 +52,10 @@ public class NotificationService implements INotificationService {
             notification.setUser(recipient);
             notification.setType(NotificationType.NEW_MESSAGE);
             notification.setTitle("Tin nhắn mới từ " + sender.getFirstName());
-            notification.setBody(truncate(message.getContent(), 80));
+            notification.setBody(truncate(message.getContent()));
             notification.setReferenceId(room.getId().toString());
             notificationRepository.save(notification);
-            NotificationResponse payload = NotificationResponse.fromEntity(notification);
+            NotificationResponse payload = notificationMapper.toResponse(notification);
             messagingTemplate.convertAndSendToUser(
                     recipient.getEmail(),
                     "/queue/notify",
@@ -78,7 +82,7 @@ public class NotificationService implements INotificationService {
         messagingTemplate.convertAndSendToUser(
                 user.getEmail(),
                 "/queue/notify",
-                NotificationResponse.fromEntity(notification)
+                notificationMapper.toResponse(notification)
         );
     }
 
@@ -89,7 +93,7 @@ public class NotificationService implements INotificationService {
                 .findByUserOrderByCreatedAtDesc(user,
                         PageRequest.of(page, size, Sort.by("createdAt").descending()))
                 .stream()
-                .map(NotificationResponse::fromEntity)
+                .map(notificationMapper::toResponse)
                 .toList();
     }
 
@@ -130,7 +134,8 @@ public class NotificationService implements INotificationService {
         };
     }
 
-    private String truncate(String text, int maxLen) {
+    private String truncate(String text) {
+        int maxLen = 80;
         if (text == null) return "";
         return text.length() <= maxLen ? text : text.substring(0, maxLen) + "...";
     }

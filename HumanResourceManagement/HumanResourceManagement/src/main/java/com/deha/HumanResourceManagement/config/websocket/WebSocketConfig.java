@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.config.websocket;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -10,10 +11,10 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
+    private final String[] allowedOrigins;
 
-    public WebSocketConfig(JwtHandshakeInterceptor jwtHandshakeInterceptor) {
-        this.jwtHandshakeInterceptor = jwtHandshakeInterceptor;
+    public WebSocketConfig(@Value("${app.cors.allowed-origins}") String allowedOrigins) {
+        this.allowedOrigins = allowedOrigins.split("\\s*,\\s*");
     }
 
     @Override
@@ -28,8 +29,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .addInterceptors(jwtHandshakeInterceptor)
-                .setAllowedOriginPatterns("*")
+                .setAllowedOrigins(allowedOrigins)
                 .withSockJS();
     }
 }

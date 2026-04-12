@@ -11,6 +11,7 @@ import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.coreorg.PositionMapper;
 import com.deha.HumanResourceManagement.repository.DepartmentRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
@@ -31,6 +32,8 @@ public class PositionService implements IPositionService {
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
     private final AccessScopeService accessScopeService;
+    private final PositionMapper positionMapper;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -39,13 +42,15 @@ public class PositionService implements IPositionService {
             IDepartmentService departmentService,
             DepartmentRepository departmentRepository,
             UserRepository userRepository,
-            AccessScopeService accessScopeService
+            AccessScopeService accessScopeService,
+            PositionMapper positionMapper
     ) {
         this.departmentService = departmentService;
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.userRepository = userRepository;
         this.accessScopeService = accessScopeService;
+        this.positionMapper = positionMapper;
     }
 
     @Override
@@ -54,19 +59,19 @@ public class PositionService implements IPositionService {
                 () -> new ResourceNotFoundException("Department not found with id: " + departmentId));
 
         User actor = accessScopeService.currentUserOrThrow();
-        if (accessScopeService.isAdmin(actor)) {
-            // no-op
-        } else if (accessScopeService.isOfficeManager(actor)) {
+        if (!accessScopeService.isAdmin(actor)) {
+            if (accessScopeService.isOfficeManager(actor)) {
             UUID officeId = department.getOffice() != null ? department.getOffice().getId() : null;
             accessScopeService.assertCanManageOffice(officeId);
-        } else if (accessScopeService.isDepartmentManager(actor)) {
-            accessScopeService.assertCanManageDepartment(departmentId);
-        } else {
-            throw new ForbiddenException("You do not have permission to view positions");
+            } else if (accessScopeService.isDepartmentManager(actor)) {
+                accessScopeService.assertCanManageDepartment(departmentId);
+            } else {
+                throw new ForbiddenException("You do not have permission to view positions");
+            }
         }
 
         return positionRepository.findAllByDepartmentId(departmentId).stream()
-                .map(PositionResponse::fromEntity)
+                .map(positionMapper::toResponse)
                 .toList();
     }
 
@@ -76,7 +81,7 @@ public class PositionService implements IPositionService {
 
         if (accessScopeService.isAdmin(actor)) {
             return positionRepository.findAll().stream()
-                    .map(PositionResponse::fromEntity)
+                    .map(positionMapper::toResponse)
                     .toList();
         }
 
@@ -88,7 +93,7 @@ public class PositionService implements IPositionService {
                             && position.getDepartment().getOffice() != null
                             && scopedOfficeId != null
                             && scopedOfficeId.equals(position.getDepartment().getOffice().getId()))
-                    .map(PositionResponse::fromEntity)
+                    .map(positionMapper::toResponse)
                     .toList();
         }
 
@@ -96,7 +101,7 @@ public class PositionService implements IPositionService {
             UUID departmentId = actor.getDepartment() != null ? actor.getDepartment().getId() : null;
             accessScopeService.assertCanManageDepartment(departmentId);
             return positionRepository.findAllByDepartmentId(departmentId).stream()
-                    .map(PositionResponse::fromEntity)
+                    .map(positionMapper::toResponse)
                     .toList();
         }
 
@@ -110,7 +115,7 @@ public class PositionService implements IPositionService {
 
         User actor = accessScopeService.currentUserOrThrow();
         if (accessScopeService.isAdmin(actor)) {
-            return PositionResponse.fromEntity(position);
+            return positionMapper.toResponse(position);
         }
 
         UUID officeId = position.getDepartment() != null && position.getDepartment().getOffice() != null
@@ -119,13 +124,13 @@ public class PositionService implements IPositionService {
 
         if (accessScopeService.isOfficeManager(actor)) {
             accessScopeService.assertCanManageOffice(officeId);
-            return PositionResponse.fromEntity(position);
+            return positionMapper.toResponse(position);
         }
 
         if (accessScopeService.isDepartmentManager(actor)) {
             UUID departmentId = position.getDepartment() != null ? position.getDepartment().getId() : null;
             accessScopeService.assertCanManageDepartment(departmentId);
-            return PositionResponse.fromEntity(position);
+            return positionMapper.toResponse(position);
         }
 
         throw new ForbiddenException("You do not have permission to view this position");
@@ -145,7 +150,7 @@ public class PositionService implements IPositionService {
         newPosition.assignDepartment(department);
         positionRepository.save(newPosition);
 
-        return PositionResponse.fromEntity(newPosition);
+        return positionMapper.toResponse(newPosition);
     }
 
     @Override
@@ -176,7 +181,7 @@ public class PositionService implements IPositionService {
         position.rename(request.getName());
         position.assignDepartment(department);
         Position merged = mergeAndFlush(position);
-        return PositionResponse.fromEntity(merged);
+        return positionMapper.toResponse(merged);
     }
 
     @Override

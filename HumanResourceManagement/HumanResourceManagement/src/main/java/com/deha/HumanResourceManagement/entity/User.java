@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
@@ -16,7 +17,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "users")
 @Data
-public class User {
+@EqualsAndHashCode(callSuper = false)
+public class User extends AuditableByUser {
 
     @Id
     @UuidGenerator

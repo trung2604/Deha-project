@@ -2,6 +2,7 @@ package com.deha.HumanResourceManagement.service.impl;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.dto.ot.OtDecisionRequest;
 import com.deha.HumanResourceManagement.dto.ot.OtReportCreateRequest;
 import com.deha.HumanResourceManagement.dto.ot.OtReportResponse;
@@ -15,12 +16,12 @@ import com.deha.HumanResourceManagement.entity.enums.OtRequestStatus;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.ot.OtReportMapper;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
 import com.deha.HumanResourceManagement.repository.OtReportRepository;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.repository.OtSessionRepository;
 import com.deha.HumanResourceManagement.service.IOtReportService;
-import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.service.ot.workflow.OtReportWorkflowService;
 import jakarta.persistence.EntityManager;
@@ -66,6 +67,7 @@ public class OtReportService implements IOtReportService {
     private final AccessScopeService accessScopeService;
     private final OfficePolicyService officePolicyService;
     private final OtReportWorkflowService otReportWorkflowService;
+    private final OtReportMapper otReportMapper;
     @Autowired(required = false)
     private Cloudinary cloudinary;
     @PersistenceContext
@@ -78,7 +80,8 @@ public class OtReportService implements IOtReportService {
             OtSessionRepository otSessionRepository,
             AccessScopeService accessScopeService,
             OfficePolicyService officePolicyService,
-            OtReportWorkflowService otReportWorkflowService
+            OtReportWorkflowService otReportWorkflowService,
+            OtReportMapper otReportMapper
     ) {
         this.otReportRepository = otReportRepository;
         this.otRequestRepository = otRequestRepository;
@@ -87,6 +90,7 @@ public class OtReportService implements IOtReportService {
         this.accessScopeService = accessScopeService;
         this.officePolicyService = officePolicyService;
         this.otReportWorkflowService = otReportWorkflowService;
+        this.otReportMapper = otReportMapper;
     }
 
     @Override
@@ -153,7 +157,7 @@ public class OtReportService implements IOtReportService {
             cleanupEvidenceSilently(uploadedPublicId);
             throw ex;
         }
-        return OtReportResponse.fromEntity(report);
+        return otReportMapper.toResponse(report);
     }
 
     private String applyEvidenceOrNull(OtReport report, MultipartFile evidenceFile) {
@@ -308,7 +312,7 @@ public class OtReportService implements IOtReportService {
         report.setApprovedAt(LocalDateTime.now());
         report.setDecisionNote(request.getDecisionNote());
         OtReport merged = mergeAndFlush(report);
-        return OtReportResponse.fromEntity(merged);
+        return otReportMapper.toResponse(merged);
     }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
@@ -340,16 +344,17 @@ public class OtReportService implements IOtReportService {
                             currentApprover.getDepartment().getId()
                     )
                     .stream()
-                    .map(OtReportResponse::fromEntity)
+                    .map(otReportMapper::toResponse)
                     .toList();
         }
+
         if (accessScopeService.isOfficeManager(currentApprover)) {
             return otReportRepository
                     .findAllByAttendanceLog_User_Office_IdOrderByAttendanceLog_LogDateDesc(
                             currentApprover.getOffice().getId()
                     )
                     .stream()
-                    .map(OtReportResponse::fromEntity)
+                    .map(otReportMapper::toResponse)
                     .toList();
         }
 
@@ -362,46 +367,52 @@ public class OtReportService implements IOtReportService {
         User currentApprover = accessScopeService.currentUserOrThrow();
 
         if (accessScopeService.isDepartmentManager(currentApprover)) {
-            UUID approverDepartmentId = currentApprover.getDepartment() != null ? currentApprover.getDepartment().getId() : null;
-            accessScopeService.assertCanManageDepartment(approverDepartmentId);
             List<OtReport> pendingReports = new ArrayList<>();
             for (OtReportStatus status : otReportWorkflowService.pendingForDeptMgr()) {
-                pendingReports.addAll(otReportRepository.findByAttendanceLog_User_Department_IdAndStatusOrderByAttendanceLog_LogDateDesc(
-                        approverDepartmentId,
-                        status
-                ));
+                pendingReports.addAll(
+                        otReportRepository.findByAttendanceLog_User_Department_IdAndStatusOrderByAttendanceLog_LogDateDesc(
+                                currentApprover.getDepartment().getId(),
+                                status
+                        )
+                );
             }
-            pendingReports.sort(comparing((OtReport r) -> r.getAttendanceLog().getLogDate()).reversed());
-            return pendingReports.stream().map(OtReportResponse::fromEntity).toList();
+            pendingReports.sort(comparing(r -> r.getAttendanceLog().getLogDate(), java.util.Comparator.reverseOrder()));
+            return pendingReports.stream().map(otReportMapper::toResponse).toList();
         }
 
         if (accessScopeService.isOfficeManager(currentApprover)) {
-            UUID approverOfficeId = currentApprover.getOffice() != null ? currentApprover.getOffice().getId() : null;
-            accessScopeService.assertCanManageOffice(approverOfficeId);
             List<OtReport> pendingReports = new ArrayList<>();
             for (OtReportStatus status : otReportWorkflowService.pendingForOfficeMgr()) {
-                pendingReports.addAll(otReportRepository.findByAttendanceLog_Office_IdAndStatusOrderByAttendanceLog_LogDateDesc(
-                        approverOfficeId,
-                        status
-                ));
+                pendingReports.addAll(
+                        otReportRepository.findByAttendanceLog_Office_IdAndStatusOrderByAttendanceLog_LogDateDesc(
+                                currentApprover.getOffice().getId(),
+                                status
+                        )
+                );
             }
-            pendingReports.sort(comparing((OtReport r) -> r.getAttendanceLog().getLogDate()).reversed());
-            return pendingReports.stream().map(OtReportResponse::fromEntity).toList();
+            pendingReports.sort(comparing(r -> r.getAttendanceLog().getLogDate(), java.util.Comparator.reverseOrder()));
+            return pendingReports.stream().map(otReportMapper::toResponse).toList();
         }
 
-        throw new ForbiddenException("You do not have permission to view OT reports");
+        return List.of();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OtReportResponse> listMy() {
         User actor = accessScopeService.currentUserOrThrow();
-        return otReportRepository
-                .findByAttendanceLog_User_IdOrderByAttendanceLog_LogDateDesc(actor.getId())
+        return otReportRepository.findByAttendanceLog_User_IdOrderByAttendanceLog_LogDateDesc(actor.getId())
                 .stream()
-                .map(OtReportResponse::fromEntity)
+                .map(otReportMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OtReportResponse> listBySession(UUID otSessionId) {
+        return otReportRepository.findByOtSession_IdOrderByAttendanceLog_LogDateDesc(otSessionId)
+                .stream()
+                .map(otReportMapper::toResponse)
                 .toList();
     }
 }
-
 

@@ -1,6 +1,5 @@
 package com.deha.HumanResourceManagement.dto.department;
 
-import com.deha.HumanResourceManagement.entity.Department;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,16 +17,4 @@ public class DepartmentResponse {
     private String description;
     private UUID officeId;
     private String officeName;
-
-    public static DepartmentResponse fromEntity(Department department) {
-        if (department == null) return null;
-        return new DepartmentResponse(
-                department.getId(),
-                department.getVersion(),
-                department.getName(),
-                department.getDescription(),
-                department.getOffice() != null ? department.getOffice().getId() : null,
-                department.getOffice() != null ? department.getOffice().getName() : null
-        );
-    }
 }

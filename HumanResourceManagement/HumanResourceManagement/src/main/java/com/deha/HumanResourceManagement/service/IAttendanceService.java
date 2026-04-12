@@ -23,6 +23,8 @@ public interface IAttendanceService {
 
     List<AttendanceLog> getDepartmentTodayLogsOrEmpty(User actor);
 
+    List<AttendanceLog> getOfficeTodayLogsOrEmpty(User actor, java.util.UUID officeId);
+
     void validateOfficeIpAccess(Office office, List<String> clientIps);
 }
 

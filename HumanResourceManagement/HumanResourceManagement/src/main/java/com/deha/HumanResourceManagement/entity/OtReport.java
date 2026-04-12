@@ -18,7 +18,7 @@ import java.util.UUID;
 )
 @Getter
 @Setter
-public class OtReport {
+public class OtReport extends AuditableByUser {
 
     @Id
     @UuidGenerator

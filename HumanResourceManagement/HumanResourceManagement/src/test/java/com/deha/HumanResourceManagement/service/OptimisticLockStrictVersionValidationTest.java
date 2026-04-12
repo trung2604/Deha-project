@@ -15,13 +15,16 @@ import com.deha.HumanResourceManagement.repository.OfficeRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.SalaryContractRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
+import com.deha.HumanResourceManagement.mapper.coreorg.DepartmentMapper;
+import com.deha.HumanResourceManagement.mapper.coreorg.OfficeMapper;
+import com.deha.HumanResourceManagement.mapper.coreorg.PositionMapper;
 import com.deha.HumanResourceManagement.service.impl.DepartmentService;
 import com.deha.HumanResourceManagement.service.impl.OfficeService;
 import com.deha.HumanResourceManagement.service.impl.PositionService;
 import com.deha.HumanResourceManagement.service.impl.SalaryContractService;
 import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
-import jakarta.persistence.EntityManager;
+import com.deha.HumanResourceManagement.service.IChatService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
 
@@ -49,7 +52,8 @@ class OptimisticLockStrictVersionValidationTest {
                 mock(DepartmentRepository.class),
                 mock(UserRepository.class),
                 new AccessScopeService(null),
-                new OfficePolicyService()
+                new OfficePolicyService(),
+                mock(OfficeMapper.class)
         );
 
         OfficeRequest request = new OfficeRequest();
@@ -72,7 +76,8 @@ class OptimisticLockStrictVersionValidationTest {
                 mock(DepartmentRepository.class),
                 mock(UserRepository.class),
                 new AccessScopeService(null),
-                new OfficePolicyService()
+                new OfficePolicyService(),
+                mock(OfficeMapper.class)
         );
 
         OfficeRequest request = new OfficeRequest();
@@ -96,8 +101,9 @@ class OptimisticLockStrictVersionValidationTest {
                 mock(PositionRepository.class),
                 mock(UserRepository.class),
                 mock(IOfficeService.class),
+                mock(IChatService.class),
                 new AccessScopeService(null),
-                mock(EntityManager.class)
+                mock(DepartmentMapper.class)
         );
 
         DepartmentRequest request = new DepartmentRequest();
@@ -119,8 +125,9 @@ class OptimisticLockStrictVersionValidationTest {
                 mock(PositionRepository.class),
                 mock(UserRepository.class),
                 mock(IOfficeService.class),
+                mock(IChatService.class),
                 new AccessScopeService(null),
-                mock(EntityManager.class)
+                mock(DepartmentMapper.class)
         );
 
         DepartmentRequest request = new DepartmentRequest();
@@ -143,7 +150,8 @@ class OptimisticLockStrictVersionValidationTest {
                 mock(IDepartmentService.class),
                 mock(DepartmentRepository.class),
                 mock(UserRepository.class),
-                new AccessScopeService(null)
+                new AccessScopeService(null),
+                mock(PositionMapper.class)
         );
 
         PositionRequest request = new PositionRequest();
@@ -165,7 +173,8 @@ class OptimisticLockStrictVersionValidationTest {
                 mock(IDepartmentService.class),
                 mock(DepartmentRepository.class),
                 mock(UserRepository.class),
-                new AccessScopeService(null)
+                new AccessScopeService(null),
+                mock(PositionMapper.class)
         );
 
         PositionRequest request = new PositionRequest();

@@ -14,6 +14,8 @@ import com.deha.HumanResourceManagement.entity.enums.ChatRoomType;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
 import com.deha.HumanResourceManagement.exception.UnauthorizedException;
+import com.deha.HumanResourceManagement.mapper.chat.ChatMessageMapper;
+import com.deha.HumanResourceManagement.mapper.chat.ChatRoomMapper;
 import com.deha.HumanResourceManagement.repository.ChatMessageRepository;
 import com.deha.HumanResourceManagement.repository.ChatRoomRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
@@ -35,6 +37,8 @@ public class ChatService implements IChatService {
     private final AccessScopeService accessScopeService;
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatMessageMapper chatMessageMapper;
+    private final ChatRoomMapper chatRoomMapper;
 
     public ChatService(
             ChatRoomRepository chatRoomRepository,
@@ -42,7 +46,9 @@ public class ChatService implements IChatService {
             UserRepository userRepository,
             AccessScopeService accessScopeService,
             NotificationService notificationService,
-            SimpMessagingTemplate messagingTemplate
+            SimpMessagingTemplate messagingTemplate,
+            ChatMessageMapper chatMessageMapper,
+            ChatRoomMapper chatRoomMapper
     ) {
         this.chatRoomRepository = chatRoomRepository;
         this.chatMessageRepository = chatMessageRepository;
@@ -50,6 +56,8 @@ public class ChatService implements IChatService {
         this.accessScopeService = accessScopeService;
         this.notificationService = notificationService;
         this.messagingTemplate = messagingTemplate;
+        this.chatMessageMapper = chatMessageMapper;
+        this.chatRoomMapper = chatRoomMapper;
     }
 
     @Override
@@ -66,11 +74,11 @@ public class ChatService implements IChatService {
         message.setRoom(room);
         message.setSender(sender);
         message.setContent(request.getContent().trim());
-        chatMessageRepository.save(message);
-        ChatMessageResponse response = ChatMessageResponse.fromEntity(message);
+        ChatMessage persistedMessage = chatMessageRepository.saveAndFlush(message);
+        ChatMessageResponse response = chatMessageMapper.toResponse(persistedMessage);
         String topic = resolveTopic(room);
         messagingTemplate.convertAndSend(topic, response);
-        notificationService.notifyNewMessage(room, message, sender);
+        notificationService.notifyNewMessage(room, persistedMessage, sender);
 
         return response;
     }
@@ -101,7 +109,7 @@ public class ChatService implements IChatService {
         return chatMessageRepository
                 .findByRoom(room, PageRequest.of(page, size, Sort.by("sentAt").descending()))
                 .stream()
-                .map(ChatMessageResponse::fromEntity)
+                .map(chatMessageMapper::toResponse)
                 .toList();
     }
 
@@ -128,7 +136,7 @@ public class ChatService implements IChatService {
 
         return chatRoomRepository.findRoomsForUser(officeId, departmentId)
                 .stream()
-                .map(ChatRoomResponse::fromEntity)
+                .map(chatRoomMapper::toResponse)
                 .toList();
     }
 

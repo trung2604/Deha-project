@@ -1,14 +1,15 @@
 package com.deha.HumanResourceManagement.service.impl;
 
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.dto.salarycontract.SalaryContractRequest;
 import com.deha.HumanResourceManagement.dto.salarycontract.SalaryContractResponse;
 import com.deha.HumanResourceManagement.entity.SalaryContract;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.salarycontract.SalaryContractMapper;
 import com.deha.HumanResourceManagement.repository.SalaryContractRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
-import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -23,17 +25,20 @@ public class SalaryContractService {
     private final SalaryContractRepository salaryContractRepository;
     private final UserRepository userRepository;
     private final AccessScopeService accessScopeService;
+    private final SalaryContractMapper salaryContractMapper;
     @PersistenceContext
     private EntityManager entityManager;
 
     public SalaryContractService(
             SalaryContractRepository salaryContractRepository,
             UserRepository userRepository,
-            AccessScopeService accessScopeService
+            AccessScopeService accessScopeService,
+            SalaryContractMapper salaryContractMapper
     ) {
         this.salaryContractRepository = salaryContractRepository;
         this.userRepository = userRepository;
         this.accessScopeService = accessScopeService;
+        this.salaryContractMapper = salaryContractMapper;
     }
 
     @Transactional
@@ -49,7 +54,7 @@ public class SalaryContractService {
         contract.setStartDate(request.getStartDate());
         contract.setEndDate(request.getEndDate());
         salaryContractRepository.save(contract);
-        return SalaryContractResponse.fromEntity(contract);
+        return salaryContractMapper.toResponse(contract);
     }
 
     @Transactional
@@ -74,7 +79,7 @@ public class SalaryContractService {
         contract.setStartDate(request.getStartDate());
         contract.setEndDate(request.getEndDate());
         SalaryContract merged = mergeAndFlush(contract);
-        return SalaryContractResponse.fromEntity(merged);
+        return salaryContractMapper.toResponse(merged);
     }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
@@ -92,7 +97,7 @@ public class SalaryContractService {
         assertScope(user);
         return salaryContractRepository.findByUserOrderByStartDateDesc(user)
                 .stream()
-                .map(SalaryContractResponse::fromEntity)
+                .map(salaryContractMapper::toResponse)
                 .toList();
     }
 
@@ -128,7 +133,7 @@ public class SalaryContractService {
         LocalDate requestEnd = endDate == null ? maxEnd : endDate;
 
         boolean overlapped = salaryContractRepository.findByUserOrderByStartDateDesc(user).stream()
-                .filter(c -> selfIdToIgnore == null || !c.getId().equals(selfIdToIgnore))
+                .filter(c -> selfIdToIgnore == null || !Objects.equals(c.getId(), selfIdToIgnore))
                 .anyMatch(c -> {
                     LocalDate cEnd = c.getEndDate() == null ? maxEnd : c.getEndDate();
                     return !c.getStartDate().isAfter(requestEnd) && !cEnd.isBefore(startDate);
@@ -148,6 +153,5 @@ public class SalaryContractService {
         return salaryContractRepository.saveAndFlush(contract);
     }
 }
-
 
 

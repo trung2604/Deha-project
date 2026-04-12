@@ -2,6 +2,7 @@ package com.deha.HumanResourceManagement.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.List;
@@ -10,7 +11,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "positions")
 @Data
-public class Position {
+@EqualsAndHashCode(callSuper = false)
+public class Position extends AuditableByUser {
 
     @Id
     @UuidGenerator
