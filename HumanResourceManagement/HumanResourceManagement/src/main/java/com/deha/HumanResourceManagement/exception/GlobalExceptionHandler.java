@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
+import org.springframework.mail.MailException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -123,6 +124,15 @@ public class GlobalExceptionHandler {
         ApiResponse res = new ApiResponse();
         res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         res.setMessage("Response serialization error");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+    }
+
+    @ExceptionHandler({MailException.class, IllegalStateException.class})
+    public ResponseEntity<?> handleMailFailure(Exception ex) {
+        log.error("Email delivery error", ex);
+        ApiResponse res = new ApiResponse();
+        res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        res.setMessage("Email delivery failed. Please check mail configuration and SMTP credentials.");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
     }
 

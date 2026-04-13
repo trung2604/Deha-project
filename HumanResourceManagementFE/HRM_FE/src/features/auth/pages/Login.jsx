@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Checkbox, Form, Input } from "antd";
 import { useAuth } from "../context/AuthContext";
@@ -14,9 +14,19 @@ function defaultHomePath(user) {
 
 export function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated, user, login } = useAuth();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const code = searchParams.get("code");
+    const error = searchParams.get("error");
+    if (!code && !error) return;
+
+    const query = searchParams.toString();
+    navigate(`/auth/callback${query ? `?${query}` : ""}`, { replace: true });
+  }, [navigate, searchParams]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;

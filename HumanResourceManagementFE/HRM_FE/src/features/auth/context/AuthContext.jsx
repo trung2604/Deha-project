@@ -27,6 +27,17 @@ function readStoredUser() {
   }
 }
 
+function buildFallbackUserFromAuthResponse(data) {
+  if (!data || typeof data !== "object") return null;
+  const hasUserShape = data.userId || data.email || data.role;
+  if (!hasUserShape) return null;
+  return normalizeAuthUser({
+    id: data.userId ?? data.id ?? null,
+    email: data.email ?? null,
+    role: data.role ?? null,
+  });
+}
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
   const [user, setUser] = useState(() => readStoredUser());
@@ -73,8 +84,17 @@ export function AuthProvider({ children }) {
       localStorage.setItem(TOKEN_KEY, nextToken);
       setToken(nextToken);
 
+      const fallbackUser = buildFallbackUserFromAuthResponse(res.data);
+      if (fallbackUser) {
+        setUser(fallbackUser);
+        localStorage.setItem(USER_KEY, JSON.stringify(fallbackUser));
+      }
+
       const profileResult = await refreshProfile();
       if (!profileResult.ok) {
+        if (fallbackUser) {
+          return { ok: true, data: fallbackUser, message: res.message || fallbackMessage };
+        }
         return profileResult;
       }
 

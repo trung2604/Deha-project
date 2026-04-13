@@ -81,7 +81,6 @@ public class GoogleOAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHa
 
         String normalized = redirectUri.toLowerCase();
         if (normalized.contains("/login/oauth2/code/google")) {
-            // Prevent infinite redirects when REDIRECT_URI points to backend OAuth callback URL.
             return fallbackCallbackUrl();
         }
 

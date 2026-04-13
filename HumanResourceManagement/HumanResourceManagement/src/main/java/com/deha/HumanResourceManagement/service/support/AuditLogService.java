@@ -54,7 +54,6 @@ public class AuditLogService {
 
             auditLogRepository.save(entry);
         } catch (Exception ex) {
-            // Auditing must not break business flow.
             log.warn("Failed to persist audit log", ex);
         }
     }
