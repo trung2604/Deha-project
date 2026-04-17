@@ -2,7 +2,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { isAdminRole } from "@/utils/role";
 
-/** Only ROLE_ADMIN can access wrapped routes; others go to profile */
+/** Only ADMIN can access wrapped routes; others go to profile */
 export function RequireAdmin({ children }) {
   const { user, initializing } = useAuth();
 

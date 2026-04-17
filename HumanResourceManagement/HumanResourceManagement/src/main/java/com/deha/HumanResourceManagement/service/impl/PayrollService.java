@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.service.impl;
 
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.dto.payroll.GeneratePayrollRequest;
 import com.deha.HumanResourceManagement.dto.payroll.PayrollResponse;
 import com.deha.HumanResourceManagement.entity.AttendanceLog;
@@ -11,15 +12,15 @@ import com.deha.HumanResourceManagement.entity.enums.OtReportStatus;
 import com.deha.HumanResourceManagement.entity.enums.PayrollStatus;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.payroll.PayrollMapper;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
-import com.deha.HumanResourceManagement.repository.PayrollRepository;
 import com.deha.HumanResourceManagement.repository.OtReportRepository;
+import com.deha.HumanResourceManagement.repository.PayrollRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.IAttendanceService;
 import com.deha.HumanResourceManagement.service.IPayrollService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
-import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.service.payroll.PayrollCalculator;
+import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ public class PayrollService implements IPayrollService {
     private final AccessScopeService accessScopeService;
     private final PayrollCalculator payrollCalculator;
     private final OfficePolicyService officePolicyService;
+    private final PayrollMapper payrollMapper;
 
     public PayrollService(
             PayrollRepository payrollRepository,
@@ -51,8 +53,9 @@ public class PayrollService implements IPayrollService {
             IAttendanceService attendanceService,
             SalaryContractService salaryContractService,
             AccessScopeService accessScopeService,
-            PayrollCalculator payrollCalculator
-            , OfficePolicyService officePolicyService
+            PayrollCalculator payrollCalculator,
+            OfficePolicyService officePolicyService,
+            PayrollMapper payrollMapper
     ) {
         this.payrollRepository = payrollRepository;
         this.userRepository = userRepository;
@@ -63,6 +66,7 @@ public class PayrollService implements IPayrollService {
         this.accessScopeService = accessScopeService;
         this.payrollCalculator = payrollCalculator;
         this.officePolicyService = officePolicyService;
+        this.payrollMapper = payrollMapper;
     }
 
     @Override
@@ -134,7 +138,7 @@ public class PayrollService implements IPayrollService {
             payroll.setGeneratedAt(LocalDateTime.now());
             payrollRepository.save(payroll);
 
-            results.add(PayrollResponse.fromEntity(payroll));
+            results.add(payrollMapper.toResponse(payroll));
         }
 
         return results;
@@ -159,7 +163,7 @@ public class PayrollService implements IPayrollService {
             }
         }
 
-        return payrolls.stream().map(PayrollResponse::fromEntity).toList();
+        return payrolls.stream().map(payrollMapper::toResponse).toList();
     }
 
     @Override
@@ -169,7 +173,7 @@ public class PayrollService implements IPayrollService {
                 .orElseThrow(() -> new ResourceNotFoundException("Payroll not found"));
         UUID officeId = payroll.getOffice() != null ? payroll.getOffice().getId() : null;
         accessScopeService.assertCanManageOffice(officeId);
-        return PayrollResponse.fromEntity(payroll);
+        return payrollMapper.toResponse(payroll);
     }
 
     private List<User> resolveTargets(GeneratePayrollRequest request) {
@@ -205,5 +209,4 @@ public class PayrollService implements IPayrollService {
         }
     }
 }
-
 

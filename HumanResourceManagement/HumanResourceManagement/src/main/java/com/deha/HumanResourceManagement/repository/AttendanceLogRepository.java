@@ -12,6 +12,8 @@ import java.util.UUID;
 
 @Repository
 public interface AttendanceLogRepository extends JpaRepository<AttendanceLog, UUID> {
+    boolean existsByUser_Id(UUID userId);
+
     boolean existsByUserAndLogDate(User user, LocalDate logDate);
 
     Optional<AttendanceLog> findByUserAndLogDate(User user, LocalDate logDate);
@@ -23,6 +25,10 @@ public interface AttendanceLogRepository extends JpaRepository<AttendanceLog, UU
     List<AttendanceLog> findByUserAndLogDateBetween(User user, LocalDate startDate, LocalDate endDate);
 
     List<AttendanceLog> findByLogDateAndUser_Department_Id(LocalDate logDate, UUID departmentId);
+
+    List<AttendanceLog> findByLogDateAndOffice_Id(LocalDate logDate, UUID officeId);
+
+    List<AttendanceLog> findByLogDate(LocalDate logDate);
 
     List<AttendanceLog> findByLogDateAndCheckOutTimeIsNull(LocalDate logDate);
 }

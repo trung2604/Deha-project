@@ -9,9 +9,9 @@ import java.time.LocalTime;
 import java.util.List;
 
 public interface IAttendanceService {
-    void checkIn(User user, List<String> clientIps);
+    void checkIn(User user, String clientIps);
 
-    void checkOut(User user, List<String> clientIps);
+    void checkOut(User user, String clientIps);
 
     int calculateHoursUntil(User user, LocalDate logDate, LocalTime deadlineTime);
 
@@ -23,6 +23,8 @@ public interface IAttendanceService {
 
     List<AttendanceLog> getDepartmentTodayLogsOrEmpty(User actor);
 
-    void validateOfficeIpAccess(Office office, List<String> clientIps);
+    List<AttendanceLog> getOfficeTodayLogsOrEmpty(User actor, java.util.UUID officeId);
+
+    void validateOfficeIpAccess(Office office, String clientIps);
 }
 

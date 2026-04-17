@@ -9,11 +9,16 @@ import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
-import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
+import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
+import com.deha.HumanResourceManagement.repository.OtRequestRepository;
+import com.deha.HumanResourceManagement.repository.OtSessionRepository;
+import com.deha.HumanResourceManagement.repository.PayrollRepository;
 import com.deha.HumanResourceManagement.service.impl.UserService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
+import com.deha.HumanResourceManagement.service.support.EmailVerificationService;
+import com.cloudinary.Cloudinary;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -35,7 +40,7 @@ class UserServiceDepartmentManagerSecurityTest {
     void updateUser_withoutExpectedVersion_shouldThrowBadRequest() {
         User actor = new User();
         actor.setId(UUID.randomUUID());
-        actor.setRole(Role.ROLE_ADMIN);
+        actor.setRole(Role.ADMIN);
 
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
@@ -56,24 +61,30 @@ class UserServiceDepartmentManagerSecurityTest {
                 mock(IDepartmentService.class),
                 mock(IOfficeService.class),
                 mock(PositionRepository.class),
+                mock(AttendanceLogRepository.class),
+                mock(OtRequestRepository.class),
+                mock(OtSessionRepository.class),
+                mock(PayrollRepository.class),
                 accessScopeService,
-                mock(PasswordEncoder.class)
+                mock(PasswordEncoder.class),
+                mock(Cloudinary.class),
+                mock(EmailVerificationService.class)
         );
 
         UpdateUserRequest payload = new UpdateUserRequest();
         payload.setFirstName("A");
         payload.setLastName("B");
         payload.setEmail("a@b.com");
-        payload.setRole(Role.ROLE_EMPLOYEE);
+        payload.setRole(Role.EMPLOYEE);
 
         assertThrows(BadRequestException.class, () -> userService.updateUser(existing.getId(), payload));
     }
 
     @Test
-    void updateUser_withStaleExpectedVersion_shouldThrowConflict() {
+    void updateUser_withStaleExpectedVersion_shouldStillUpdateInDetachedFlow() {
         User actor = new User();
         actor.setId(UUID.randomUUID());
-        actor.setRole(Role.ROLE_ADMIN);
+        actor.setRole(Role.ADMIN);
 
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
@@ -89,30 +100,57 @@ class UserServiceDepartmentManagerSecurityTest {
         UserRepository userRepository = mock(UserRepository.class);
         when(userRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
 
+        IOfficeService officeService = mock(IOfficeService.class);
+        IDepartmentService departmentService = mock(IDepartmentService.class);
+        PositionRepository positionRepository = mock(PositionRepository.class);
+
+        Office office = new Office();
+        office.setId(UUID.randomUUID());
+        Department department = new Department();
+        department.setId(UUID.randomUUID());
+        department.setOffice(office);
+        com.deha.HumanResourceManagement.entity.Position position = new com.deha.HumanResourceManagement.entity.Position();
+        position.setId(UUID.randomUUID());
+        position.setDepartment(department);
+
+        when(officeService.findById(office.getId())).thenReturn(office);
+        when(departmentService.findDepartmentById(department.getId())).thenReturn(department);
+        when(positionRepository.findById(position.getId())).thenReturn(Optional.of(position));
+
         UserService userService = new UserService(
                 userRepository,
-                mock(IDepartmentService.class),
-                mock(IOfficeService.class),
-                mock(PositionRepository.class),
+                departmentService,
+                officeService,
+                positionRepository,
+                mock(AttendanceLogRepository.class),
+                mock(OtRequestRepository.class),
+                mock(OtSessionRepository.class),
+                mock(PayrollRepository.class),
                 accessScopeService,
-                mock(PasswordEncoder.class)
+                mock(PasswordEncoder.class),
+                mock(Cloudinary.class),
+                mock(EmailVerificationService.class)
         );
 
         UpdateUserRequest payload = new UpdateUserRequest();
         payload.setFirstName("A");
         payload.setLastName("B");
         payload.setEmail("a@b.com");
-        payload.setRole(Role.ROLE_EMPLOYEE);
+        payload.setRole(Role.EMPLOYEE);
+        payload.setOffice(office);
+        payload.setDepartment(department);
+        payload.setPosition(position);
         payload.setExpectedVersion(2L);
 
-        assertThrows(ConflictException.class, () -> userService.updateUser(existing.getId(), payload));
+        assertDoesNotThrow(() -> userService.updateUser(existing.getId(), payload));
+        verify(userRepository).saveAndFlush(any(User.class));
     }
 
     @Test
     void departmentManager_shouldBeForbiddenToCreateUser() {
         User departmentManager = new User();
         departmentManager.setId(UUID.randomUUID());
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
 
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
@@ -138,8 +176,14 @@ class UserServiceDepartmentManagerSecurityTest {
                 departmentService,
                 officeService,
                 positionRepository,
+                mock(AttendanceLogRepository.class),
+                mock(OtRequestRepository.class),
+                mock(OtSessionRepository.class),
+                mock(PayrollRepository.class),
                 accessScopeService,
-                passwordEncoder
+                passwordEncoder,
+                mock(Cloudinary.class),
+                mock(EmailVerificationService.class)
         );
 
         UserRequest payload = new UserRequest();
@@ -148,7 +192,7 @@ class UserServiceDepartmentManagerSecurityTest {
         payload.setEmail("a@b.com");
         payload.setPassword("12345678");
         payload.setOffice(office);
-        payload.setRole(Role.ROLE_EMPLOYEE);
+        payload.setRole(Role.EMPLOYEE);
 
         assertThrows(ForbiddenException.class, () -> userService.createUser(payload));
     }
@@ -167,7 +211,7 @@ class UserServiceDepartmentManagerSecurityTest {
 
         User actor = new User();
         actor.setId(UUID.randomUUID());
-        actor.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        actor.setRole(Role.MANAGER_DEPARTMENT);
         actor.setOffice(office);
         actor.setDepartment(department);
 
@@ -185,7 +229,7 @@ class UserServiceDepartmentManagerSecurityTest {
         employeeUser.setFirstName("John");
         employeeUser.setLastName("Doe");
         employeeUser.setEmail("john@doe.com");
-        employeeUser.setRole(Role.ROLE_EMPLOYEE);
+        employeeUser.setRole(Role.EMPLOYEE);
         employeeUser.setOffice(office);
         employeeUser.setDepartment(department);
         employeeUser.setActive(true);
@@ -204,8 +248,14 @@ class UserServiceDepartmentManagerSecurityTest {
                 departmentService,
                 officeService,
                 positionRepository,
+                mock(AttendanceLogRepository.class),
+                mock(OtRequestRepository.class),
+                mock(OtSessionRepository.class),
+                mock(PayrollRepository.class),
                 accessScopeService,
-                passwordEncoder
+                passwordEncoder,
+                mock(Cloudinary.class),
+                mock(EmailVerificationService.class)
         );
 
         // Pass a different office/department in request payload, service must ignore them for department managers.

@@ -8,7 +8,7 @@ import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
 import com.deha.HumanResourceManagement.service.impl.AttendanceService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.strategy.OtTypeResolver;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,7 +41,7 @@ class AttendanceServiceDepartmentTodayTest {
 
         User actor = new User();
         actor.setId(UUID.randomUUID());
-        actor.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        actor.setRole(Role.MANAGER_DEPARTMENT);
         actor.setOffice(office);
         actor.setDepartment(department);
 
@@ -92,7 +91,7 @@ class AttendanceServiceDepartmentTodayTest {
 
         User actor = new User();
         actor.setId(UUID.randomUUID());
-        actor.setRole(Role.ROLE_MANAGER_OFFICE);
+        actor.setRole(Role.MANAGER_OFFICE);
         actor.setOffice(office);
         actor.setDepartment(null);
 

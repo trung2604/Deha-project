@@ -24,13 +24,13 @@ import { SalaryContractModal } from "../components/SalaryContractModal";
 
 function PayrollPageHeader() {
   return (
-    <div className="mb-8">
+    <div className="mb-2 glass-surface page-surface p-5 md:p-6 soft-ring">
       <div className="flex items-center gap-3 mb-2">
         <div
           className="p-2 rounded-lg"
           style={{
-            backgroundColor: "rgba(82, 196, 26, 0.1)",
-            color: "#52c41a",
+            background: "linear-gradient(135deg, rgba(45,190,141,0.18), rgba(91,124,255,0.16))",
+            color: "#2dbe8d",
           }}
         >
           <DollarSign className="w-6 h-6" />
@@ -50,7 +50,7 @@ function PayrollPageHeader() {
       <p
         style={{
           fontSize: "14px",
-          color: "#595959",
+          color: "#59607a",
           margin: 0,
           paddingLeft: "44px",
         }}

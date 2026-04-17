@@ -5,6 +5,7 @@ import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 
 @Component
+@Profile("!test")
 @RequiredArgsConstructor
 public class InitAdminAccount implements CommandLineRunner {
 
@@ -29,7 +31,7 @@ public class InitAdminAccount implements CommandLineRunner {
             admin.setLastName("System");
             admin.setEmail(adminEmail);
             admin.setPassword(passwordEncoder.encode("12345678"));
-            admin.setRole(Role.ROLE_ADMIN);
+            admin.setRole(Role.ADMIN);
             admin.setActive(true);
             admin.setCreatedAt(LocalDateTime.now());
 

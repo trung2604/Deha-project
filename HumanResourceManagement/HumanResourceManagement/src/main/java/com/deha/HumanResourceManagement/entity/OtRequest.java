@@ -19,7 +19,7 @@ import java.util.UUID;
 )
 @Getter
 @Setter
-public class OtRequest {
+public class OtRequest extends AuditableByUser {
 
     @Id
     @UuidGenerator

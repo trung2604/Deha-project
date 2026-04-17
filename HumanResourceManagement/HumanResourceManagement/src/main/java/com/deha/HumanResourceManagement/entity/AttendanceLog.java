@@ -20,7 +20,7 @@ import java.util.UUID;
 )
 @Getter
 @Setter
-public class AttendanceLog {
+public class AttendanceLog extends AuditableByUser {
 
     @Id
     @UuidGenerator

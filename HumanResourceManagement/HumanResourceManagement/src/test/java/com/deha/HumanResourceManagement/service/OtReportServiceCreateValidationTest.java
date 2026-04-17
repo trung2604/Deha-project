@@ -16,7 +16,7 @@ import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.repository.OtSessionRepository;
 import com.deha.HumanResourceManagement.service.impl.OtReportService;
 import com.deha.HumanResourceManagement.service.ot.workflow.OtReportWorkflowService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import org.junit.jupiter.api.Test;
 
@@ -81,7 +81,7 @@ class OtReportServiceCreateValidationTest {
 
 		User actor = new User();
 		actor.setId(UUID.randomUUID());
-		actor.setRole(Role.ROLE_EMPLOYEE);
+		actor.setRole(Role.EMPLOYEE);
 		actor.setOffice(office);
 
 		LocalDate logDate = LocalDate.now();

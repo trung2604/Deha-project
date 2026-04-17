@@ -5,22 +5,23 @@ import {
   Bell,
   Building2,
   Calendar,
-  CheckCircle,
   ChevronDown,
-  Clock,
   LogOut,
   Menu,
   Search,
+  MessageSquareText,
   User,
   Users,
-  XCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { Input } from 'antd';
+import { getResponseMessage } from '@/utils/apiResponse';
+import { useNotifications } from '@/features/notifications/context/NotificationContext';
 
 const breadcrumbMap = {
   '/': ['Dashboard'],
+  '/dashboard': ['Dashboard'],
   '/users': ['Users'],
   '/offices': ['Offices'],
   '/departments': ['Departments'],
@@ -29,31 +30,45 @@ const breadcrumbMap = {
   '/leave-requests': ['Leave Requests'],
   '/salary': ['Salary'],
   '/activity-logs': ['Activity Logs'],
+  '/audit-logs': ['Activity Logs'],
   '/profile': ['Profile'],
   '/notifications': ['Notifications'],
+  '/chat': ['Chat'],
 };
 
 const notificationIcons = {
-  success: CheckCircle,
-  warning: AlertCircle,
-  error: XCircle,
-  info: Clock,
+  NEW_MESSAGE: MessageSquareText,
+  SYSTEM: AlertCircle,
+  DEFAULT: Bell,
 };
 
 const notificationColors = {
-  success: { bg: 'rgba(82, 196, 26, 0.1)', text: '#52C41A' },
-  warning: { bg: 'rgba(250, 140, 22, 0.1)', text: '#FA8C16' },
-  error: { bg: 'rgba(255, 77, 79, 0.1)', text: '#FF4D4F' },
-  info: { bg: 'rgba(22, 119, 255, 0.1)', text: '#1677FF' },
+  NEW_MESSAGE: { bg: 'rgba(22, 119, 255, 0.1)', text: '#1677FF' },
+  SYSTEM: { bg: 'rgba(250, 140, 22, 0.1)', text: '#FA8C16' },
+  DEFAULT: { bg: 'rgba(22, 119, 255, 0.1)', text: '#1677FF' },
 };
+
+function formatNotificationTime(value) {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '--';
+  return date.toLocaleString();
+}
 
 export function Header({ onMenuClick }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    isNotificationsLoading,
+    refreshNotifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+  } = useNotifications();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [displayedCount, setDisplayedCount] = useState(5);
@@ -64,7 +79,6 @@ export function Header({ onMenuClick }) {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
   const initials = (user?.firstName?.[0] || '') + (user?.lastName?.[0] || '') || 'U';
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
   const displayedNotifications = notifications.slice(0, displayedCount);
   const hasMore = displayedCount < notifications.length;
 
@@ -86,6 +100,11 @@ export function Header({ onMenuClick }) {
     return () => setDisplayedCount(5);
   }, [notificationOpen]);
 
+  useEffect(() => {
+    if (!notificationOpen) return;
+    refreshNotifications();
+  }, [notificationOpen, refreshNotifications]);
+
   const searchResults = { users: [], departments: [], leaveRequests: [] };
   const totalResults = 0;
 
@@ -100,12 +119,33 @@ export function Header({ onMenuClick }) {
     setSearchTerm('');
   };
 
-  const markAsRead = (id) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  const markAsRead = async (id) => {
+    const target = notifications.find((n) => n.id === id);
+    if (!target || target.read) return;
+    const result = await markNotificationRead(id);
+    if (!result.ok) {
+      toast.error(getResponseMessage(result.response, 'Failed to mark as read'));
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    const result = await markAllNotificationsRead();
+    if (!result.ok) {
+      toast.error(getResponseMessage(result.response, 'Failed to mark all as read'));
+    }
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification) return;
+    if (!notification.read) {
+      await markAsRead(notification.id);
+    }
+    setNotificationOpen(false);
+    if (notification.type === 'NEW_MESSAGE') {
+      navigate(notification.referenceId ? `/chat?roomId=${notification.referenceId}` : '/chat');
+      return;
+    }
+    navigate('/notifications');
   };
 
   const handleLogout = () => {
@@ -117,17 +157,16 @@ export function Header({ onMenuClick }) {
 
   return (
     <header
-      className="h-16 border-b flex items-center justify-between px-4 md:px-6 sticky top-0 z-20 backdrop-blur-md"
+      className="h-16 border-b flex items-center justify-between px-4 md:px-6 sticky top-0 z-20 glass-header"
       style={{
-        backgroundColor: 'rgba(255,255,255,0.82)',
-        borderColor: 'rgba(232,232,232,0.9)',
-        boxShadow: '0 8px 20px rgba(15, 23, 42, 0.04)',
+        borderColor: 'rgba(91, 124, 255, 0.12)',
+        boxShadow: '0 8px 20px rgba(41, 64, 122, 0.08)',
       }}
     >
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
-          className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="lg:hidden header-icon-btn"
           style={{ color: '#0A0A0A' }}
         >
           <Menu className="w-5 h-5" />
@@ -173,7 +212,7 @@ export function Header({ onMenuClick }) {
           <>
             <div className="fixed inset-0 z-10" onClick={() => setSearchOpen(false)} />
             <div
-              className="absolute left-0 right-0 top-full mt-2 rounded-lg shadow-lg border overflow-hidden z-20"
+              className="absolute left-0 right-0 top-full mt-2 rounded-lg shadow-lg border overflow-hidden z-20 overlay-panel glass-surface"
               style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}
             >
               <div className="px-4 py-3 border-b" style={{ borderColor: '#E8E8E8' }}>
@@ -274,7 +313,7 @@ export function Header({ onMenuClick }) {
           <>
             <div className="fixed inset-0 z-10" onClick={() => setSearchOpen(false)} />
             <div
-              className="absolute left-0 right-0 top-full mt-2 rounded-lg shadow-lg border overflow-hidden z-20"
+              className="absolute left-0 right-0 top-full mt-2 rounded-lg shadow-lg border overflow-hidden z-20 overlay-panel glass-surface"
               style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}
             >
               <div className="px-4 py-8 text-center">
@@ -290,7 +329,7 @@ export function Header({ onMenuClick }) {
         <div className="relative">
           <button
             onClick={() => setNotificationOpen(!notificationOpen)}
-            className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            className="relative header-icon-btn"
             style={{ color: '#0A0A0A' }}
           >
             <Bell className="w-5 h-5" />
@@ -301,7 +340,7 @@ export function Header({ onMenuClick }) {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setNotificationOpen(false)} />
               <div
-                className="absolute right-0 top-full mt-2 w-96 rounded-lg shadow-lg border overflow-hidden z-20"
+                className="absolute right-0 top-full mt-2 w-96 rounded-lg shadow-lg border overflow-hidden z-20 overlay-panel glass-surface"
                 style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: '#E8E8E8' }}>
@@ -319,7 +358,11 @@ export function Header({ onMenuClick }) {
                 </div>
 
                 <div className="max-h-96 overflow-y-auto" ref={notificationListRef} onScroll={handleNotificationScroll}>
-                  {notifications.length === 0 ? (
+                  {isNotificationsLoading ? (
+                    <div className="px-4 py-6 text-center">
+                      <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin mx-auto" style={{ borderColor: '#1677FF', borderTopColor: 'transparent' }} />
+                    </div>
+                  ) : notifications.length === 0 ? (
                     <div className="px-4 py-8 text-center">
                       <Bell className="w-12 h-12 mx-auto mb-2" style={{ color: '#E8E8E8' }} />
                       <p style={{ color: '#595959', fontSize: '14px' }}>No notifications</p>
@@ -327,13 +370,13 @@ export function Header({ onMenuClick }) {
                   ) : (
                     <>
                       {displayedNotifications.map((notification) => {
-                        const Icon = notificationIcons[notification.type];
-                        const colors = notificationColors[notification.type];
+                        const Icon = notificationIcons[notification.type] || notificationIcons.DEFAULT;
+                        const colors = notificationColors[notification.type] || notificationColors.DEFAULT;
 
                         return (
                           <div
                             key={notification.id}
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => handleNotificationClick(notification)}
                             className="px-4 py-3 border-b hover:bg-gray-50 transition-colors cursor-pointer"
                             style={{
                               borderColor: '#E8E8E8',
@@ -352,10 +395,10 @@ export function Header({ onMenuClick }) {
                                   {!notification.read && <div className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ backgroundColor: '#1677FF' }} />}
                                 </div>
                                 <p className="mb-1" style={{ color: '#595959', fontSize: '12px', lineHeight: '1.4' }}>
-                                  {notification.message}
+                                  {notification.body}
                                 </p>
                                 <span style={{ color: '#8C8C8C', fontSize: '11px', fontFamily: 'JetBrains Mono, monospace' }}>
-                                  {notification.time}
+                                  {formatNotificationTime(notification.createdAt)}
                                 </span>
                               </div>
                             </div>
@@ -396,10 +439,19 @@ export function Header({ onMenuClick }) {
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-xl transition-colors"
+            className="flex items-center gap-2 p-2 rounded-xl transition-colors"
+            style={{ backgroundColor: 'rgba(255,255,255,0.28)' }}
           >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: '#1677FF', fontSize: '12px', fontWeight: '600' }}>
-              {initials.toUpperCase()}
+            <div className="header-avatar-chip">
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={fullName}
+                  className="w-full h-full rounded-full object-cover"
+                />
+              ) : (
+                initials.toUpperCase()
+              )}
             </div>
             <span className="hidden sm:block font-medium" style={{ color: '#0A0A0A', fontSize: '14px' }}>
               {fullName}
@@ -410,19 +462,19 @@ export function Header({ onMenuClick }) {
           {dropdownOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-              <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg border overflow-hidden z-20" style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}>
+              <div className="absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg border overflow-hidden z-20 overlay-panel glass-surface" style={{ backgroundColor: '#FFFFFF', borderColor: '#E8E8E8' }}>
                 <button
                   onClick={() => {
                     setDropdownOpen(false);
                     navigate('/profile');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+                  className="overlay-list-item text-left"
                 >
                   <User className="w-4 h-4" style={{ color: '#595959' }} />
                   <span style={{ color: '#0A0A0A', fontSize: '14px' }}>Profile</span>
                 </button>
                 <div className="border-t" style={{ borderColor: '#E8E8E8' }} />
-                <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left" onClick={handleLogout}>
+                <button className="overlay-list-item text-left" onClick={handleLogout}>
                   <LogOut className="w-4 h-4" style={{ color: '#FF4D4F' }} />
                   <span style={{ color: '#FF4D4F', fontSize: '14px' }}>Logout</span>
                 </button>

@@ -85,13 +85,12 @@ export function PositionsModal({
         }}
       />
       <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[860px] rounded-2xl z-50 flex flex-col overflow-hidden"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-24px)] max-w-[860px] rounded-xl sm:rounded-2xl z-50 flex flex-col overflow-hidden"
         style={{
           backgroundColor: "#FFFFFF",
           boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
-          height: "620px",
-          maxHeight: "calc(100vh - 40px)",
-          maxWidth: "calc(100vw - 40px)",
+          height: "min(620px, calc(100vh - 24px))",
+          maxHeight: "calc(100vh - 24px)",
         }}
         // keep interactions smooth while closing
         aria-hidden={closing}
@@ -112,7 +111,7 @@ export function PositionsModal({
             </div>
           )}
 
-          <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "#E8E8E8" }}>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b" style={{ borderColor: "#E8E8E8" }}>
             <div>
               <h3
                 style={{
@@ -131,7 +130,7 @@ export function PositionsModal({
             </button>
           </div>
 
-          <div className="p-6 space-y-4 flex-1 flex flex-col overflow-hidden min-h-0">
+          <div className="p-4 sm:p-6 space-y-4 flex-1 flex flex-col overflow-hidden min-h-0">
             <div className="rounded-xl p-4 border" style={{ borderColor: "#E8E8E8" }}>
               <div className="flex items-center justify-between mb-3">
                 <div style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>Add position</div>

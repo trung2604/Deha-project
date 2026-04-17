@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useAuth } from "../context/AuthContext";
-import { isAdminRole, isOfficeManagerRole, isDepartmentManagerRole } from "@/utils/role";
 import { Checkbox, Form, Input } from "antd";
+import { useAuth } from "../context/AuthContext";
+import authService from "../api/authService";
+import { isAdminRole, isDepartmentManagerRole, isOfficeManagerRole } from "@/utils/role";
+import { AUTH_BG_STYLE, AUTH_CARD_STYLE, AUTH_LINK_BUTTON_STYLE, AUTH_OUTLINE_BUTTON_STYLE } from "../constants/authUi";
 
 function defaultHomePath(user) {
   if (isAdminRole(user?.role) || isOfficeManagerRole(user?.role) || isDepartmentManagerRole(user?.role)) return "/departments";
@@ -12,9 +14,19 @@ function defaultHomePath(user) {
 
 export function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAuthenticated, user, login } = useAuth();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const code = searchParams.get("code");
+    const error = searchParams.get("error");
+    if (!code && !error) return;
+
+    const query = searchParams.toString();
+    navigate(`/auth/callback${query ? `?${query}` : ""}`, { replace: true });
+  }, [navigate, searchParams]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) return;
@@ -46,46 +58,21 @@ export function Login() {
     }
   };
 
+  const handleGoogleLogin = () => {
+    window.location.href = authService.getGoogleLoginUrl();
+  };
+
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-6"
-      style={{ backgroundColor: "#F5F7FA" }}
-    >
-      <div
-        className="w-full max-w-md rounded-xl p-8"
-        style={{ backgroundColor: "#FFFFFF", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}
-      >
+    <div className="min-h-screen flex items-center justify-center p-6" style={AUTH_BG_STYLE}>
+      <div className="w-full max-w-md rounded-2xl p-8 glass-surface page-surface" style={AUTH_CARD_STYLE}>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: "#1677FF" }}
-            >
-              <span
-                style={{
-                  color: "#FFFFFF",
-                  fontSize: "20px",
-                  fontWeight: "700",
-                  fontFamily: "DM Sans, sans-serif",
-                }}
-              >
-                H
-              </span>
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #5b7cff 0%, #7a5cff 100%)" }}>
+              <span style={{ color: "#FFFFFF", fontSize: "20px", fontWeight: "700", fontFamily: "DM Sans, sans-serif" }}>H</span>
             </div>
-            <span
-              style={{
-                fontSize: "24px",
-                fontWeight: "700",
-                fontFamily: "DM Sans, sans-serif",
-                color: "#0A0A0A",
-              }}
-            >
-              HRM System
-            </span>
+            <span style={{ fontSize: "24px", fontWeight: "700", fontFamily: "DM Sans, sans-serif", color: "#0A0A0A" }}>HRM System</span>
           </div>
-          <p style={{ color: "#595959", fontSize: "14px" }}>
-            Sign in to your account to continue
-          </p>
+          <p style={{ color: "#595959", fontSize: "14px" }}>Sign in to continue using the system</p>
         </div>
 
         <Form
@@ -97,23 +84,18 @@ export function Login() {
           disabled={submitting}
           validateMessages={{
             required: "${label} is required",
-            types: { email: "Please enter a valid email address" },
+            types: { email: "Please enter a valid email" },
           }}
         >
           <Form.Item
-            label={<span style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: 500 }}>Email Address</span>}
+            label={<span style={{ color: "#0A0A0A", fontSize: "13px", fontWeight: 500 }}>Email</span>}
             name="email"
             rules={[
               { required: true, message: "Please enter your email" },
-              { type: "email", message: "Please enter a valid email address" },
+              { type: "email", message: "Please enter a valid email" },
             ]}
           >
-            <Input
-              placeholder="you@company.com"
-              size="middle"
-              style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
-              autoComplete="email"
-            />
+            <Input placeholder="you@company.com" size="middle" style={{ borderColor: "#E8E8E8", fontSize: "14px" }} autoComplete="email" />
           </Form.Item>
 
           <Form.Item
@@ -123,7 +105,7 @@ export function Login() {
             validateTrigger={["onSubmit", "onChange"]}
           >
             <Input.Password
-              placeholder="••••••••"
+              placeholder="********"
               size="middle"
               style={{ borderColor: "#E8E8E8", fontSize: "14px" }}
               autoComplete="current-password"
@@ -138,18 +120,18 @@ export function Login() {
             </div>
           </Form.Item>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full h-10 rounded-lg transition-all duration-150 hover:opacity-90 disabled:opacity-60"
-            style={{
-              backgroundColor: "#1677FF",
-              color: "#FFFFFF",
-              fontSize: "14px",
-              fontWeight: "600",
-            }}
-          >
-            {submitting ? "Signing in..." : "Sign In"}
+          <div style={{ marginTop: -8, marginBottom: 16, textAlign: "right" }}>
+            <button type="button" onClick={() => navigate("/forgot-password")} disabled={submitting} style={AUTH_LINK_BUTTON_STYLE}>
+              Forgot password?
+            </button>
+          </div>
+
+          <button type="submit" disabled={submitting} className="w-full btn-primary-gradient justify-center">
+            {submitting ? "Signing in..." : "Sign in"}
+          </button>
+
+          <button type="button" onClick={handleGoogleLogin} disabled={submitting} className="w-full mt-3" style={AUTH_OUTLINE_BUTTON_STYLE}>
+            Continue with Google
           </button>
         </Form>
       </div>

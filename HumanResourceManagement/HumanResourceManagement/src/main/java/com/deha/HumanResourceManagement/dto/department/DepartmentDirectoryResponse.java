@@ -6,9 +6,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * Departments list for directory UI: optional keyword filter + total count in DB for badges.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -12,14 +12,15 @@ import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ResourceAlreadyExistException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.coreorg.DepartmentMapper;
 import com.deha.HumanResourceManagement.repository.DepartmentRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.repository.specification.DepartmentSpecification;
+import com.deha.HumanResourceManagement.service.IChatService;
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IOfficeService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
-import jakarta.persistence.EntityManager;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -34,25 +35,30 @@ public class DepartmentService implements IDepartmentService {
     private final PositionRepository positionRepository;
     private final UserRepository userRepository;
     private final IOfficeService officeService;
+    private final IChatService chatService;
     private final AccessScopeService accessScopeService;
-    private final EntityManager entityManager;
+    private final DepartmentMapper departmentMapper;
 
     public DepartmentService(
             DepartmentRepository departmentRepository,
             PositionRepository positionRepository,
             UserRepository userRepository,
             IOfficeService officeService,
-            AccessScopeService accessScopeService, EntityManager entityManager
+            IChatService chatService,
+            AccessScopeService accessScopeService,
+            DepartmentMapper departmentMapper
     ) {
         this.departmentRepository = departmentRepository;
         this.positionRepository = positionRepository;
         this.userRepository = userRepository;
         this.officeService = officeService;
+        this.chatService = chatService;
         this.accessScopeService = accessScopeService;
-        this.entityManager = entityManager;
+        this.departmentMapper = departmentMapper;
     }
 
     @Override
+    @Transactional
     public DepartmentResponse createDepartment(DepartmentRequest departmentRequest){
         Office office = officeService.findById(departmentRequest.getOfficeId());
         accessScopeService.assertCanManageOffice(office.getId());
@@ -63,53 +69,26 @@ public class DepartmentService implements IDepartmentService {
         department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
         department.assignOffice(office);
         departmentRepository.save(department);
-        return DepartmentResponse.fromEntity(department);
+        chatService.createDepartmentRoom(department);
+        return departmentMapper.toResponse(department);
     }
 
-//    @Override
-//    @Transactional
-//    public DepartmentResponse updateDepartment(UUID id, DepartmentRequest departmentRequest){
-//        Department department = departmentRepository.findById(id).orElseThrow(
-//                () -> new ResourceNotFoundException("Department not found with id: " + id));
-//        assertExpectedVersion(departmentRequest.getExpectedVersion(), department.getVersion(), "Department");
-//        Office office = officeService.findById(departmentRequest.getOfficeId());
-//        accessScopeService.assertCanManageOffice(office.getId());
-//        boolean changedOffice = department.getOffice() == null || !department.getOffice().getId().equals(office.getId());
-//        boolean changedName = department.getName() == null || !department.getName().equalsIgnoreCase(departmentRequest.getName());
-//        if ((changedOffice || changedName)
-//                && departmentRepository.existsByNameIgnoreCaseAndOffice_Id(departmentRequest.getName(), office.getId())) {
-//            throw new ResourceAlreadyExistException("Department with the same name already exists.");
-//        }
-//        department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
-//        department.assignOffice(office);
-//        departmentRepository.saveAndFlush(department);
-//        return DepartmentResponse.fromEntity(department);
-//    }
-@Override
-@Transactional
-public DepartmentResponse updateDepartment(UUID id, DepartmentRequest departmentRequest) {
-    if (departmentRequest.getExpectedVersion() == null) {
-        throw new BadRequestException("Expected version is required");
+    @Override
+    @Transactional
+    public DepartmentResponse updateDepartment(UUID id, DepartmentRequest departmentRequest) {
+        if (departmentRequest.getExpectedVersion() == null) {
+            throw new BadRequestException("Expected version is required");
+        }
+        Department department = new Department();
+        department.setId(id);
+        department.setVersion(departmentRequest.getExpectedVersion());
+        Office office = officeService.findById(departmentRequest.getOfficeId());
+        accessScopeService.assertCanManageOffice(office.getId());
+        department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
+        department.assignOffice(office);
+        departmentRepository.saveAndFlush(department);
+        return departmentMapper.toResponse(department);
     }
-    Department department = new Department();
-    department.setId(id);
-    department.setVersion(departmentRequest.getExpectedVersion());
-    Office office = officeService.findById(departmentRequest.getOfficeId());
-    accessScopeService.assertCanManageOffice(office.getId());
-    department.applyDetails(departmentRequest.getName(), departmentRequest.getDescription());
-    department.assignOffice(office);
-    departmentRepository.saveAndFlush(department);
-    return DepartmentResponse.fromEntity(department);
-}
-
-//    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
-//        if (expectedVersion == null) {
-//            throw new BadRequestException("Expected version is required");
-//        }
-//        if (!Objects.equals(expectedVersion, currentVersion)) {
-//            throw new ConflictException(resourceName + " was modified by another user. Please refresh and retry.");
-//        }
-//    }
 
     @Override
     @Transactional
@@ -124,7 +103,6 @@ public DepartmentResponse updateDepartment(UUID id, DepartmentRequest department
             throw new ConflictException(
                     "Cannot delete department while it still has users assigned. Reassign or remove users first.");
         }
-        // Safe order: no users remain, so positions can be removed without FK violations from users.position_id
         positionRepository.deleteAllByDepartmentId(id);
         departmentRepository.delete(department);
     }
@@ -133,7 +111,7 @@ public DepartmentResponse updateDepartment(UUID id, DepartmentRequest department
     public DepartmentResponse getDepartmentById(UUID id){
         Department department = departmentRepository.findById(id).orElseThrow(
                 () -> new ResourceNotFoundException("Department not found with id: " + id));
-        return DepartmentResponse.fromEntity(department);
+        return departmentMapper.toResponse(department);
     }
 
     @Override
@@ -150,7 +128,7 @@ public DepartmentResponse updateDepartment(UUID id, DepartmentRequest department
             );
         }
 
-        return DepartmentDetailResponse.fromEntity(department);
+        return departmentMapper.toDetailResponse(department);
     }
 
     @Override
@@ -176,7 +154,7 @@ public DepartmentResponse updateDepartment(UUID id, DepartmentRequest department
                     || (dept.getDescription() != null && dept.getDescription().toLowerCase().contains(normalized));
 
             List<DepartmentResponse> list = matches
-                    ? List.of(DepartmentResponse.fromEntity(dept))
+                    ? List.of(departmentMapper.toResponse(dept))
                     : List.of();
 
             long totalCount = matches ? 1 : 0;
@@ -201,7 +179,7 @@ public DepartmentResponse updateDepartment(UUID id, DepartmentRequest department
 
         long totalCount = departmentRepository.count(spec);
         List<DepartmentResponse> list = rows.stream()
-                .map(DepartmentResponse::fromEntity)
+                .map(departmentMapper::toResponse)
                 .toList();
 
         return new DepartmentDirectoryResponse(list, totalCount);
@@ -217,5 +195,3 @@ public DepartmentResponse updateDepartment(UUID id, DepartmentRequest department
         return department;
     }
 }
-
-

@@ -8,8 +8,13 @@ import { RequireManagerOrAdmin } from "./components/RequireManagerOrAdmin";
 import { RequireOfficeManagerOrAdmin } from "./components/RequireOfficeManagerOrAdmin";
 import { RequireOfficeManager } from "./components/RequireOfficeManager";
 import { RequireDepartmentsViewAccess } from "./components/RequireDepartmentsViewAccess";
+import { RequireOvertimeAccess } from "./components/RequireOvertimeAccess";
 
 const Login = lazy(() => import("@/features/auth/pages/Login").then((m) => ({ default: m.Login })));
+const OAuth2Callback = lazy(() => import("@/features/auth/pages/OAuth2Callback").then((m) => ({ default: m.OAuth2Callback })));
+const VerifyEmail = lazy(() => import("@/features/auth/pages/VerifyEmail").then((m) => ({ default: m.VerifyEmail })));
+const ForgotPassword = lazy(() => import("@/features/auth/pages/ForgotPassword").then((m) => ({ default: m.ForgotPassword })));
+const ResetPassword = lazy(() => import("@/features/auth/pages/ResetPassword").then((m) => ({ default: m.ResetPassword })));
 const UsersPage = lazy(() => import("@/features/users/pages/UserPage").then((m) => ({ default: m.UsersPage })));
 const DepartmentsPage = lazy(() =>
   import("@/features/departments/pages/DepartmentsPage").then((m) => ({ default: m.DepartmentsPage })),
@@ -28,11 +33,17 @@ const OvertimePage = lazy(() =>
   import("@/features/overtime/pages/OvertimePage").then((m) => ({ default: m.OvertimePage })),
 );
 const PayrollPage = lazy(() => import("@/features/payroll/pages/PayrollPage").then((m) => ({ default: m.PayrollPage })));
+const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const AuditLogsPage = lazy(() => import("@/features/auditLogs/pages/AuditLogsPage").then((m) => ({ default: m.AuditLogsPage })));
 const Profile = lazy(() => import("@/features/profile/pages/Profile"));
+const ChatPage = lazy(() => import("@/features/chat/pages/ChatPage.jsx").then((m) => ({ default: m.ChatPage })));
+const NotificationsPage = lazy(() =>
+  import("@/features/notifications/pages/NotificationsPage").then((m) => ({ default: m.NotificationsPage })),
+);
 
 function RouteLoader() {
   return (
-    <div className="rounded-xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+    <div className="rounded-xl p-6 glass-surface page-surface soft-ring">
       <p style={{ margin: 0, color: "#8C8C8C", fontSize: "14px" }}>Loading page...</p>
     </div>
   );
@@ -55,6 +66,22 @@ export const router = createBrowserRouter([
     path: "/login",
     element: withSuspense(<Login />),
   },
+  {
+    path: "/auth/callback",
+    element: withSuspense(<OAuth2Callback />),
+  },
+  {
+    path: "/verify-email",
+    element: withSuspense(<VerifyEmail />),
+  },
+  {
+    path: "/forgot-password",
+    element: withSuspense(<ForgotPassword />),
+  },
+  {
+    path: "/reset-password",
+    element: withSuspense(<ResetPassword />),
+  },
 //   {
 //     path: "/register",
 //     Component: Register,
@@ -65,6 +92,12 @@ export const router = createBrowserRouter([
     Component: Layout,
     children: [
       { index: true, Component: IndexRedirect },
+      {
+        path: "dashboard",
+        element: (
+          <RequireOfficeManagerOrAdmin>{withSuspense(<DashboardPage />)}</RequireOfficeManagerOrAdmin>
+        ),
+      },
       {
         path: "offices",
         element: (
@@ -101,7 +134,9 @@ export const router = createBrowserRouter([
       },
       {
         path: "overtime",
-        element: withSuspense(<OvertimePage />),
+        element: (
+          <RequireOvertimeAccess>{withSuspense(<OvertimePage />)}</RequireOvertimeAccess>
+        ),
       },
       {
         path: "payroll",
@@ -109,11 +144,24 @@ export const router = createBrowserRouter([
           <RequireOfficeManagerOrAdmin>{withSuspense(<PayrollPage />)}</RequireOfficeManagerOrAdmin>
         ),
       },
+      {
+        path: "chat",
+        element: withSuspense(<ChatPage />),
+      },
+      {
+        path: "notifications",
+        element: withSuspense(<NotificationsPage />),
+      },
+      {
+        path: "audit-logs",
+        element: (
+          <RequireOfficeManagerOrAdmin>{withSuspense(<AuditLogsPage />)}</RequireOfficeManagerOrAdmin>
+        ),
+      },
     //   { path: "leave-requests", Component: LeaveRequests },
     //   { path: "salary", Component: Salary },
     //   { path: "activity-logs", Component: ActivityLogs },
       { path: "profile", element: withSuspense(<Profile />) },
-    //   { path: "notifications", Component: Notifications },
     ],
   },
 ]);

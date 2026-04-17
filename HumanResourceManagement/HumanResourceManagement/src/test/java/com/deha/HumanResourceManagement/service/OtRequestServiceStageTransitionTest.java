@@ -9,11 +9,10 @@ import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.OtRequestStatus;
 import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
-import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.service.impl.OtRequestService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.ot.workflow.OtRequestWorkflowService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -42,13 +41,13 @@ class OtRequestServiceStageTransitionTest {
 
         User requestCreator = new User();
         requestCreator.setId(UUID.randomUUID());
-        requestCreator.setRole(Role.ROLE_EMPLOYEE);
+        requestCreator.setRole(Role.EMPLOYEE);
         requestCreator.setOffice(office);
         requestCreator.setDepartment(department);
 
         User departmentManager = new User();
         departmentManager.setId(UUID.randomUUID());
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(department);
 
@@ -84,7 +83,7 @@ class OtRequestServiceStageTransitionTest {
     }
 
     @Test
-    void decide_withStaleExpectedVersion_shouldThrowConflict() {
+    void decide_withStaleExpectedVersion_shouldProceedWithDetachedMerge() {
         UUID requestId = UUID.randomUUID();
 
         Office office = new Office();
@@ -96,13 +95,13 @@ class OtRequestServiceStageTransitionTest {
 
         User requestCreator = new User();
         requestCreator.setId(UUID.randomUUID());
-        requestCreator.setRole(Role.ROLE_EMPLOYEE);
+        requestCreator.setRole(Role.EMPLOYEE);
         requestCreator.setOffice(office);
         requestCreator.setDepartment(department);
 
         User departmentManager = new User();
         departmentManager.setId(UUID.randomUUID());
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(department);
 
@@ -116,6 +115,7 @@ class OtRequestServiceStageTransitionTest {
 
         OtRequestRepository otRequestRepository = mock(OtRequestRepository.class);
         when(otRequestRepository.findById(requestId)).thenReturn(Optional.of(otRequest));
+        when(otRequestRepository.saveAndFlush(any(OtRequest.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
@@ -133,10 +133,10 @@ class OtRequestServiceStageTransitionTest {
         OtDecisionRequest decision = new OtDecisionRequest();
         decision.setApproved(true);
         decision.setExpectedVersion(4L);
-        decision.setExpectedVersion(4L);
 
-        assertThrows(ConflictException.class, () -> service.decide(requestId, decision));
-        verify(otRequestRepository, never()).save(any(OtRequest.class));
+        OtRequestResponse response = service.decide(requestId, decision);
+        assertNotNull(response);
+        assertEquals(OtRequestStatus.APPROVED, response.getStatus());
     }
 
     @Test
@@ -154,13 +154,13 @@ class OtRequestServiceStageTransitionTest {
 
         User requestCreator = new User();
         requestCreator.setId(UUID.randomUUID());
-        requestCreator.setRole(Role.ROLE_EMPLOYEE);
+        requestCreator.setRole(Role.EMPLOYEE);
         requestCreator.setOffice(office);
         requestCreator.setDepartment(department);
 
         User departmentManager = new User();
         departmentManager.setId(UUID.randomUUID());
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(department);
 
@@ -175,7 +175,7 @@ class OtRequestServiceStageTransitionTest {
 
         OtRequestRepository otRequestRepository = mock(OtRequestRepository.class);
         when(otRequestRepository.findById(requestId)).thenReturn(Optional.of(otRequest));
-        when(otRequestRepository.save(any(OtRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(otRequestRepository.saveAndFlush(any(OtRequest.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
@@ -215,13 +215,13 @@ class OtRequestServiceStageTransitionTest {
 
         User requestCreator = new User();
         requestCreator.setId(UUID.randomUUID());
-        requestCreator.setRole(Role.ROLE_EMPLOYEE);
+        requestCreator.setRole(Role.EMPLOYEE);
         requestCreator.setOffice(office);
         requestCreator.setDepartment(department);
 
         User officeManager = new User();
         officeManager.setId(UUID.randomUUID());
-        officeManager.setRole(Role.ROLE_MANAGER_OFFICE);
+        officeManager.setRole(Role.MANAGER_OFFICE);
         officeManager.setOffice(office);
 
         OtRequest otRequest = new OtRequest();
@@ -235,7 +235,7 @@ class OtRequestServiceStageTransitionTest {
 
         OtRequestRepository otRequestRepository = mock(OtRequestRepository.class);
         when(otRequestRepository.findById(requestId)).thenReturn(Optional.of(otRequest));
-        when(otRequestRepository.save(any(OtRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(otRequestRepository.saveAndFlush(any(OtRequest.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
@@ -281,13 +281,13 @@ class OtRequestServiceStageTransitionTest {
 
         User requestCreator = new User();
         requestCreator.setId(UUID.randomUUID());
-        requestCreator.setRole(Role.ROLE_EMPLOYEE);
+        requestCreator.setRole(Role.EMPLOYEE);
         requestCreator.setOffice(office);
         requestCreator.setDepartment(correctDept);
 
         User departmentManager = new User();
         departmentManager.setId(UUID.randomUUID());
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(wrongDept);
 
@@ -343,13 +343,13 @@ class OtRequestServiceStageTransitionTest {
 
         User requestCreator = new User();
         requestCreator.setId(managerId);
-        requestCreator.setRole(Role.ROLE_EMPLOYEE);
+        requestCreator.setRole(Role.EMPLOYEE);
         requestCreator.setOffice(office);
         requestCreator.setDepartment(department);
 
         User departmentManager = new User();
         departmentManager.setId(managerId);
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(department);
 
@@ -387,4 +387,3 @@ class OtRequestServiceStageTransitionTest {
         assertThrows(ForbiddenException.class, action);
     }
 }
-

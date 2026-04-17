@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
@@ -16,7 +17,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "users")
 @Data
-public class User {
+@EqualsAndHashCode(callSuper = false)
+public class User extends AuditableByUser {
 
     @Id
     @UuidGenerator
@@ -40,6 +42,9 @@ public class User {
     @Column(name = "phone", nullable = true, length = 10)
     @Pattern(regexp = "^\\d{9,15}$", message = "Phone number must be 9-15 digits")
     private String phone;
+
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
 
     @Column(name = "password", nullable = false)
     private String password;
@@ -104,10 +109,6 @@ public class User {
         this.office = office;
         this.department = department;
         this.position = position;
-    }
-
-    public void activate() {
-        this.isActive = true;
     }
 
     public void markCreatedNow() {

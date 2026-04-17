@@ -356,29 +356,21 @@ export function DepartmentsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="page-hero">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
           <h1
             style={{
               fontFamily: "DM Sans, sans-serif",
-              fontSize: "24px",
+              fontSize: "28px",
               fontWeight: "600",
               color: "#0A0A0A",
+              margin: 0,
             }}
           >
             {departmentManager ? DEPARTMENT_WORKSPACE_COPY.titleManager : DEPARTMENT_WORKSPACE_COPY.titleDefault}
           </h1>
-          <span
-            className="px-3 py-1 rounded-full"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(139, 92, 246, 0.16), rgba(139, 92, 246, 0.08))",
-              color: "#8B5CF6",
-              fontSize: "13px",
-              fontWeight: "600",
-              boxShadow: "inset 0 0 0 1px rgba(139,92,246,0.2)",
-            }}
-          >
+          <span className="metric-chip" style={{ color: "#6d4cff" }}>
             {getDepartmentCountLabel({
               departmentManager,
               myDepartment,
@@ -387,29 +379,26 @@ export function DepartmentsPage() {
               departmentTotalCount,
             })}
           </span>
-        </div>
+          </div>
 
-        {canManageDepartments && (
-          <button
-            onClick={openCreateDepartment}
-            disabled={showSkeletonOnly}
-            className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95 disabled:opacity-60"
-            style={{
-              background: "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
-              color: "#FFFFFF",
-              fontSize: "14px",
-              fontWeight: "500",
-              boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
-            }}
-          >
-            <Plus className="w-4 h-4" />
-            Add Department
-          </button>
-        )}
+          {canManageDepartments && (
+            <button
+              onClick={openCreateDepartment}
+              disabled={showSkeletonOnly}
+              className="btn-primary-gradient disabled:opacity-60"
+            >
+              <Plus className="w-4 h-4" />
+              Add Department
+            </button>
+          )}
+        </div>
+        <p className="page-subtitle">
+          Organize teams, assign positions, and keep department structure transparent.
+        </p>
       </div>
 
       {departmentManager && (
-        <div className="rounded-2xl p-5" style={{ background: "linear-gradient(135deg, rgba(22,119,255,0.10), rgba(139,92,246,0.10))", border: "1px solid rgba(22,119,255,0.2)" }}>
+        <div className="rounded-2xl p-5 glass-surface" style={{ background: "linear-gradient(135deg, rgba(22,119,255,0.10), rgba(139,92,246,0.10))", border: "1px solid rgba(22,119,255,0.2)" }}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div style={{ color: "#0A0A0A", fontSize: "18px", fontWeight: 700 }}>
@@ -500,7 +489,7 @@ export function DepartmentsPage() {
               <div
                 className="xl:col-span-2 rounded-2xl p-6 border"
                 style={{
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: "rgba(255,255,255,0.9)",
                   borderColor: "rgba(15,23,42,0.08)",
                   boxShadow: "0 12px 28px rgba(15,23,42,0.08)",
                 }}
@@ -591,7 +580,7 @@ export function DepartmentsPage() {
               <div
                 className="rounded-2xl p-6 border"
                 style={{
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: "rgba(255,255,255,0.9)",
                   borderColor: "rgba(15,23,42,0.08)",
                   boxShadow: "0 12px 28px rgba(15,23,42,0.08)",
                 }}
@@ -603,14 +592,7 @@ export function DepartmentsPage() {
                 <button
                   type="button"
                   onClick={() => setDetailDepartmentId(myDepartment.id)}
-                  className="w-full flex items-center justify-center gap-2 px-4 h-10 rounded-xl transition-all duration-200 hover:opacity-95"
-                  style={{
-                    background: "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
-                    color: "#FFFFFF",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
-                  }}
+                  className="w-full btn-primary-gradient justify-center"
                 >
                   Open Department Details
                 </button>

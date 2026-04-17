@@ -4,6 +4,7 @@ import com.deha.HumanResourceManagement.entity.OtRequest;
 import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.OtRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -13,6 +14,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface OtRequestRepository extends JpaRepository<OtRequest, UUID> {
+    boolean existsByUser_Id(UUID userId);
+
     Optional<OtRequest> findByUserAndLogDate(User user, LocalDate logDate);
     Optional<OtRequest> findByUserAndLogDateAndStatus(User user, LocalDate logDate, OtRequestStatus status);
     List<OtRequest> findByOffice_IdAndLogDate(UUID officeId, LocalDate logDate);
@@ -25,4 +28,8 @@ public interface OtRequestRepository extends JpaRepository<OtRequest, UUID> {
     List<OtRequest> findAllByUser_Department_IdOrderByLogDateDesc(UUID departmentId);
 
     List<OtRequest> findAllByOffice_IdOrderByLogDateDesc(UUID officeId);
+
+    @Modifying
+    @Query("update OtRequest r set r.approvedBy = null where r.approvedBy.id = :userId")
+    int clearApprovedByUser(@Param("userId") UUID userId);
 }

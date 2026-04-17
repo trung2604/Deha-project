@@ -5,6 +5,7 @@ import com.deha.HumanResourceManagement.dto.user.UserRequest;
 import com.deha.HumanResourceManagement.dto.user.UserResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -16,6 +17,14 @@ public interface IUserService {
     UserResponse getUserById(UUID id);
 
     void deleteUser(UUID id);
+
+    void deactivateUser(UUID id);
+
+    void resetUserPassword(UUID id, String newPassword);
+
+    String uploadAvatar(MultipartFile file);
+
+    void removeAvatar();
 
     Page<UserResponse> getUsersWithFilters(
             String keyword,

@@ -1,5 +1,8 @@
 package com.deha.HumanResourceManagement.service.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.dto.ot.OtDecisionRequest;
 import com.deha.HumanResourceManagement.dto.ot.OtReportCreateRequest;
 import com.deha.HumanResourceManagement.dto.ot.OtReportResponse;
@@ -13,22 +16,28 @@ import com.deha.HumanResourceManagement.entity.enums.OtRequestStatus;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.ot.OtReportMapper;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
 import com.deha.HumanResourceManagement.repository.OtReportRepository;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.repository.OtSessionRepository;
 import com.deha.HumanResourceManagement.service.IOtReportService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.service.ot.workflow.OtReportWorkflowService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static java.util.Comparator.comparing;
@@ -37,6 +46,19 @@ import static java.util.Comparator.comparing;
 public class OtReportService implements IOtReportService {
     private static final int REPORT_NOTE_MIN_LENGTH = 10;
     private static final int REPORT_NOTE_MAX_LENGTH = 500;
+    private static final long MAX_EVIDENCE_SIZE_BYTES = 8L * 1024 * 1024;
+    private static final Set<String> ALLOWED_EVIDENCE_MIME_TYPES = Set.of(
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "application/pdf",
+            "text/plain",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    private static final Logger log = LoggerFactory.getLogger(OtReportService.class);
 
     private final OtReportRepository otReportRepository;
     private final OtRequestRepository otRequestRepository;
@@ -45,6 +67,9 @@ public class OtReportService implements IOtReportService {
     private final AccessScopeService accessScopeService;
     private final OfficePolicyService officePolicyService;
     private final OtReportWorkflowService otReportWorkflowService;
+    private final OtReportMapper otReportMapper;
+    @Autowired(required = false)
+    private Cloudinary cloudinary;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -55,7 +80,8 @@ public class OtReportService implements IOtReportService {
             OtSessionRepository otSessionRepository,
             AccessScopeService accessScopeService,
             OfficePolicyService officePolicyService,
-            OtReportWorkflowService otReportWorkflowService
+            OtReportWorkflowService otReportWorkflowService,
+            OtReportMapper otReportMapper
     ) {
         this.otReportRepository = otReportRepository;
         this.otRequestRepository = otRequestRepository;
@@ -64,11 +90,21 @@ public class OtReportService implements IOtReportService {
         this.accessScopeService = accessScopeService;
         this.officePolicyService = officePolicyService;
         this.otReportWorkflowService = otReportWorkflowService;
+        this.otReportMapper = otReportMapper;
     }
 
     @Override
     @Transactional
     public OtReportResponse create(OtReportCreateRequest request) {
+        return create(request, null);
+    }
+
+    @Override
+    @Transactional
+    public OtReportResponse create(OtReportCreateRequest request, MultipartFile evidenceFile) {
+        if (request == null || request.getOtSessionId() == null) {
+            throw new BadRequestException("OT session id is required");
+        }
         User actor = accessScopeService.currentUserOrThrow();
         boolean canCreateOt = accessScopeService.isEmployee(actor)
                 || accessScopeService.isDepartmentManager(actor);
@@ -105,15 +141,93 @@ public class OtReportService implements IOtReportService {
         String reportNoteFinal = normalizeReportNoteOrThrow(request.getReportNote());
 
         OtReport report = new OtReport();
+        report.setId(UUID.randomUUID());
         report.setAttendanceLog(attendanceLog);
         report.setOtRequest(approvedRequest);
         report.setOtSession(otSession);
         report.setReportedOtHours(eligibleOtHours);
         report.setReportNote(reportNoteFinal);
-
         report.setStatus(otReportWorkflowService.initialStatus(actor.getRole()));
-        otReportRepository.save(report);
-        return OtReportResponse.fromEntity(report);
+
+        String uploadedPublicId = null;
+        try {
+            uploadedPublicId = applyEvidenceOrNull(report, evidenceFile);
+            otReportRepository.save(report);
+        } catch (RuntimeException ex) {
+            cleanupEvidenceSilently(uploadedPublicId);
+            throw ex;
+        }
+        return otReportMapper.toResponse(report);
+    }
+
+    private String applyEvidenceOrNull(OtReport report, MultipartFile evidenceFile) {
+        if (evidenceFile == null || evidenceFile.isEmpty()) {
+            return null;
+        }
+        if (cloudinary == null) {
+            throw new BadRequestException("Evidence upload is not available right now");
+        }
+        if (evidenceFile.getSize() > MAX_EVIDENCE_SIZE_BYTES) {
+            throw new BadRequestException("Evidence file must be <= 8MB");
+        }
+
+        String mimeType = evidenceFile.getContentType();
+        if (mimeType == null || !ALLOWED_EVIDENCE_MIME_TYPES.contains(mimeType.toLowerCase())) {
+            throw new BadRequestException("Unsupported evidence file type");
+        }
+
+        String safeFileName = normalizeEvidenceFileName(evidenceFile.getOriginalFilename());
+        String publicId = "ot_reports/" + report.getId() + "/evidence";
+        try {
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(
+                    evidenceFile.getBytes(),
+                    ObjectUtils.asMap(
+                            "public_id", publicId,
+                            "resource_type", "auto",
+                            "overwrite", true,
+                            "invalidate", true
+                    )
+            );
+            Object secureUrl = uploadResult.get("secure_url");
+            if (secureUrl == null) {
+                throw new BadRequestException("Evidence upload failed: missing file URL");
+            }
+
+            report.setEvidenceFileName(safeFileName);
+            report.setEvidenceFileUrl(secureUrl.toString());
+            report.setEvidenceFilePublicId(publicId);
+            report.setEvidenceFileMimeType(mimeType);
+            report.setEvidenceFileSizeBytes(evidenceFile.getSize());
+            return publicId;
+        } catch (BadRequestException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new BadRequestException("Evidence upload failed. Please try again.");
+        }
+    }
+
+    private String normalizeEvidenceFileName(String originalFilename) {
+        String fallback = "evidence-file";
+        if (originalFilename == null || originalFilename.isBlank()) {
+            return fallback;
+        }
+        String normalized = originalFilename.trim();
+        if (normalized.length() <= 255) {
+            return normalized;
+        }
+        return normalized.substring(0, 255);
+    }
+
+    private void cleanupEvidenceSilently(String publicId) {
+        if (publicId == null || cloudinary == null) {
+            return;
+        }
+        try {
+            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "raw", "invalidate", true));
+            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", "image", "invalidate", true));
+        } catch (Exception ex) {
+            log.warn("Failed to rollback uploaded OT evidence {}", publicId, ex);
+        }
     }
 
     private String normalizeReportNoteOrThrow(String reportNote) {
@@ -188,12 +302,17 @@ public class OtReportService implements IOtReportService {
         report.setOtSession(current.getOtSession());
         report.setReportedOtHours(current.getReportedOtHours());
         report.setReportNote(current.getReportNote());
+        report.setEvidenceFileName(current.getEvidenceFileName());
+        report.setEvidenceFileUrl(current.getEvidenceFileUrl());
+        report.setEvidenceFilePublicId(current.getEvidenceFilePublicId());
+        report.setEvidenceFileMimeType(current.getEvidenceFileMimeType());
+        report.setEvidenceFileSizeBytes(current.getEvidenceFileSizeBytes());
         report.setStatus(otReportWorkflowService.nextStatus(manager.getRole(), current.getStatus(), approved));
         report.setApprovedBy(manager);
         report.setApprovedAt(LocalDateTime.now());
         report.setDecisionNote(request.getDecisionNote());
         OtReport merged = mergeAndFlush(report);
-        return OtReportResponse.fromEntity(merged);
+        return otReportMapper.toResponse(merged);
     }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {
@@ -225,16 +344,17 @@ public class OtReportService implements IOtReportService {
                             currentApprover.getDepartment().getId()
                     )
                     .stream()
-                    .map(OtReportResponse::fromEntity)
+                    .map(otReportMapper::toResponse)
                     .toList();
         }
+
         if (accessScopeService.isOfficeManager(currentApprover)) {
             return otReportRepository
                     .findAllByAttendanceLog_User_Office_IdOrderByAttendanceLog_LogDateDesc(
                             currentApprover.getOffice().getId()
                     )
                     .stream()
-                    .map(OtReportResponse::fromEntity)
+                    .map(otReportMapper::toResponse)
                     .toList();
         }
 
@@ -247,46 +367,52 @@ public class OtReportService implements IOtReportService {
         User currentApprover = accessScopeService.currentUserOrThrow();
 
         if (accessScopeService.isDepartmentManager(currentApprover)) {
-            UUID approverDepartmentId = currentApprover.getDepartment() != null ? currentApprover.getDepartment().getId() : null;
-            accessScopeService.assertCanManageDepartment(approverDepartmentId);
             List<OtReport> pendingReports = new ArrayList<>();
             for (OtReportStatus status : otReportWorkflowService.pendingForDeptMgr()) {
-                pendingReports.addAll(otReportRepository.findByAttendanceLog_User_Department_IdAndStatusOrderByAttendanceLog_LogDateDesc(
-                        approverDepartmentId,
-                        status
-                ));
+                pendingReports.addAll(
+                        otReportRepository.findByAttendanceLog_User_Department_IdAndStatusOrderByAttendanceLog_LogDateDesc(
+                                currentApprover.getDepartment().getId(),
+                                status
+                        )
+                );
             }
-            pendingReports.sort(comparing((OtReport r) -> r.getAttendanceLog().getLogDate()).reversed());
-            return pendingReports.stream().map(OtReportResponse::fromEntity).toList();
+            pendingReports.sort(comparing(r -> r.getAttendanceLog().getLogDate(), java.util.Comparator.reverseOrder()));
+            return pendingReports.stream().map(otReportMapper::toResponse).toList();
         }
 
         if (accessScopeService.isOfficeManager(currentApprover)) {
-            UUID approverOfficeId = currentApprover.getOffice() != null ? currentApprover.getOffice().getId() : null;
-            accessScopeService.assertCanManageOffice(approverOfficeId);
             List<OtReport> pendingReports = new ArrayList<>();
             for (OtReportStatus status : otReportWorkflowService.pendingForOfficeMgr()) {
-                pendingReports.addAll(otReportRepository.findByAttendanceLog_Office_IdAndStatusOrderByAttendanceLog_LogDateDesc(
-                        approverOfficeId,
-                        status
-                ));
+                pendingReports.addAll(
+                        otReportRepository.findByAttendanceLog_Office_IdAndStatusOrderByAttendanceLog_LogDateDesc(
+                                currentApprover.getOffice().getId(),
+                                status
+                        )
+                );
             }
-            pendingReports.sort(comparing((OtReport r) -> r.getAttendanceLog().getLogDate()).reversed());
-            return pendingReports.stream().map(OtReportResponse::fromEntity).toList();
+            pendingReports.sort(comparing(r -> r.getAttendanceLog().getLogDate(), java.util.Comparator.reverseOrder()));
+            return pendingReports.stream().map(otReportMapper::toResponse).toList();
         }
 
-        throw new ForbiddenException("You do not have permission to view OT reports");
+        return List.of();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OtReportResponse> listMy() {
         User actor = accessScopeService.currentUserOrThrow();
-        return otReportRepository
-                .findByAttendanceLog_User_IdOrderByAttendanceLog_LogDateDesc(actor.getId())
+        return otReportRepository.findByAttendanceLog_User_IdOrderByAttendanceLog_LogDateDesc(actor.getId())
                 .stream()
-                .map(OtReportResponse::fromEntity)
+                .map(otReportMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OtReportResponse> listBySession(UUID otSessionId) {
+        return otReportRepository.findByOtSession_IdOrderByAttendanceLog_LogDateDesc(otSessionId)
+                .stream()
+                .map(otReportMapper::toResponse)
                 .toList();
     }
 }
-
 

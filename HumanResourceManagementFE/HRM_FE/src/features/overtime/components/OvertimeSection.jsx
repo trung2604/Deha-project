@@ -81,7 +81,7 @@ export function OvertimeSection({
 
   const filteredMyOvertimeReports = useMemo(() => myOvertimeReports.filter((r) => {
     const statusMatched = myOvertimeReportStatusFilter === OT_FILTER_ALL ? true : r.status === myOvertimeReportStatusFilter;
-    return statusMatched && containsKeyword(r, myReportKeyword, ["logDate", "reportNote", "status", "reportedOtHours"]);
+    return statusMatched && containsKeyword(r, myReportKeyword, ["logDate", "reportNote", "status", "reportedOtHours", "evidenceFileName"]);
   }), [myOvertimeReports, myOvertimeReportStatusFilter, myReportKeyword]);
 
   const filteredApprovalScopeOvertimeRequests = useMemo(() => approvalScopeOvertimeRequests.filter((r) => {
@@ -91,7 +91,7 @@ export function OvertimeSection({
 
   const filteredApprovalScopeOvertimeReports = useMemo(() => approvalScopeOvertimeReports.filter((r) => {
     const statusMatched = pendingOvertimeReportStatusFilter === OT_FILTER_ALL ? true : r.status === pendingOvertimeReportStatusFilter;
-    return statusMatched && containsKeyword(r, pendingReportKeyword, ["userName", "logDate", "reportNote", "status", "reportedOtHours"]);
+    return statusMatched && containsKeyword(r, pendingReportKeyword, ["userName", "logDate", "reportNote", "status", "reportedOtHours", "evidenceFileName"]);
   }), [approvalScopeOvertimeReports, pendingOvertimeReportStatusFilter, pendingReportKeyword]);
 
   const overtimeActionHint = !hasApprovedOvertimeRequestForToday
@@ -107,7 +107,7 @@ export function OvertimeSection({
   return (
     <div className="space-y-5">
       {/* OT Workflow Section */}
-      <div className="section-card" style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8E8E8", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+      <div className="section-card glass-surface page-surface">
         <div
           className="section-header section-ot-header"
           style={{ borderColor: "rgba(250, 140, 22, 0.2)" }}
@@ -144,7 +144,7 @@ export function OvertimeSection({
           )}
 
           {/* OT Session Controls */}
-          <div className="rounded-xl p-5" style={{ backgroundColor: "rgba(250, 140, 22, 0.04)", border: "1px solid rgba(250, 140, 22, 0.2)" }}>
+          <div className="rounded-xl p-5" style={{ background: "linear-gradient(135deg, rgba(250, 140, 22, 0.09), rgba(91, 124, 255, 0.05))", border: "1px solid rgba(250, 140, 22, 0.2)" }}>
             <div style={{ color: "#8C8C8C", fontSize: "12px", fontWeight: 700, marginBottom: 10, textTransform: "uppercase" }}>Session Control</div>
             {hasInvalidOtTimeline && (
               <Alert
@@ -197,7 +197,7 @@ export function OvertimeSection({
             </div>
             {(isOvertimeSessionCheckedIn || isOvertimeSessionCheckedOut) && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-                <div className="rounded-lg p-3" style={{ border: "1px solid rgba(22,119,255,0.25)", backgroundColor: "rgba(22,119,255,0.06)" }}>
+                <div className="rounded-lg p-3" style={{ border: "1px solid rgba(22,119,255,0.25)", background: "linear-gradient(135deg, rgba(22,119,255,0.09), rgba(53,195,255,0.08))" }}>
                   <div style={{ color: "#595959", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
                     OT Stopwatch
                   </div>
@@ -212,14 +212,14 @@ export function OvertimeSection({
                   </div>
                 </div>
 
-                <div className="rounded-lg p-3" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
+                <div className="rounded-lg p-3 glass-surface" style={{ border: "1px solid #E8E8E8" }}>
                   <div style={{ color: "#595959", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
                     Check-in Time
                   </div>
                   <div style={{ fontSize: "20px", fontWeight: 600, color: "#0a0a0a", fontFamily: "monospace" }}>{otCheckInTimeText}</div>
                 </div>
 
-                <div className="rounded-lg p-3" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
+                <div className="rounded-lg p-3 glass-surface" style={{ border: "1px solid #E8E8E8" }}>
                   <div style={{ color: "#595959", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
                     Check-out Time
                   </div>
@@ -233,29 +233,32 @@ export function OvertimeSection({
 
           {/* My OT Requests */}
           {canCreateOvertime && (
-            <div className="rounded-xl p-5" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
+            <div className="rounded-xl p-5 glass-surface" style={{ border: "1px solid #E8E8E8" }}>
               <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#0a0a0a", marginBottom: "12px", textTransform: "uppercase" }}>
                 My OT Requests
               </h4>
-              <Select
-                value={myOvertimeRequestStatusFilter}
-                onChange={setMyOvertimeRequestStatusFilter}
-                style={{ width: 220, marginBottom: 14 }}
-                options={OT_STATUS_FILTER_OPTIONS}
-                size="middle"
-              />
-              <Input
-                allowClear
-                placeholder="Search date/reason/status"
-                value={myRequestKeyword}
-                onChange={(event) => setMyRequestKeyword(event.target.value)}
-                style={{ width: 280, marginBottom: 14, marginLeft: 8 }}
-              />
+              <div className="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+                <Select
+                  value={myOvertimeRequestStatusFilter}
+                  onChange={setMyOvertimeRequestStatusFilter}
+                  style={{ width: "100%", maxWidth: 220 }}
+                  options={OT_STATUS_FILTER_OPTIONS}
+                  size="middle"
+                />
+                <Input
+                  allowClear
+                  placeholder="Search date/reason/status"
+                  value={myRequestKeyword}
+                  onChange={(event) => setMyRequestKeyword(event.target.value)}
+                  style={{ width: "100%", maxWidth: 320 }}
+                />
+              </div>
               <Table
                 rowKey={(r) => r.id}
                 loading={loading}
                 dataSource={filteredMyOvertimeRequests}
                 size="middle"
+                scroll={{ x: 680 }}
                 pagination={{ pageSize: 5 }}
                 columns={[
                   {
@@ -282,29 +285,32 @@ export function OvertimeSection({
 
           {/* My OT Reports */}
           {canCreateOvertime && (
-            <div className="rounded-xl p-5" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
+            <div className="rounded-xl p-5 glass-surface" style={{ border: "1px solid #E8E8E8" }}>
               <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#0a0a0a", marginBottom: "12px", textTransform: "uppercase" }}>
                 My OT Reports
               </h4>
-              <Select
-                value={myOvertimeReportStatusFilter}
-                onChange={setMyOvertimeReportStatusFilter}
-                style={{ width: 220, marginBottom: 14 }}
-                options={OT_STATUS_FILTER_OPTIONS}
-                size="middle"
-              />
-              <Input
-                allowClear
-                placeholder="Search date/note/status"
-                value={myReportKeyword}
-                onChange={(event) => setMyReportKeyword(event.target.value)}
-                style={{ width: 280, marginBottom: 14, marginLeft: 8 }}
-              />
+              <div className="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+                <Select
+                  value={myOvertimeReportStatusFilter}
+                  onChange={setMyOvertimeReportStatusFilter}
+                  style={{ width: "100%", maxWidth: 220 }}
+                  options={OT_STATUS_FILTER_OPTIONS}
+                  size="middle"
+                />
+                <Input
+                  allowClear
+                  placeholder="Search date/note/status"
+                  value={myReportKeyword}
+                  onChange={(event) => setMyReportKeyword(event.target.value)}
+                  style={{ width: "100%", maxWidth: 320 }}
+                />
+              </div>
               <Table
                 rowKey={(r) => r.id}
                 loading={loading}
                 dataSource={filteredMyOvertimeReports}
                 size="middle"
+                scroll={{ x: 760 }}
                 pagination={{ pageSize: 5 }}
                 columns={[
                   {
@@ -340,29 +346,32 @@ export function OvertimeSection({
           {/* Approval Scope */}
           {canManageOvertimeApprovals && (
             <>
-              <div className="rounded-xl p-5" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
+              <div className="rounded-xl p-5 glass-surface" style={{ border: "1px solid #E8E8E8" }}>
                 <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#0a0a0a", marginBottom: "12px", textTransform: "uppercase" }}>
                   OT Requests (Approval Scope)
                 </h4>
-                <Select
-                  value={pendingOvertimeRequestStatusFilter}
-                  onChange={setPendingOvertimeRequestStatusFilter}
-                  style={{ width: 220, marginBottom: 14 }}
+                <div className="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <Select
+                    value={pendingOvertimeRequestStatusFilter}
+                    onChange={setPendingOvertimeRequestStatusFilter}
+                    style={{ width: "100%", maxWidth: 220 }}
                     options={OT_STATUS_FILTER_OPTIONS}
-                  size="middle"
-                />
-                <Input
-                  allowClear
-                  placeholder="Search user/date/reason"
-                  value={pendingRequestKeyword}
-                  onChange={(event) => setPendingRequestKeyword(event.target.value)}
-                  style={{ width: 280, marginBottom: 14, marginLeft: 8 }}
-                />
+                    size="middle"
+                  />
+                  <Input
+                    allowClear
+                    placeholder="Search user/date/reason"
+                    value={pendingRequestKeyword}
+                    onChange={(event) => setPendingRequestKeyword(event.target.value)}
+                    style={{ width: "100%", maxWidth: 320 }}
+                  />
+                </div>
                 <Table
                   rowKey={(r) => r.id}
                   loading={loading}
                   dataSource={filteredApprovalScopeOvertimeRequests}
                   size="middle"
+                  scroll={{ x: 900 }}
                   pagination={{ pageSize: 5 }}
                   columns={[
                     { title: "User", dataIndex: "userName", key: "userName", sorter: (a, b) => String(a?.userName || "").localeCompare(String(b?.userName || "")) },
@@ -395,29 +404,32 @@ export function OvertimeSection({
                 />
               </div>
 
-              <div className="rounded-xl p-5" style={{ border: "1px solid #E8E8E8", backgroundColor: "#FFFFFF" }}>
+              <div className="rounded-xl p-5 glass-surface" style={{ border: "1px solid #E8E8E8" }}>
                 <h4 style={{ fontSize: "13px", fontWeight: "700", color: "#0a0a0a", marginBottom: "12px", textTransform: "uppercase" }}>
                   OT Reports (Approval Scope)
                 </h4>
-                <Select
-                  value={pendingOvertimeReportStatusFilter}
-                  onChange={setPendingOvertimeReportStatusFilter}
-                  style={{ width: 220, marginBottom: 14 }}
-                      options={OT_STATUS_FILTER_OPTIONS}
-                  size="middle"
-                />
-                <Input
-                  allowClear
-                  placeholder="Search user/date/note"
-                  value={pendingReportKeyword}
-                  onChange={(event) => setPendingReportKeyword(event.target.value)}
-                  style={{ width: 280, marginBottom: 14, marginLeft: 8 }}
-                />
+                <div className="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <Select
+                    value={pendingOvertimeReportStatusFilter}
+                    onChange={setPendingOvertimeReportStatusFilter}
+                    style={{ width: "100%", maxWidth: 220 }}
+                    options={OT_STATUS_FILTER_OPTIONS}
+                    size="middle"
+                  />
+                  <Input
+                    allowClear
+                    placeholder="Search user/date/note"
+                    value={pendingReportKeyword}
+                    onChange={(event) => setPendingReportKeyword(event.target.value)}
+                    style={{ width: "100%", maxWidth: 320 }}
+                  />
+                </div>
                 <Table
                   rowKey={(r) => r.id}
                   loading={loading}
                   dataSource={filteredApprovalScopeOvertimeReports}
                   size="middle"
+                  scroll={{ x: 980 }}
                   pagination={{ pageSize: 5 }}
                   columns={[
                     { title: "User", dataIndex: "userName", key: "userName", sorter: (a, b) => String(a?.userName || "").localeCompare(String(b?.userName || "")) },

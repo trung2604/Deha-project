@@ -156,16 +156,15 @@ export function DepartmentDetailModal({
         }}
       />
       <div
-        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[980px] h-[720px] rounded-2xl z-50 overflow-hidden flex flex-col"
+        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-24px)] max-w-[980px] h-[calc(100vh-24px)] sm:h-[720px] rounded-xl sm:rounded-2xl z-50 overflow-hidden flex flex-col"
         style={{
           backgroundColor: "#FFFFFF",
           boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
-          maxWidth: "calc(100vw - 40px)",
-          maxHeight: "calc(100vh - 40px)",
+          maxHeight: "calc(100vh - 24px)",
         }}
       >
         <div style={fadeStyle} className="relative h-full w-full flex flex-col min-h-0">
-          <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "#E8E8E8" }}>
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b" style={{ borderColor: "#E8E8E8" }}>
             <div className="flex items-center gap-3">
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -236,7 +235,7 @@ export function DepartmentDetailModal({
             </div>
           )}
 
-          <div className="p-6 flex-1 overflow-hidden min-h-0">
+          <div className="p-4 sm:p-6 flex-1 overflow-hidden min-h-0">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0">
               <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
                 <div className="rounded-xl p-5 border" style={{ borderColor: "#E8E8E8" }}>

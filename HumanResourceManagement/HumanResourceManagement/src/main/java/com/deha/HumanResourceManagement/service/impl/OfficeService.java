@@ -11,11 +11,12 @@ import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.exception.ResourceNotFoundException;
+import com.deha.HumanResourceManagement.mapper.coreorg.OfficeMapper;
 import com.deha.HumanResourceManagement.repository.DepartmentRepository;
 import com.deha.HumanResourceManagement.repository.OfficeRepository;
 import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.service.IOfficeService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -37,6 +38,7 @@ public class OfficeService implements IOfficeService {
     private final UserRepository userRepository;
     private final AccessScopeService accessScopeService;
     private final OfficePolicyService officePolicyService;
+    private final OfficeMapper officeMapper;
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -45,19 +47,21 @@ public class OfficeService implements IOfficeService {
             DepartmentRepository departmentRepository,
             UserRepository userRepository,
             AccessScopeService accessScopeService,
-            OfficePolicyService officePolicyService
+            OfficePolicyService officePolicyService,
+            OfficeMapper officeMapper
     ) {
         this.officeRepository = officeRepository;
         this.departmentRepository = departmentRepository;
         this.userRepository = userRepository;
         this.accessScopeService = accessScopeService;
         this.officePolicyService = officePolicyService;
+        this.officeMapper = officeMapper;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<OfficeResponse> getAll() {
-        return officeRepository.findAll().stream().map(OfficeResponse::fromEntity).toList();
+        return officeRepository.findAll().stream().map(officeMapper::toResponse).toList();
     }
 
     @Override
@@ -70,17 +74,22 @@ public class OfficeService implements IOfficeService {
     @Override
     @Transactional
     public OfficeResponse create(OfficeRequest request) {
+        User actor = accessScopeService.currentUserOrThrow();
+        if (!accessScopeService.isAdmin(actor)) {
+            throw new ForbiddenException("Only admin can create office");
+        }
         if (officeRepository.existsByNameIgnoreCase(request.getName().trim())) {
             throw new ConflictException("Office with the same name already exists");
         }
 
         List<String> normalizedIps = normalizeIpList(request.getIpWifiIps());
         if (normalizedIps.isEmpty()) {
-            throw new ConflictException("Office must have at least 1 WiFi IP");
+            throw new BadRequestException("Office must have at least 1 WiFi IP");
         }
 
         Office office = new Office();
         office.applyDetails(request.getName().trim(), request.getDescription());
+
         office.setStandardWorkHours(officePolicyService.standardWorkHours(null));
         office.setOtMinHours(officePolicyService.otMinHours(null));
         office.setLatestCheckoutTime(officePolicyService.latestCheckoutTime(null));
@@ -97,12 +106,16 @@ public class OfficeService implements IOfficeService {
         }
 
         officeRepository.save(office);
-        return OfficeResponse.fromEntity(office);
+        return officeMapper.toResponse(office);
     }
 
     @Override
     @Transactional
     public OfficeResponse update(UUID id, OfficeRequest request) {
+        User actor = accessScopeService.currentUserOrThrow();
+        if (!accessScopeService.isAdmin(actor)) {
+            throw new ForbiddenException("Only admin can update office");
+        }
         Office current = findById(id);
 //        assertExpectedVersion(request.getExpectedVersion(), office.getVersion(), "Office");
         if (request.getExpectedVersion() == null) {
@@ -115,10 +128,11 @@ public class OfficeService implements IOfficeService {
 
         List<String> normalizedIps = normalizeIpList(request.getIpWifiIps());
         if (normalizedIps.isEmpty()) {
-            throw new ConflictException("Office must have at least 1 WiFi IP");
+            throw new BadRequestException("Office must have at least 1 WiFi IP");
         }
 
         Office office = buildDetachedOffice(current, request.getExpectedVersion());
+
         office.applyDetails(nextName, request.getDescription());
 
         Map<String, UUID> existingWifiIdByIp = current.getWifiIps().stream()
@@ -142,12 +156,16 @@ public class OfficeService implements IOfficeService {
         }
 
         Office merged = mergeAndFlush(office);
-        return OfficeResponse.fromEntity(merged);
+        return officeMapper.toResponse(merged);
     }
 
     @Override
     @Transactional
     public void delete(UUID id) {
+        User actor = accessScopeService.currentUserOrThrow();
+        if (!accessScopeService.isAdmin(actor)) {
+            throw new ForbiddenException("Only admin can delete office");
+        }
         Office office = findById(id);
         long departments = departmentRepository.countByOffice_Id(id);
         if (departments > 0) {
@@ -171,7 +189,7 @@ public class OfficeService implements IOfficeService {
             throw new ResourceNotFoundException("Office policy not found for current user");
         }
         Office office = findById(actor.getOffice().getId());
-        return OfficePolicyResponse.fromEntity(office);
+        return officeMapper.toPolicyResponse(office);
     }
 
     @Override
@@ -200,7 +218,7 @@ public class OfficeService implements IOfficeService {
         office.setOtHolidayMultiplier(request.getOtHolidayMultiplier());
         office.setOtNightBonusMultiplier(request.getOtNightBonusMultiplier());
         Office merged = mergeAndFlush(office);
-        return OfficePolicyResponse.fromEntity(merged);
+        return officeMapper.toPolicyResponse(merged);
     }
 
 //    private void assertExpectedVersion(Long expectedVersion, Long currentVersion, String resourceName) {

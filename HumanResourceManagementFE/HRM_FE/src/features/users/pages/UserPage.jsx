@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
+import { Modal } from "antd";
 import { toast } from "sonner";
 import { UserFilters } from "../components/UserFilters";
 import { UserTable } from "../components/UserTable";
 import { UserModal } from "@/features/users/components/UserModal";
 import { DeleteUserModal } from "@/features/users/components/DeleteUserModal";
+import { ResetUserPasswordModal } from "@/features/users/components/ResetUserPasswordModal";
 import UserService from "@/features/users/api/UserService";
 import departmentService from "@/features/departments/api/departmentService";
 import positionService from "@/features/departments/api/positionService";
@@ -19,10 +21,12 @@ import {
   getPageContent,
   getPageMeta,
   getResponseMessage,
+  isConflictResponse,
   isSuccessResponse,
 } from "@/utils/apiResponse";
 
 export function UsersPage() {
+  const normalizeEmail = (value) => String(value ?? "").trim().toLowerCase();
   const { user } = useAuth();
   const admin = isAdminRole(user?.role);
   const officeManager = isOfficeManagerRole(user?.role);
@@ -44,6 +48,7 @@ export function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [resettingUser, setResettingUser] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [offices, setOffices] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -184,7 +189,28 @@ export function UsersPage() {
     async function run() {
       try {
         const res = await UserService.deleteUser(deletingUser.id);
-        if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to delete User"));
+        if (!isSuccessResponse(res)) {
+          if (isConflictResponse(res)) {
+            Modal.confirm({
+              title: "Cannot delete user",
+              content: `${getResponseMessage(res, "This user has related records.")} Do you want to deactivate this user instead?`,
+              okText: "Deactivate",
+              cancelText: "Cancel",
+              okButtonProps: { danger: true },
+              onOk: async () => {
+                const deactivateRes = await UserService.deactivateUser(deletingUser.id);
+                if (!isSuccessResponse(deactivateRes)) {
+                  toast.error(getResponseMessage(deactivateRes, "Failed to deactivate user"));
+                  return;
+                }
+                await reloadUsers();
+                toast.success(getResponseMessage(deactivateRes, "User deactivated successfully"));
+              },
+            });
+            return;
+          }
+          return toast.error(getResponseMessage(res, "Failed to delete User"));
+        }
         await reloadUsers();
         toast.success(getResponseMessage(res, "User deleted successfully"));
       } catch {
@@ -216,7 +242,37 @@ export function UsersPage() {
         await reloadUsers();
         toast.success(getResponseMessage(res, "User updated successfully"));
       } else {
-        const res = await UserService.createUser(userPayload);
+        let res;
+        try {
+          res = await UserService.createUser(userPayload);
+        } catch (error) {
+          // Backend can still finish creating user when mail delivery is slow/fails.
+          if (error?.code === "ECONNABORTED") {
+            const officeId = (admin ? officeFilter : user?.officeId) || undefined;
+            const verifyRes = await UserService.getUsers({
+              keyword: userPayload?.email,
+              officeId,
+              page: 0,
+              size: 20,
+            });
+            const created = getPageContent(verifyRes).some(
+              (u) => normalizeEmail(u?.email) === normalizeEmail(userPayload?.email),
+            );
+
+            if (created) {
+              await reloadUsers();
+              toast.success("User was created. Verification email may be delayed due to SMTP connection issues.");
+              setShowAddModal(false);
+              setEditingUser(null);
+              return;
+            }
+
+            toast.error("Create request timed out. Please retry or refresh list to confirm user status.");
+            return;
+          }
+          throw error;
+        }
+
         if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save User"));
         await reloadUsers();
         toast.success(getResponseMessage(res, "User added successfully"));
@@ -228,6 +284,21 @@ export function UsersPage() {
       toast.error("Failed to save User");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (newPassword) => {
+    if (!resettingUser?.id) return;
+    try {
+      const res = await UserService.resetUserPassword(resettingUser.id, newPassword);
+      if (!isSuccessResponse(res)) {
+        toast.error(getResponseMessage(res, "Failed to reset password"));
+        return;
+      }
+      toast.success(getResponseMessage(res, "User password reset successfully"));
+      setResettingUser(null);
+    } catch {
+      toast.error("Failed to reset password");
     }
   };
 
@@ -271,52 +342,28 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h1
-            style={{
-              fontFamily: "DM Sans, sans-serif",
-              fontSize: "24px",
-              fontWeight: "600",
-              color: "#0A0A0A",
-            }}
-          >
-            Users
-          </h1>
-          <span
-            className="px-3 py-1 rounded-full"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(22, 119, 255, 0.14), rgba(22, 119, 255, 0.08))",
-              color: "#1677FF",
-              fontSize: "13px",
-              fontWeight: "600",
-              boxShadow: "inset 0 0 0 1px rgba(22,119,255,0.16)",
-            }}
-          >
-            {totalElements}
-          </span>
-        </div>
-        {canEditUsers && (
-          <button
-            onClick={() => {
-              setEditingUser(null);
-              setShowAddModal(true);
-            }}
-            className="flex items-center gap-2 px-4 h-9 rounded-xl transition-all duration-200 hover:opacity-95"
-            style={{
-              background:
-                "linear-gradient(135deg, #1677FF 0%, #0958D9 100%)",
-              color: "#FFFFFF",
-              boxShadow: "0 8px 20px rgba(22,119,255,0.26)",
-            }}
-          >
-            <Plus className="w-4 h-4" />
-            <span style={{ fontSize: "14px", fontWeight: "500" }}>
+      <div className="page-hero">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <h1 className="page-title">Users</h1>
+            <span className="metric-chip">{totalElements}</span>
+          </div>
+          {canEditUsers && (
+            <button
+              onClick={() => {
+                setEditingUser(null);
+                setShowAddModal(true);
+              }}
+              className="btn-primary-gradient"
+            >
+              <Plus className="w-4 h-4" />
               Add User
-            </span>
-          </button>
-        )}
+            </button>
+          )}
+        </div>
+        <p className="page-subtitle">
+          Manage employee accounts, role assignments, and workspace placement.
+        </p>
       </div>
 
       <UserFilters
@@ -343,6 +390,7 @@ export function UsersPage() {
         users={filteredUsers}
         onEdit={setEditingUser}
         onDelete={setDeletingUser}
+        onResetPassword={setResettingUser}
         readOnly={readOnly}
         totalPages={totalPages}
         totalElements={totalElements}
@@ -366,12 +414,20 @@ export function UsersPage() {
 
       {deletingUser && (
         <DeleteUserModal
-          UserName={
+          userName={
             `${deletingUser.firstName ?? ""} ${deletingUser.lastName ?? ""}`.trim() ||
             "-"
           }
           onClose={() => setDeletingUser(null)}
           onConfirm={handleDeleteConfirm}
+        />
+      )}
+
+      {resettingUser && (
+        <ResetUserPasswordModal
+          user={resettingUser}
+          onClose={() => setResettingUser(null)}
+          onSubmit={handleResetPasswordSubmit}
         />
       )}
     </div>

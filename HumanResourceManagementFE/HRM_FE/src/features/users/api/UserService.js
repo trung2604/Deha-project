@@ -23,6 +23,14 @@ const UserService = {
     return await axios.delete(`/users/${id}`);
   },
 
+  deactivateUser: async (id) => {
+    return await axios.patch(`/users/${id}/deactivate`);
+  },
+
+  resetUserPassword: async (id, newPassword) => {
+    return await axios.post(`/users/${id}/reset-password`, { newPassword });
+  },
+
   searchUsers: async ({ keyword, page = 0, size = 10, officeId, departmentId, positionId, active } = {}) => {
     return await axios.get("/users/search", {
       params: { keyword, page, size, officeId, departmentId, positionId, active },

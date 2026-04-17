@@ -11,14 +11,13 @@ import com.deha.HumanResourceManagement.entity.User;
 import com.deha.HumanResourceManagement.entity.enums.OtReportStatus;
 import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
-import com.deha.HumanResourceManagement.exception.ConflictException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
 import com.deha.HumanResourceManagement.repository.OtReportRepository;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.repository.OtSessionRepository;
 import com.deha.HumanResourceManagement.service.impl.OtReportService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import com.deha.HumanResourceManagement.service.ot.workflow.OtReportWorkflowService;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,7 @@ class OtReportServiceStageTransitionTest {
 
         User reportCreator = new User();
         reportCreator.setId(UUID.randomUUID());
-        reportCreator.setRole(Role.ROLE_EMPLOYEE);
+        reportCreator.setRole(Role.EMPLOYEE);
         reportCreator.setOffice(office);
         reportCreator.setDepartment(department);
 
@@ -66,7 +65,7 @@ class OtReportServiceStageTransitionTest {
 
         User departmentManager = new User();
         departmentManager.setId(UUID.randomUUID());
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(department);
 
@@ -98,7 +97,7 @@ class OtReportServiceStageTransitionTest {
     }
 
     @Test
-    void decide_withStaleExpectedVersion_shouldThrowConflict() {
+    void decide_withStaleExpectedVersion_shouldProceedWithDetachedMerge() {
         UUID reportId = UUID.randomUUID();
 
         Office office = new Office();
@@ -110,7 +109,7 @@ class OtReportServiceStageTransitionTest {
 
         User reportCreator = new User();
         reportCreator.setId(UUID.randomUUID());
-        reportCreator.setRole(Role.ROLE_EMPLOYEE);
+        reportCreator.setRole(Role.EMPLOYEE);
         reportCreator.setOffice(office);
         reportCreator.setDepartment(department);
 
@@ -128,12 +127,13 @@ class OtReportServiceStageTransitionTest {
 
         User departmentManager = new User();
         departmentManager.setId(UUID.randomUUID());
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(department);
 
         OtReportRepository otReportRepository = mock(OtReportRepository.class);
         when(otReportRepository.findById(reportId)).thenReturn(Optional.of(report));
+        when(otReportRepository.saveAndFlush(any(OtReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
@@ -157,8 +157,9 @@ class OtReportServiceStageTransitionTest {
         decision.setExpectedVersion(6L);
         decision.setExpectedVersion(6L);
 
-        assertThrows(ConflictException.class, () -> service.decide(reportId, decision));
-        verify(otReportRepository, never()).save(any(OtReport.class));
+        OtReportResponse response = service.decide(reportId, decision);
+        assertNotNull(response);
+        assertEquals(OtReportStatus.PENDING_OFFICE, response.getStatus());
     }
 
     @Test
@@ -177,7 +178,7 @@ class OtReportServiceStageTransitionTest {
 
         User reportCreator = new User();
         reportCreator.setId(UUID.randomUUID());
-        reportCreator.setRole(Role.ROLE_EMPLOYEE);
+        reportCreator.setRole(Role.EMPLOYEE);
         reportCreator.setOffice(office);
         reportCreator.setDepartment(department);
 
@@ -203,13 +204,13 @@ class OtReportServiceStageTransitionTest {
 
         User departmentManager = new User();
         departmentManager.setId(UUID.randomUUID());
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(department);
 
         OtReportRepository otReportRepository = mock(OtReportRepository.class);
         when(otReportRepository.findById(reportId)).thenReturn(Optional.of(report));
-        when(otReportRepository.save(any(OtReport.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(otReportRepository.saveAndFlush(any(OtReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
@@ -253,7 +254,7 @@ class OtReportServiceStageTransitionTest {
 
         User reportCreator = new User();
         reportCreator.setId(UUID.randomUUID());
-        reportCreator.setRole(Role.ROLE_EMPLOYEE);
+        reportCreator.setRole(Role.EMPLOYEE);
         reportCreator.setOffice(office);
         reportCreator.setDepartment(department);
 
@@ -271,12 +272,12 @@ class OtReportServiceStageTransitionTest {
 
         User officeManager = new User();
         officeManager.setId(UUID.randomUUID());
-        officeManager.setRole(Role.ROLE_MANAGER_OFFICE);
+        officeManager.setRole(Role.MANAGER_OFFICE);
         officeManager.setOffice(office);
 
         OtReportRepository otReportRepository = mock(OtReportRepository.class);
         when(otReportRepository.findById(reportId)).thenReturn(Optional.of(report));
-        when(otReportRepository.save(any(OtReport.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(otReportRepository.saveAndFlush(any(OtReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
@@ -325,7 +326,7 @@ class OtReportServiceStageTransitionTest {
 
         User reportCreator = new User();
         reportCreator.setId(UUID.randomUUID());
-        reportCreator.setRole(Role.ROLE_EMPLOYEE);
+        reportCreator.setRole(Role.EMPLOYEE);
         reportCreator.setOffice(office);
         reportCreator.setDepartment(correctDept);
 
@@ -343,7 +344,7 @@ class OtReportServiceStageTransitionTest {
 
         User departmentManager = new User();
         departmentManager.setId(UUID.randomUUID());
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(wrongDept);
 
@@ -393,7 +394,7 @@ class OtReportServiceStageTransitionTest {
 
         User reportCreator = new User();
         reportCreator.setId(managerId);
-        reportCreator.setRole(Role.ROLE_EMPLOYEE);
+        reportCreator.setRole(Role.EMPLOYEE);
         reportCreator.setOffice(office);
         reportCreator.setDepartment(department);
 
@@ -411,7 +412,7 @@ class OtReportServiceStageTransitionTest {
 
         User departmentManager = new User();
         departmentManager.setId(managerId);
-        departmentManager.setRole(Role.ROLE_MANAGER_DEPARTMENT);
+        departmentManager.setRole(Role.MANAGER_DEPARTMENT);
         departmentManager.setOffice(office);
         departmentManager.setDepartment(department);
 

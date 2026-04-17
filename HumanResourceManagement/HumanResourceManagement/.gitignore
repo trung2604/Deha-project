@@ -37,3 +37,11 @@ build/
 ../.idea/misc.xml
 ../.idea/modules.xml
 .idea/
+
+node_modules/
+package-lock.json
+yarn.lock
+dist/
+build/
+.env
+src/main/resources/ssl/keystore.p12

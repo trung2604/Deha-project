@@ -2,6 +2,7 @@ package com.deha.HumanResourceManagement.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalTime;
@@ -12,7 +13,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "offices")
 @Data
-public class Office {
+@EqualsAndHashCode(callSuper = false)
+public class Office extends AuditableByUser {
     @Id
     @UuidGenerator
     private UUID id;

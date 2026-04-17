@@ -18,7 +18,7 @@ import java.util.UUID;
 )
 @Getter
 @Setter
-public class OtReport {
+public class OtReport extends AuditableByUser {
 
     @Id
     @UuidGenerator
@@ -61,4 +61,16 @@ public class OtReport {
 
     @Column(name = "evidence_file_name", length = 255)
     private String evidenceFileName;
+
+    @Column(name = "evidence_file_url", length = 1000)
+    private String evidenceFileUrl;
+
+    @Column(name = "evidence_file_public_id", length = 255)
+    private String evidenceFilePublicId;
+
+    @Column(name = "evidence_file_mime_type", length = 128)
+    private String evidenceFileMimeType;
+
+    @Column(name = "evidence_file_size_bytes")
+    private Long evidenceFileSizeBytes;
 }

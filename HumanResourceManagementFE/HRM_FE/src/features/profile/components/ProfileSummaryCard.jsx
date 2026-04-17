@@ -1,4 +1,45 @@
-import { Briefcase, Calendar, Mail, Phone } from "lucide-react";
+import { Briefcase, Calendar, Camera, Mail, Phone, Trash2, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+
+async function cropImageToSquare(file) {
+  const imageUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Invalid image file"));
+      image.src = imageUrl;
+    });
+
+    const size = Math.min(img.width, img.height);
+    const sx = Math.floor((img.width - size) / 2);
+    const sy = Math.floor((img.height - size) / 2);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Canvas is not supported");
+    }
+    ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob((result) => {
+        if (!result) {
+          reject(new Error("Unable to crop image"));
+          return;
+        }
+        resolve(result);
+      }, file.type || "image/jpeg", 0.92);
+    });
+
+    return new File([blob], file.name, { type: blob.type || file.type || "image/jpeg" });
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
 
 function formatDate(value) {
   if (!value) return "N/A";
@@ -11,10 +52,32 @@ function formatDate(value) {
   });
 }
 
-export function ProfileSummaryCard({ user }) {
+export function ProfileSummaryCard({ user, onAvatarUpload, onAvatarRemove, uploadingAvatar = false }) {
+  const fileInputRef = useRef(null);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState(null);
+  const [pendingAvatarPreview, setPendingAvatarPreview] = useState("");
+  const [avatarViewerOpen, setAvatarViewerOpen] = useState(false);
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "User";
   const initials = ((user?.firstName?.[0] || "") + (user?.lastName?.[0] || "") || "U").toUpperCase();
   const status = user?.active ? "Active" : "Inactive";
+  const avatarUrl = pendingAvatarPreview || user?.avatarUrl || "";
+  const isPreviewMode = Boolean(pendingAvatarFile);
+
+  useEffect(() => {
+    return () => {
+      if (pendingAvatarPreview) {
+        URL.revokeObjectURL(pendingAvatarPreview);
+      }
+    };
+  }, [pendingAvatarPreview]);
+
+  const resetPendingAvatar = () => {
+    setPendingAvatarFile(null);
+    if (pendingAvatarPreview) {
+      URL.revokeObjectURL(pendingAvatarPreview);
+    }
+    setPendingAvatarPreview("");
+  };
 
   const rows = [
     { icon: Mail, label: "Email", value: user?.email || "N/A" },
@@ -23,15 +86,90 @@ export function ProfileSummaryCard({ user }) {
     { icon: Calendar, label: "Join Date", value: formatDate(user?.createdAt) },
   ];
 
+  const handleAvatarClick = () => {
+    if (avatarUrl) {
+      setAvatarViewerOpen(true);
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="rounded-lg p-6" style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8E8E8" }}>
       <div className="flex flex-col items-center mb-6">
         <div
-          className="w-32 h-32 rounded-full flex items-center justify-center text-white text-3xl font-bold mb-4"
-          style={{ backgroundColor: "#1677FF" }}
+          className="relative w-32 h-32 rounded-full flex items-center justify-center text-white text-3xl font-bold mb-4 overflow-hidden transition-all duration-300"
+          style={{
+            backgroundColor: "#1677FF",
+            boxShadow: isPreviewMode
+              ? "0 0 0 4px rgba(22,119,255,0.18), 0 10px 24px rgba(22,119,255,0.25)"
+              : "0 6px 18px rgba(22,119,255,0.22)",
+          }}
+          onClick={handleAvatarClick}
+          title={avatarUrl ? "View avatar" : "Upload avatar"}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleAvatarClick();
+            }
+          }}
         >
-          {initials}
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={fullName}
+              className="w-32 h-32 rounded-full object-cover"
+            />
+          ) : (
+            initials
+          )}
+          {isPreviewMode && (
+            <div
+              className="absolute bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+              style={{ backgroundColor: "rgba(0,0,0,0.65)", color: "#FFFFFF" }}
+            >
+              Preview
+            </div>
+          )}
+          <div
+            className="absolute inset-0 flex items-end justify-center pb-2 opacity-0 hover:opacity-100 transition-opacity duration-200"
+            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45), rgba(0,0,0,0))" }}
+          >
+            <span className="text-xs font-semibold" style={{ color: "#FFFFFF" }}>
+              {avatarUrl ? "View" : "Upload"}
+            </span>
+          </div>
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              try {
+                const cropped = await cropImageToSquare(file);
+                const previewUrl = URL.createObjectURL(cropped);
+                if (pendingAvatarPreview) {
+                  URL.revokeObjectURL(pendingAvatarPreview);
+                }
+                setPendingAvatarFile(cropped);
+                setPendingAvatarPreview(previewUrl);
+                setAvatarViewerOpen(true);
+              } catch {
+                setPendingAvatarFile(null);
+                toast.error("Unable to crop selected image");
+              }
+            }
+            e.target.value = "";
+          }}
+        />
+        <p style={{ color: "#8C8C8C", fontSize: "12px", marginTop: "-2px", marginBottom: "10px" }}>
+          Supported: image files up to 2MB, cropped to a square preview.
+        </p>
         <h2 className="text-xl font-bold mb-1" style={{ color: "#0A0A0A" }}>
           {fullName}
         </h2>
@@ -63,6 +201,113 @@ export function ProfileSummaryCard({ user }) {
           );
         })}
       </div>
+
+      {avatarViewerOpen && avatarUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          onClick={() => setAvatarViewerOpen(false)}
+        >
+          <div
+            className="w-full max-w-xl rounded-2xl overflow-hidden"
+            style={{ backgroundColor: "#FFFFFF", border: "1px solid #E8E8E8" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: "1px solid #E8E8E8" }}>
+              <h3 style={{ color: "#0A0A0A", fontSize: "16px", fontWeight: 700, margin: 0 }}>Profile avatar</h3>
+              <button
+                type="button"
+                onClick={() => setAvatarViewerOpen(false)}
+                className="p-2 rounded-lg"
+                style={{ color: "#595959", backgroundColor: "#F5F5F5" }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 flex items-center justify-center" style={{ backgroundColor: "#0A0A0A" }}>
+              <img src={avatarUrl} alt={fullName} className="max-h-[70vh] w-auto rounded-lg object-contain" />
+            </div>
+
+            <div className="px-4 py-3 flex flex-wrap gap-2 justify-end" style={{ borderTop: "1px solid #E8E8E8" }}>
+              {pendingAvatarFile && (
+                <>
+                  <button
+                    type="button"
+                    disabled={uploadingAvatar}
+                    onClick={async () => {
+                      if (!onAvatarUpload) return;
+                      const ok = await onAvatarUpload(pendingAvatarFile);
+                      if (ok) {
+                        resetPendingAvatar();
+                        setAvatarViewerOpen(false);
+                      }
+                    }}
+                    className="px-3 py-1 rounded-lg inline-flex items-center gap-1.5 disabled:opacity-60"
+                    style={{ border: "1px solid #1677FF", backgroundColor: "#1677FF", color: "#FFFFFF", fontSize: "13px", fontWeight: 500 }}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    {uploadingAvatar ? "Uploading..." : "Upload"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={uploadingAvatar}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1 rounded-lg inline-flex items-center gap-1.5 disabled:opacity-60"
+                    style={{ border: "1px solid #D9D9D9", backgroundColor: "#FFFFFF", color: "#0A0A0A", fontSize: "13px", fontWeight: 500 }}
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    Choose another
+                  </button>
+                  <button
+                    type="button"
+                    disabled={uploadingAvatar}
+                    onClick={() => {
+                      resetPendingAvatar();
+                      setAvatarViewerOpen(false);
+                    }}
+                    className="px-3 py-1 rounded-lg inline-flex items-center gap-1.5 disabled:opacity-60"
+                    style={{ border: "1px solid #D9D9D9", backgroundColor: "#FFFFFF", color: "#595959", fontSize: "13px", fontWeight: 500 }}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Cancel
+                  </button>
+                </>
+              )}
+              {!pendingAvatarFile && (
+                <button
+                  type="button"
+                  disabled={uploadingAvatar}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1 rounded-lg inline-flex items-center gap-1.5 disabled:opacity-60"
+                  style={{ border: "1px solid #D9D9D9", backgroundColor: "#FFFFFF", color: "#0A0A0A", fontSize: "13px", fontWeight: 500 }}
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  Change avatar
+                </button>
+              )}
+              {!!user?.avatarUrl && !pendingAvatarFile && (
+                <button
+                  type="button"
+                  disabled={uploadingAvatar}
+                  onClick={async () => {
+                    if (!onAvatarRemove) return;
+                    const ok = await onAvatarRemove();
+                    if (ok) {
+                      setAvatarViewerOpen(false);
+                    }
+                  }}
+                  className="px-3 py-1 rounded-lg inline-flex items-center gap-1.5 disabled:opacity-60"
+                  style={{ border: "1px solid #FFCCC7", backgroundColor: "#FFF1F0", color: "#CF1322", fontSize: "13px", fontWeight: 500 }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Remove avatar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

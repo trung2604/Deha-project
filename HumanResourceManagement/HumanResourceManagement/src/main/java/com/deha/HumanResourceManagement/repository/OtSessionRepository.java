@@ -9,5 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface OtSessionRepository extends JpaRepository<OtSession, UUID> {
+    boolean existsByUser_Id(UUID userId);
+
     Optional<OtSession> findByUserAndLogDate(User user, LocalDate logDate);
 }

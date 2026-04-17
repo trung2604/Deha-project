@@ -1,7 +1,9 @@
 import axios from "axios";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8081/api";
+// Single source of truth for backend API endpoint in frontend.
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -12,10 +14,70 @@ const axiosInstance = axios.create({
   },
 });
 
+const refreshClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+let refreshTokenPromise = null;
+let isRefreshing = false;
+let pendingRequests = [];
+
+function clearSessionAndRedirect() {
+  localStorage.removeItem("auth_token");
+  localStorage.removeItem("user_info");
+  if (window.location.pathname === "/login") {
+    return;
+  }
+  window.location.href = "/login";
+}
+
+function subscribeTokenRefresh() {
+  return new Promise((resolve, reject) => {
+    pendingRequests.push({ resolve, reject });
+  });
+}
+
+function flushPendingRequests(error, token) {
+  pendingRequests.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+      return;
+    }
+    resolve(token);
+  });
+  pendingRequests = [];
+}
+
+async function refreshAccessToken() {
+  const refreshRes = await refreshClient.post("/auth/refresh", null, {
+    withCredentials: true,
+    _skipAuthRefresh: true,
+  });
+
+  const nextToken = refreshRes?.data?.data?.token;
+  if (!nextToken) {
+    throw new Error("Missing token in refresh response");
+  }
+  localStorage.setItem("auth_token", nextToken);
+  return nextToken;
+}
+
 axiosInstance.interceptors.request.use(
   (config) => {
+    if (config._skipAuthHeader) {
+      return config;
+    }
+
     const token = localStorage.getItem("auth_token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error),
@@ -39,37 +101,49 @@ axiosInstance.interceptors.response.use(
     // 403 is usually authorization failure and should not force logout.
     if (status === 401 && originalRequest && !originalRequest._skipAuthRefresh) {
       if (originalRequest._retry) {
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("user_info");
-        window.location.href = "/login";
+        clearSessionAndRedirect();
         return error.response?.data;
       }
 
       originalRequest._retry = true;
 
+      if (isRefreshing) {
+        try {
+          const queuedToken = await subscribeTokenRefresh();
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${queuedToken}`;
+          return axiosInstance(originalRequest);
+        } catch {
+          clearSessionAndRedirect();
+          return error.response?.data;
+        }
+      }
+
+      isRefreshing = true;
+
       try {
-        const refreshRes = await axiosInstance.post(
-          "/auth/refresh",
-          null,
-          {
-            withCredentials: true,
-            _skipAuthRefresh: true,
-          },
-        );
+        if (!refreshTokenPromise) {
+          refreshTokenPromise = refreshAccessToken();
+        }
 
-        const nextToken = refreshRes?.data?.token;
-        if (!nextToken) throw new Error("Missing token in refresh response");
+        const nextToken = await refreshTokenPromise;
+        if (!nextToken) {
+          throw new Error("Missing token in refresh response");
+        }
 
-        localStorage.setItem("auth_token", nextToken);
+        flushPendingRequests(null, nextToken);
+
         // retry original request with updated token
         originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${nextToken}`;
         return axiosInstance(originalRequest);
       } catch {
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("user_info");
-        window.location.href = "/login";
+        flushPendingRequests(new Error("Refresh failed"), null);
+        clearSessionAndRedirect();
         return error.response?.data;
+      } finally {
+        isRefreshing = false;
+        refreshTokenPromise = null;
       }
     }
 

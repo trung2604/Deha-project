@@ -5,12 +5,15 @@ import com.deha.HumanResourceManagement.dto.department.DepartmentRequest;
 import com.deha.HumanResourceManagement.dto.position.PositionRequest;
 import com.deha.HumanResourceManagement.service.IDepartmentService;
 import com.deha.HumanResourceManagement.service.IPositionService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Tag(name = "Departments", description = "Department directory and department/position management APIs")
 @RestController
 @RequestMapping("/api/departments")
 public class DepartmentController extends ApiControllerSupport {
@@ -23,6 +26,7 @@ public class DepartmentController extends ApiControllerSupport {
     }
 
     @GetMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE','MANAGER_DEPARTMENT')")
     public ApiResponse getDepartments(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID officeId
@@ -31,37 +35,44 @@ public class DepartmentController extends ApiControllerSupport {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE','MANAGER_DEPARTMENT')")
     public ApiResponse getDepartmentById(@PathVariable UUID id) {
         return success("Department retrieved successfully", HttpStatus.OK, departmentService.getDepartmentDetailById(id));
     }
 
     @PostMapping()
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse createDepartment(@RequestBody @Valid DepartmentRequest departmentRequest) {
         return success("Department created successfully", HttpStatus.CREATED, departmentService.createDepartment(departmentRequest));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse updateDepartment(@PathVariable UUID id, @RequestBody @Valid DepartmentRequest departmentRequest) {
         return success("Department updated successfully", HttpStatus.OK, departmentService.updateDepartment(id, departmentRequest));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse deleteDepartment(@PathVariable UUID id) {
         departmentService.deleteDepartment(id);
         return success("Department deleted successfully", HttpStatus.OK, null);
     }
 
     @GetMapping("/{departmentId}/positions")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE','MANAGER_DEPARTMENT')")
     public ApiResponse getDepartmentPositions(@PathVariable UUID departmentId) {
         return success("Positions retrieved successfully", HttpStatus.OK, positionService.getAllPositionsOfDepartment(departmentId));
     }
 
     @PostMapping("/{departmentId}/positions")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse createDepartmentPosition(@PathVariable UUID departmentId, @RequestBody @Valid PositionRequest positionRequest) {
         return success("Position created successfully", HttpStatus.CREATED, positionService.createPosition(departmentId, positionRequest));
     }
 
     @PutMapping("/{departmentId}/positions/{positionId}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse updateDepartmentPosition(
             @PathVariable UUID departmentId,
             @PathVariable UUID positionId,
@@ -71,6 +82,7 @@ public class DepartmentController extends ApiControllerSupport {
     }
 
     @DeleteMapping("/{departmentId}/positions/{positionId}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER_OFFICE')")
     public ApiResponse deleteDepartmentPosition(@PathVariable UUID departmentId, @PathVariable UUID positionId) {
         positionService.deletePositionInDepartment(departmentId, positionId);
         return success("Position deleted successfully", HttpStatus.OK, null);

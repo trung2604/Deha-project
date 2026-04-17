@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.service.impl;
 
+import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.dto.ot.OtSessionResponse;
 import com.deha.HumanResourceManagement.entity.OtRequest;
 import com.deha.HumanResourceManagement.entity.OtSession;
@@ -8,11 +9,11 @@ import com.deha.HumanResourceManagement.entity.enums.OtRequestStatus;
 import com.deha.HumanResourceManagement.entity.enums.OtSessionStatus;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.exception.ForbiddenException;
+import com.deha.HumanResourceManagement.mapper.ot.OtSessionMapper;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.repository.OtSessionRepository;
 import com.deha.HumanResourceManagement.service.IAttendanceService;
 import com.deha.HumanResourceManagement.service.IOtSessionService;
-import com.deha.HumanResourceManagement.service.support.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +22,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 
 @Service
 public class OtSessionService implements IOtSessionService {
@@ -32,24 +32,27 @@ public class OtSessionService implements IOtSessionService {
     private final AccessScopeService accessScopeService;
     private final OfficePolicyService officePolicyService;
     private final IAttendanceService attendanceService;
+    private final OtSessionMapper otSessionMapper;
 
     public OtSessionService(
             OtSessionRepository otSessionRepository,
             OtRequestRepository otRequestRepository,
             AccessScopeService accessScopeService,
             OfficePolicyService officePolicyService,
-            IAttendanceService attendanceService
+            IAttendanceService attendanceService,
+            OtSessionMapper otSessionMapper
     ) {
         this.otSessionRepository = otSessionRepository;
         this.otRequestRepository = otRequestRepository;
         this.accessScopeService = accessScopeService;
         this.officePolicyService = officePolicyService;
         this.attendanceService = attendanceService;
+        this.otSessionMapper = otSessionMapper;
     }
 
     @Override
     @Transactional
-    public OtSessionResponse checkIn(List<String> clientIps) {
+    public OtSessionResponse checkIn(String clientIps) {
         User actor = currentOtActorOrThrow("check in OT");
         if (actor.getOffice() == null) {
             throw new BadRequestException("User is not assigned to any office");
@@ -78,12 +81,12 @@ public class OtSessionService implements IOtSessionService {
         session.setStatus(OtSessionStatus.CHECKED_IN);
         otSessionRepository.save(session);
         int minimumOtHours = officePolicyService.otMinHours(actor.getOffice());
-        return OtSessionResponse.fromEntity(session, minimumOtHours);
+        return otSessionMapper.toResponse(session, minimumOtHours);
     }
 
     @Override
     @Transactional
-    public OtSessionResponse checkOut(List<String> clientIps) {
+    public OtSessionResponse checkOut(String clientIps) {
         User actor = currentOtActorOrThrow("check out OT");
         LocalDate today = LocalDate.now();
         OtSession session = otSessionRepository.findByUserAndLogDate(actor, today)
@@ -108,7 +111,7 @@ public class OtSessionService implements IOtSessionService {
         session.setCheckOutTime(effectiveCheckout);
         session.setStatus(OtSessionStatus.CHECKED_OUT);
         otSessionRepository.save(session);
-        return OtSessionResponse.fromEntity(session, minimumOtHours);
+        return otSessionMapper.toResponse(session, minimumOtHours);
     }
 
     @Override
@@ -117,7 +120,7 @@ public class OtSessionService implements IOtSessionService {
         User actor = currentOtActorOrThrow("view personal OT session");
         int minimumOtHours = officePolicyService.otMinHours(actor.getOffice());
         return otSessionRepository.findByUserAndLogDate(actor, LocalDate.now())
-                .map(session -> OtSessionResponse.fromEntity(session, minimumOtHours))
+                .map(session -> otSessionMapper.toResponse(session, minimumOtHours))
                 .orElse(null);
     }
 

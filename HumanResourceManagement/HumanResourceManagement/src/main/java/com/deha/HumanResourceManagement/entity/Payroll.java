@@ -3,6 +3,7 @@ package com.deha.HumanResourceManagement.entity;
 import com.deha.HumanResourceManagement.entity.enums.PayrollStatus;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.math.BigDecimal;
@@ -15,7 +16,8 @@ import java.util.UUID;
         uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "pay_year", "pay_month"})
 )
 @Data
-public class Payroll {
+@EqualsAndHashCode(callSuper = false)
+public class Payroll extends AuditableByUser {
     @Id
     @UuidGenerator
     private UUID id;
