@@ -93,7 +93,7 @@ class AttendanceControllerSecurityWebMvcTest {
     @WithMockUser(roles = "EMPLOYEE")
     void checkInAsEmployeeReturns200() throws Exception {
         when(accessScopeService.currentUserOrThrow()).thenReturn(new User());
-        when(clientIpResolverService.extractClientIps(any())).thenReturn(List.of("127.0.0.1"));
+        when(clientIpResolverService.extractClientIp(any())).thenReturn("127.0.0.1");
 
         mockMvc.perform(post("/api/attendance/check-in"))
                 .andExpect(status().isOk());

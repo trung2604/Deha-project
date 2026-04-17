@@ -1,24 +1,25 @@
 package com.deha.HumanResourceManagement.service.support;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
+import com.sendgrid.*;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+
+import java.io.IOException;
 
 @Service
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
+    private final SendGrid sendGrid;
 
     @Value("${app.mail.from}")
     private String fromAddress;
@@ -29,14 +30,16 @@ public class EmailService {
     @Value("${app.mail.fail-fast:true}")
     private boolean mailFailFast;
 
-    public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine) {
-        this.mailSender = mailSender;
+    public EmailService(TemplateEngine templateEngine,
+                        @Value("${app.sendgrid.api-key}") String apiKey) {
         this.templateEngine = templateEngine;
+        this.sendGrid = new SendGrid(apiKey);
     }
 
+    @Async("mailTaskExecutor")
     public void sendVerificationEmail(String to, String fullName, String token) {
         if (frontendUrl == null || frontendUrl.isBlank()) {
-            throw new IllegalStateException("Missing app.frontend.url for verification link generation");
+            throw new IllegalStateException("Missing app.frontend.url");
         }
         Context ctx = new Context();
         ctx.setVariable("fullName", fullName);
@@ -47,6 +50,7 @@ public class EmailService {
         send(to, "[HRM] Kích hoạt tài khoản của bạn", html);
     }
 
+    @Async("mailTaskExecutor")
     public void sendOtpEmail(String to, String otp) {
         Context ctx = new Context();
         ctx.setVariable("email", to);
@@ -61,20 +65,35 @@ public class EmailService {
             throw new IllegalStateException("Missing app.mail.from configuration");
         }
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
-            helper.setFrom(fromAddress);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(html, true);
-            mailSender.send(message);
-            log.info("Email sent successfully to {} (subject='{}')", to, subject);
-        } catch (MessagingException | MailException e) {
-            if (mailFailFast) {
-                log.error("Failed to send email to {} with subject '{}': {}", to, subject, e.getMessage(), e);
-                throw new IllegalStateException("Email delivery failed", e);
+            Email from = new Email(fromAddress);
+            Email toEmail = new Email(to);
+            Content content = new Content("text/html", html);
+            Mail mail = new Mail(from, subject, toEmail, content);
+
+            Request request = new Request();
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            Response response = sendGrid.api(request);
+
+            if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
+                log.info("Email sent via SendGrid to {} (subject='{}')", to, subject);
+            } else {
+                handleFailure(to, subject,
+                        "SendGrid returned status " + response.getStatusCode()
+                                + ": " + response.getBody());
             }
-            log.warn("Email not sent to {} (subject='{}'): {}", to, subject, e.getMessage());
+        } catch (IOException e) {
+            handleFailure(to, subject, e.getMessage());
         }
+    }
+
+    private void handleFailure(String to, String subject, String reason) {
+        if (mailFailFast) {
+            log.error("Failed to send email to {} (subject='{}'): {}", to, subject, reason);
+            throw new IllegalStateException("Email delivery failed: " + reason);
+        }
+        log.warn("Email not sent to {} (subject='{}'): {}", to, subject, reason);
     }
 }

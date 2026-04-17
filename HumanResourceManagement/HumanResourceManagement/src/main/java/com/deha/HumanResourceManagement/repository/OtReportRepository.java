@@ -3,6 +3,9 @@ package com.deha.HumanResourceManagement.repository;
 import com.deha.HumanResourceManagement.entity.OtReport;
 import com.deha.HumanResourceManagement.entity.enums.OtReportStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -33,5 +36,9 @@ public interface OtReportRepository extends JpaRepository<OtReport, UUID> {
     List<OtReport> findByAttendanceLog_User_IdOrderByAttendanceLog_LogDateDesc(UUID userId);
 
     List<OtReport> findByOtSession_IdOrderByAttendanceLog_LogDateDesc(UUID otSessionId);
+
+    @Modifying
+    @Query("update OtReport r set r.approvedBy = null where r.approvedBy.id = :userId")
+    int clearApprovedByUser(@Param("userId") UUID userId);
 }
 

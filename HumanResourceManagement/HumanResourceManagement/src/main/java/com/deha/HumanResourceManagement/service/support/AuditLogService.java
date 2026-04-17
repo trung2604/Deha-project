@@ -26,10 +26,16 @@ public class AuditLogService {
 
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
+    private final ClientIpResolverService clientIpResolverService;
 
-    public AuditLogService(AuditLogRepository auditLogRepository, UserRepository userRepository) {
+    public AuditLogService(
+            AuditLogRepository auditLogRepository,
+            UserRepository userRepository,
+            ClientIpResolverService clientIpResolverService
+    ) {
         this.auditLogRepository = auditLogRepository;
         this.userRepository = userRepository;
+        this.clientIpResolverService = clientIpResolverService;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -42,7 +48,7 @@ public class AuditLogService {
             entry.setTargetId(resolveTargetId(request));
             entry.setStatusCode(statusCode);
             entry.setSuccess(statusCode >= 200 && statusCode < 400);
-            entry.setClientIp(extractClientIp(request));
+            entry.setClientIp(trimToLength(clientIpResolverService.extractClientIp(request), 45));
             entry.setUserAgent(trimToLength(request.getHeader("User-Agent"), 500));
             entry.setDurationMs(durationMs < 0 ? null : durationMs);
 
@@ -100,18 +106,6 @@ public class AuditLogService {
         return trimToLength(pattern.toString(), 255);
     }
 
-    private String extractClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            String first = forwardedFor.split(",")[0].trim();
-            return trimToLength(first, 45);
-        }
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return trimToLength(realIp.trim(), 45);
-        }
-        return trimToLength(request.getRemoteAddr(), 45);
-    }
 
     private String safe(String value) {
         return trimToLength(value == null ? "" : value, 500);

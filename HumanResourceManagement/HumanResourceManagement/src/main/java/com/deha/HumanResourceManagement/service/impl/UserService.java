@@ -20,6 +20,7 @@ import com.deha.HumanResourceManagement.repository.UserRepository;
 import com.deha.HumanResourceManagement.repository.PositionRepository;
 import com.deha.HumanResourceManagement.repository.AttendanceLogRepository;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
+import com.deha.HumanResourceManagement.repository.OtReportRepository;
 import com.deha.HumanResourceManagement.repository.OtSessionRepository;
 import com.deha.HumanResourceManagement.repository.PayrollRepository;
 import com.deha.HumanResourceManagement.repository.specification.UserSpecification;
@@ -34,6 +35,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +54,7 @@ public class UserService implements IUserService {
     private final PositionRepository positionRepository;
     private final AttendanceLogRepository attendanceLogRepository;
     private final OtRequestRepository otRequestRepository;
+    private final OtReportRepository otReportRepository;
     private final OtSessionRepository otSessionRepository;
     private final PayrollRepository payrollRepository;
     private final AccessScopeService accessScopeService;
@@ -68,6 +71,7 @@ public class UserService implements IUserService {
             PositionRepository positionRepository,
             AttendanceLogRepository attendanceLogRepository,
             OtRequestRepository otRequestRepository,
+            OtReportRepository otReportRepository,
             OtSessionRepository otSessionRepository,
             PayrollRepository payrollRepository,
             AccessScopeService accessScopeService,
@@ -82,6 +86,7 @@ public class UserService implements IUserService {
         this.positionRepository = positionRepository;
         this.attendanceLogRepository = attendanceLogRepository;
         this.otRequestRepository = otRequestRepository;
+        this.otReportRepository = otReportRepository;
         this.otSessionRepository = otSessionRepository;
         this.payrollRepository = payrollRepository;
         this.accessScopeService = accessScopeService;
@@ -241,20 +246,28 @@ public class UserService implements IUserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         accessScopeService.assertCanManageOffice(user.getOffice() != null ? user.getOffice().getId() : null);
 
-        if (hasRelatedUserRecords(user.getId())) {
+        // Keep active users protected from destructive deletes when historical records exist.
+        if (user.isActive() && hasRelatedUserRecords(user.getId())) {
             throw new ConflictException("Cannot delete user because related records already exist (attendance/overtime/payroll). Deactivate the user instead.");
+        }
+
+        if (!user.isActive()) {
+            // Clear manager approval references that are defined without ON DELETE behavior.
+            otRequestRepository.clearApprovedByUser(user.getId());
+            otReportRepository.clearApprovedByUser(user.getId());
         }
 
         try {
             userRepository.delete(user);
             userRepository.flush();
         } catch (DataIntegrityViolationException ex) {
-            throw new ConflictException("Cannot delete user because related records already exist (attendance/overtime/payroll). Deactivate the user instead.");
+            throw new ConflictException("Cannot delete user because related records still reference this account.");
         }
     }
 

@@ -1,9 +1,9 @@
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
+import { API_ORIGIN } from "@/utils/axios";
 
 function wsEndpointFromApiBase() {
-  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8081/api";
-  return apiBase.replace(/\/api\/?$/, "") + "/ws";
+  return API_ORIGIN + "/ws";
 }
 
 export function createRealtimeClient({ token, onConnect, onDisconnect, onError } = {}) {

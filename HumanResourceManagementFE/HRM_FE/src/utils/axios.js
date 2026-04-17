@@ -1,7 +1,9 @@
 import axios from "axios";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8081/api";
+// Single source of truth for backend API endpoint in frontend.
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -67,8 +69,15 @@ async function refreshAccessToken() {
 
 axiosInstance.interceptors.request.use(
   (config) => {
+    if (config._skipAuthHeader) {
+      return config;
+    }
+
     const token = localStorage.getItem("auth_token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error),

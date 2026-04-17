@@ -30,7 +30,7 @@ public class OtSessionController extends ApiControllerSupport {
         return success(
                 "OT checked in successfully",
                 HttpStatus.OK,
-                otSessionService.checkIn(clientIpResolverService.extractClientIps(request))
+                otSessionService.checkIn(clientIpResolverService.extractClientIp(request))
         );
     }
 
@@ -40,7 +40,7 @@ public class OtSessionController extends ApiControllerSupport {
         return success(
                 "OT checked out successfully",
                 HttpStatus.OK,
-                otSessionService.checkOut(clientIpResolverService.extractClientIps(request))
+                otSessionService.checkOut(clientIpResolverService.extractClientIp(request))
         );
     }
 

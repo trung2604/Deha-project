@@ -21,8 +21,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -73,12 +77,24 @@ public class AuthService {
             throw new BadRequestException("Email and password are required");
         }
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+        } catch (BadCredentialsException ex) {
+            // Keep login failure message generic to avoid account enumeration.
+            throw new UnauthorizedException("Invalid email or password");
+        } catch (DisabledException ex) {
+            throw new ForbiddenException("Account is inactive");
+        } catch (LockedException ex) {
+            throw new ForbiddenException("Account is locked");
+        } catch (AuthenticationException ex) {
+            throw new UnauthorizedException("Authentication failed");
+        }
 
         Object principalObj = authentication.getPrincipal();
         if (!(principalObj instanceof CustomUserDetail principal) || principal.getUser() == null) {

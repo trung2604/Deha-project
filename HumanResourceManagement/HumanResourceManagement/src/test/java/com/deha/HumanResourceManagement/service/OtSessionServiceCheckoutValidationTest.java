@@ -9,6 +9,7 @@ import com.deha.HumanResourceManagement.entity.enums.Role;
 import com.deha.HumanResourceManagement.exception.BadRequestException;
 import com.deha.HumanResourceManagement.repository.OtRequestRepository;
 import com.deha.HumanResourceManagement.repository.OtSessionRepository;
+import com.deha.HumanResourceManagement.mapper.ot.OtSessionMapper;
 import com.deha.HumanResourceManagement.service.impl.OtSessionService;
 import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.service.support.OfficePolicyService;
@@ -16,7 +17,6 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -48,6 +48,16 @@ class OtSessionServiceCheckoutValidationTest {
         when(otSessionRepository.findByUserAndLogDate(actor, LocalDate.now())).thenReturn(Optional.of(session));
 
         IAttendanceService attendanceService = mock(IAttendanceService.class);
+        OtSessionMapper otSessionMapper = mock(OtSessionMapper.class);
+        when(otSessionMapper.toResponse(any(OtSession.class), anyInt())).thenAnswer(invocation -> {
+            OtSession source = invocation.getArgument(0);
+            Integer minimumOtHours = invocation.getArgument(1);
+            OtSessionResponse response = new OtSessionResponse();
+            response.setStatus(source.getStatus());
+            response.setCheckOutTime(source.getCheckOutTime());
+            response.setMinimumOtHours(minimumOtHours);
+            return response;
+        });
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
             public User currentUserOrThrow() {
@@ -60,12 +70,13 @@ class OtSessionServiceCheckoutValidationTest {
                 mock(OtRequestRepository.class),
                 accessScopeService,
                 new OfficePolicyService(),
-                attendanceService
+                attendanceService,
+                otSessionMapper
         );
 
         BadRequestException exception = assertThrows(
                 BadRequestException.class,
-                () -> service.checkOut(List.of("127.0.0.1"))
+                () -> service.checkOut("127.0.0.1")
         );
 
         assertTrue(exception.getMessage().contains("Minimum OT time is 1 hour(s)"));
@@ -96,6 +107,16 @@ class OtSessionServiceCheckoutValidationTest {
         when(otSessionRepository.save(any(OtSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         IAttendanceService attendanceService = mock(IAttendanceService.class);
+        OtSessionMapper otSessionMapper = mock(OtSessionMapper.class);
+        when(otSessionMapper.toResponse(any(OtSession.class), anyInt())).thenAnswer(invocation -> {
+            OtSession source = invocation.getArgument(0);
+            Integer minimumOtHours = invocation.getArgument(1);
+            OtSessionResponse response = new OtSessionResponse();
+            response.setStatus(source.getStatus());
+            response.setCheckOutTime(source.getCheckOutTime());
+            response.setMinimumOtHours(minimumOtHours);
+            return response;
+        });
         AccessScopeService accessScopeService = new AccessScopeService(null) {
             @Override
             public User currentUserOrThrow() {
@@ -108,10 +129,11 @@ class OtSessionServiceCheckoutValidationTest {
                 mock(OtRequestRepository.class),
                 accessScopeService,
                 new OfficePolicyService(),
-                attendanceService
+                attendanceService,
+                otSessionMapper
         );
 
-        OtSessionResponse response = service.checkOut(List.of("127.0.0.1"));
+        OtSessionResponse response = service.checkOut("127.0.0.1");
 
         assertEquals(OtSessionStatus.CHECKED_OUT, response.getStatus());
         assertNotNull(response.getCheckOutTime());

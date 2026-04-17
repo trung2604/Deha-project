@@ -26,6 +26,7 @@ import {
 } from "@/utils/apiResponse";
 
 export function UsersPage() {
+  const normalizeEmail = (value) => String(value ?? "").trim().toLowerCase();
   const { user } = useAuth();
   const admin = isAdminRole(user?.role);
   const officeManager = isOfficeManagerRole(user?.role);
@@ -241,7 +242,37 @@ export function UsersPage() {
         await reloadUsers();
         toast.success(getResponseMessage(res, "User updated successfully"));
       } else {
-        const res = await UserService.createUser(userPayload);
+        let res;
+        try {
+          res = await UserService.createUser(userPayload);
+        } catch (error) {
+          // Backend can still finish creating user when mail delivery is slow/fails.
+          if (error?.code === "ECONNABORTED") {
+            const officeId = (admin ? officeFilter : user?.officeId) || undefined;
+            const verifyRes = await UserService.getUsers({
+              keyword: userPayload?.email,
+              officeId,
+              page: 0,
+              size: 20,
+            });
+            const created = getPageContent(verifyRes).some(
+              (u) => normalizeEmail(u?.email) === normalizeEmail(userPayload?.email),
+            );
+
+            if (created) {
+              await reloadUsers();
+              toast.success("User was created. Verification email may be delayed due to SMTP connection issues.");
+              setShowAddModal(false);
+              setEditingUser(null);
+              return;
+            }
+
+            toast.error("Create request timed out. Please retry or refresh list to confirm user status.");
+            return;
+          }
+          throw error;
+        }
+
         if (!isSuccessResponse(res)) return toast.error(getResponseMessage(res, "Failed to save User"));
         await reloadUsers();
         toast.success(getResponseMessage(res, "User added successfully"));
@@ -383,7 +414,7 @@ export function UsersPage() {
 
       {deletingUser && (
         <DeleteUserModal
-          UserName={
+          userName={
             `${deletingUser.firstName ?? ""} ${deletingUser.lastName ?? ""}`.trim() ||
             "-"
           }
