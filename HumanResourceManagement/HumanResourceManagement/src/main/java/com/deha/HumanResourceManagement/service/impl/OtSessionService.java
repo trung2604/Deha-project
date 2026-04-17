@@ -22,7 +22,6 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 
 @Service
 public class OtSessionService implements IOtSessionService {
@@ -53,7 +52,7 @@ public class OtSessionService implements IOtSessionService {
 
     @Override
     @Transactional
-    public OtSessionResponse checkIn(List<String> clientIps) {
+    public OtSessionResponse checkIn(String clientIps) {
         User actor = currentOtActorOrThrow("check in OT");
         if (actor.getOffice() == null) {
             throw new BadRequestException("User is not assigned to any office");
@@ -87,7 +86,7 @@ public class OtSessionService implements IOtSessionService {
 
     @Override
     @Transactional
-    public OtSessionResponse checkOut(List<String> clientIps) {
+    public OtSessionResponse checkOut(String clientIps) {
         User actor = currentOtActorOrThrow("check out OT");
         LocalDate today = LocalDate.now();
         OtSession session = otSessionRepository.findByUserAndLogDate(actor, today)

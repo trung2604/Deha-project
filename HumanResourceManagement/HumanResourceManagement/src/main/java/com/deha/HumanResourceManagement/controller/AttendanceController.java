@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "Attendance", description = "Attendance check-in/check-out and daily attendance tracking APIs")
@@ -44,7 +43,7 @@ public class AttendanceController extends ApiControllerSupport {
     @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER_DEPARTMENT','MANAGER_OFFICE')")
     public ApiResponse checkIn(HttpServletRequest request) {
         User actor = accessScopeService.currentUserOrThrow();
-        List<String> clientIps = clientIpResolverService.extractClientIps(request);
+        String clientIps = clientIpResolverService.extractClientIp(request);
         attendanceService.checkIn(actor, clientIps);
         return success("Checked in successfully", HttpStatus.OK, null);
     }
@@ -53,7 +52,7 @@ public class AttendanceController extends ApiControllerSupport {
     @PreAuthorize("hasAnyRole('EMPLOYEE','MANAGER_DEPARTMENT','MANAGER_OFFICE')")
     public ApiResponse checkOut(HttpServletRequest request) {
         User actor = accessScopeService.currentUserOrThrow();
-        List<String> clientIps = clientIpResolverService.extractClientIps(request);
+        String clientIps = clientIpResolverService.extractClientIp(request);
         attendanceService.checkOut(actor, clientIps);
         return success("Checked out successfully", HttpStatus.OK, null);
     }

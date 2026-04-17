@@ -212,10 +212,9 @@ export function UserTable({
                       <button
                         type="button"
                         onClick={() => onDelete(user)}
-                        disabled={!user.active}
                         className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50"
-                        style={{ color: user.active ? "#FF4D4F" : "#A0A0A0", cursor: user.active ? "pointer" : "not-allowed" }}
-                        title={user.active ? "Delete user" : "User is already inactive"}
+                        style={{ color: "#FF4D4F" }}
+                        title="Delete user"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -414,10 +413,9 @@ export function UserTable({
                         <button
                           type="button"
                           onClick={() => onDelete(user)}
-                          disabled={!user.active}
                           className="p-2 rounded-lg transition-colors duration-150 hover:bg-red-50 hover-lift"
-                          style={{ color: user.active ? "#FF4D4F" : "#A0A0A0", cursor: user.active ? "pointer" : "not-allowed" }}
-                          title={user.active ? "Delete user" : "User is already inactive"}
+                          style={{ color: "#FF4D4F" }}
+                          title="Delete user"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

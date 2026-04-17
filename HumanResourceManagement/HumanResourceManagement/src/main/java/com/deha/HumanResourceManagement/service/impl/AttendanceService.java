@@ -21,10 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -57,7 +59,7 @@ public class AttendanceService implements IAttendanceService {
 
     @Override
     @Transactional
-    public void checkIn(User user, List<String> clientIps) {
+    public void checkIn(User user, String clientIps) {
         Office office = user.getOffice();
         if (office == null)
             throw new BadRequestException("User not assigned to any office");
@@ -78,7 +80,7 @@ public class AttendanceService implements IAttendanceService {
 
     @Override
     @Transactional
-    public void checkOut(User user, List<String> clientIps) {
+    public void checkOut(User user, String clientIps) {
         AttendanceLog log = attendanceLogRepo
                 .findByUserAndLogDateAndCheckOutTimeIsNull(user, LocalDate.now())
                 .orElseThrow(() -> new BadRequestException("No check-in record found for today"));
@@ -256,12 +258,12 @@ public class AttendanceService implements IAttendanceService {
 
     @Override
     @Transactional(readOnly = true)
-    public void validateOfficeIpAccess(Office office, List<String> clientIps) {
+    public void validateOfficeIpAccess(Office office, String clientIps) {
         matchAllowedIp(office, clientIps);
     }
 
-    private String matchAllowedIp(Office office, List<String> clientIps) {
-        Set<String> candidateIps = (clientIps == null ? List.<String>of() : clientIps).stream()
+    private String matchAllowedIp(Office office, String clientIps) {
+        Set<String> candidateIps = (clientIps == null ? List.<String>of() : Arrays.asList(clientIps.split(","))).stream()
                 .map(this::normalizeIp)
                 .filter(s -> !s.isBlank())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -287,10 +289,7 @@ public class AttendanceService implements IAttendanceService {
 
         for (String candidate : candidateIps) {
             for (String allowed : allowedIps) {
-                if (candidate.equals(allowed)) {
-                    return candidate;
-                }
-                if (isLoopback(candidate) && isLoopback(allowed)) {
+                if (ipMatchesAllowed(candidate, allowed)) {
                     return candidate;
                 }
             }
@@ -324,6 +323,61 @@ public class AttendanceService implements IAttendanceService {
     private boolean isLoopback(String ip) {
         String value = normalizeIp(ip);
         return "127.0.0.1".equals(value) || "::1".equals(value) || "0:0:0:0:0:0:0:1".equals(value);
+    }
+
+    private boolean ipMatchesAllowed(String candidate, String allowed) {
+        if (candidate.equals(allowed)) {
+            return true;
+        }
+        if (isLoopback(candidate) && isLoopback(allowed)) {
+            return true;
+        }
+        if (allowed.contains("/")) {
+            return isIpInCidr(candidate, allowed);
+        }
+        return false;
+    }
+
+    private boolean isIpInCidr(String ip, String cidr) {
+        try {
+            String[] parts = cidr.split("/", 2);
+            if (parts.length != 2) {
+                return false;
+            }
+
+            InetAddress candidateAddress = InetAddress.getByName(ip);
+            InetAddress networkAddress = InetAddress.getByName(parts[0]);
+            byte[] candidateBytes = candidateAddress.getAddress();
+            byte[] networkBytes = networkAddress.getAddress();
+
+            if (candidateBytes.length != networkBytes.length) {
+                return false;
+            }
+
+            int prefixLength = Integer.parseInt(parts[1]);
+            int maxPrefix = candidateBytes.length * 8;
+            if (prefixLength < 0 || prefixLength > maxPrefix) {
+                return false;
+            }
+
+            int wholeBytes = prefixLength / 8;
+            int remainingBits = prefixLength % 8;
+
+            for (int i = 0; i < wholeBytes; i++) {
+                if (candidateBytes[i] != networkBytes[i]) {
+                    return false;
+                }
+            }
+
+            if (remainingBits == 0) {
+                return true;
+            }
+
+            int mask = 0xFF << (8 - remainingBits);
+            return (candidateBytes[wholeBytes] & mask) == (networkBytes[wholeBytes] & mask);
+        } catch (UnknownHostException | NumberFormatException ex) {
+            return false;
+        }
     }
 
     private Set<String> resolveLocalLanIpv4s() {
