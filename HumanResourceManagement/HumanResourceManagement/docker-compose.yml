@@ -46,11 +46,6 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    environment:
-      # Override container-internal network addresses only
-      DB_HOST: postgres
-      DB_PORT: 5433
-      SPRING_DATA_REDIS_HOST: redis
     ports:
       - "8081:8081"
       - "8443:8443"

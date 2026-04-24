@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Single source of truth for backend API endpoint in frontend.
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+  import.meta.env.VITE_API_URL || "https://hrm-deha-cjhwf4c0egg0feg2.malaysiawest-01.azurewebsites.net/api";
 export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, "");
 
 const axiosInstance = axios.create({

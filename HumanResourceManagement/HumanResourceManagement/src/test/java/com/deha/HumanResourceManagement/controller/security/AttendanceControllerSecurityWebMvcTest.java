@@ -1,6 +1,6 @@
 package com.deha.HumanResourceManagement.controller.security;
 
-import com.deha.HumanResourceManagement.config.AuditLoggingInterceptor;
+import com.deha.HumanResourceManagement.config.audit.AuditLoggingInterceptor;
 import com.deha.HumanResourceManagement.config.security.AccessScopeService;
 import com.deha.HumanResourceManagement.config.security.GoogleOAuth2FailureHandler;
 import com.deha.HumanResourceManagement.config.security.GoogleOAuth2SuccessHandler;
