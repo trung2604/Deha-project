@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.HandlerMapping;
 
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -87,8 +88,9 @@ public class AuditLogService {
         if (!(attr instanceof Map<?, ?> vars)) {
             return null;
         }
-        Object idValue = vars.get("id");
-        if (idValue == null) {
+
+        Object idValue = resolveIdCandidate(vars);
+        if (idValue == null || idValue.toString().isBlank()) {
             return null;
         }
         try {
@@ -96,6 +98,20 @@ public class AuditLogService {
         } catch (IllegalArgumentException ignored) {
             return null;
         }
+    }
+
+    private Object resolveIdCandidate(Map<?, ?> vars) {
+        Object directId = vars.get("id");
+        if (directId != null) {
+            return directId;
+        }
+
+        return vars.entrySet().stream()
+                .filter(entry -> entry.getKey() instanceof String key && key.toLowerCase(Locale.ROOT).endsWith("id"))
+                .sorted(Comparator.comparing(entry -> entry.getKey().toString()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
     private String resolveEndpointPattern(HttpServletRequest request) {

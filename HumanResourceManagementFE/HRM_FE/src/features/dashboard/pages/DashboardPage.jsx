@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button, Drawer, Select, Tag } from "antd";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import auditLogService from "@/features/auditLogs/api/auditLogService";
-import userService from "@/features/users/api/userService";
+import userService from "@/features/users/api/UserService";
 import departmentService from "@/features/departments/api/departmentService";
 import officeService from "@/features/offices/api/officeService";
 import attendanceService from "@/features/attendance/api/attendanceService";

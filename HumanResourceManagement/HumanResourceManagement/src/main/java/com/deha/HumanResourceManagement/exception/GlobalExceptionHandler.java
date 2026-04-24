@@ -6,6 +6,10 @@ import jakarta.persistence.OptimisticLockException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,26 +76,37 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<?> handleAuthentication(AuthenticationException ex) {
-        ApiResponse res = new ApiResponse();
-        res.setStatus(HttpStatus.UNAUTHORIZED.value());
-        res.setMessage("Unauthorized");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
+        return build(HttpStatus.UNAUTHORIZED, "Unauthorized");
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<?> handleBadCredentials(BadCredentialsException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<?> handleDisabled(DisabledException ex) {
+        return build(HttpStatus.FORBIDDEN, "Account is inactive");
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<?> handleLocked(LockedException ex) {
+        return build(HttpStatus.FORBIDDEN, "Account is locked");
+    }
+
+    @ExceptionHandler(InsufficientAuthenticationException.class)
+    public ResponseEntity<?> handleInsufficientAuth(InsufficientAuthenticationException ex) {
+        return build(HttpStatus.UNAUTHORIZED, "Authentication is required");
     }
 
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<?> handleJwt(JwtException ex) {
-        ApiResponse res = new ApiResponse();
-        res.setStatus(HttpStatus.UNAUTHORIZED.value());
-        res.setMessage("Invalid or expired token");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(res);
+        return build(HttpStatus.UNAUTHORIZED, "Invalid or expired token");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<?> handleAccessDenied(AccessDeniedException ex) {
-        ApiResponse res = new ApiResponse();
-        res.setStatus(HttpStatus.FORBIDDEN.value());
-        res.setMessage("Access denied");
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(res);
+        return build(HttpStatus.FORBIDDEN, "Access denied");
     }
 
     @ExceptionHandler({ObjectOptimisticLockingFailureException.class, OptimisticLockException.class})
@@ -143,5 +158,12 @@ public class GlobalExceptionHandler {
         res.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
         res.setMessage("Unexpected server error");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(res);
+    }
+
+    private ResponseEntity<ApiResponse> build(HttpStatus status, String message) {
+        ApiResponse res = new ApiResponse();
+        res.setStatus(status.value());
+        res.setMessage(message);
+        return ResponseEntity.status(status).body(res);
     }
 }

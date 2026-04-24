@@ -1,5 +1,6 @@
 package com.deha.HumanResourceManagement.config;
 
+import com.deha.HumanResourceManagement.config.audit.AuditLoggingInterceptor;
 import com.deha.HumanResourceManagement.service.support.AuditLogService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
