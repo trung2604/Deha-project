@@ -38,7 +38,7 @@ public class AuthController extends ApiControllerSupport {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Account inactive/locked"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "503", description = "Authentication session service unavailable")
     })
-    public ApiResponse login(@RequestBody LoginRequest request, HttpServletResponse response) {
+    public ApiResponse login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
         return success("Login successful", HttpStatus.OK, authService.login(request, response));
     }
 

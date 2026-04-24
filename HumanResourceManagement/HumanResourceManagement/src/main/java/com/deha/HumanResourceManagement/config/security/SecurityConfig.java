@@ -48,7 +48,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler, GoogleOAuth2FailureHandler googleOAuth2FailureHandler,CorsConfigurationSource corsConfigurationSource) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            GoogleOAuth2SuccessHandler googleOAuth2SuccessHandler,
+            GoogleOAuth2FailureHandler googleOAuth2FailureHandler,
+            CorsConfigurationSource corsConfigurationSource
+    ) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -171,7 +176,7 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(allowedOrigins));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT","PATHC", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
