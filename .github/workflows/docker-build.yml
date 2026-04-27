@@ -22,7 +22,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login to Azure (OIDC)
+      - name: Login to Azure (OIDC with Managed Identity)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -31,15 +31,15 @@ jobs:
 
       - name: Login to ACR
         run: |
-          ACR_NAME=$(echo $ACR_LOGIN_SERVER | cut -d'.' -f1)
-          az acr login --name $ACR_NAME
+          echo ${{ secrets.ACR_PASSWORD }} | docker login $ACR_LOGIN_SERVER \
+            -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
       - name: Build & Push Backend Image
         run: |
           docker build -t $ACR_LOGIN_SERVER/backend:${{ github.sha }} ./backend
           docker push $ACR_LOGIN_SERVER/backend:${{ github.sha }}
 
-      - name: Deploy Backend Web App
+      - name: Deploy Backend to Web App
         run: |
           az webapp config container set \
             --name $BACKEND_APP \
@@ -47,7 +47,7 @@ jobs:
             --docker-custom-image-name $ACR_LOGIN_SERVER/backend:${{ github.sha }} \
             --docker-registry-server-url https://$ACR_LOGIN_SERVER
 
-      - name: Restart Backend App
+      - name: Restart Backend
         run: |
           az webapp restart \
             --name $BACKEND_APP \
@@ -61,7 +61,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Login to Azure (OIDC)
+      - name: Login to Azure (OIDC with Managed Identity)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -70,15 +70,15 @@ jobs:
 
       - name: Login to ACR
         run: |
-          ACR_NAME=$(echo $ACR_LOGIN_SERVER | cut -d'.' -f1)
-          az acr login --name $ACR_NAME
+          echo ${{ secrets.ACR_PASSWORD }} | docker login $ACR_LOGIN_SERVER \
+            -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
       - name: Build & Push Frontend Image
         run: |
           docker build -t $ACR_LOGIN_SERVER/frontend:${{ github.sha }} ./frontend
           docker push $ACR_LOGIN_SERVER/frontend:${{ github.sha }}
 
-      - name: Deploy Frontend Web App
+      - name: Deploy Frontend to Web App
         run: |
           az webapp config container set \
             --name $FRONTEND_APP \
@@ -86,7 +86,7 @@ jobs:
             --docker-custom-image-name $ACR_LOGIN_SERVER/frontend:${{ github.sha }} \
             --docker-registry-server-url https://$ACR_LOGIN_SERVER
 
-      - name: Restart Frontend App
+      - name: Restart Frontend
         run: |
           az webapp restart \
             --name $FRONTEND_APP \
