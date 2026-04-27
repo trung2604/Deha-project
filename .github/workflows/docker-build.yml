@@ -11,9 +11,8 @@ permissions:
 env:
   ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
   RESOURCE_GROUP: hrm-deha-resource
-  BACKEND_APP: hrm-deha-backend
-  FRONTEND_APP: hrm-deha-frontend
-
+  BACKEND_APP: hrm-deha
+  FRONTEND_APP: hrm-fe-deha
 jobs:
   deploy:
     runs-on: ubuntu-latest
