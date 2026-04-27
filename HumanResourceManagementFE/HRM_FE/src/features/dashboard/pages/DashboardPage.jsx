@@ -379,7 +379,7 @@ export function DashboardPage() {
       <div className="page-hero">
         <h1 className="page-title" style={{ fontSize: 26 }}>Dashboard</h1>
         <p className="page-subtitle">
-          Welcome back 123456{user?.firstName ? `, ${user.firstName}` : ""}. System-wide snapshot across workforce, attendance, overtime, payroll and governance.
+          Welcome back 123456789{user?.firstName ? `, ${user.firstName}` : ""}. System-wide snapshot across workforce, attendance, overtime, payroll and governance.
         </p>
         <div className="mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1" style={{ backgroundColor: "rgba(22,119,255,0.10)" }}>
           <span style={{ width: 8, height: 8, borderRadius: 999, backgroundColor: "#1677FF" }} />
