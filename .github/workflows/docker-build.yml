@@ -1,4 +1,4 @@
-name: Build and Deploy (OIDC - Final)
+name: Build and Deploy (Health Check Ready)
 
 on:
   push:
@@ -10,7 +10,6 @@ permissions:
 
 env:
   ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-
   RESOURCE_GROUP: hrm-deha-resource
 
   BACKEND_APP: hrm-deha
@@ -40,22 +39,12 @@ jobs:
       - name: Build & Push Backend
         run: |
           docker build -t $ACR_LOGIN_SERVER/backend:${{ github.sha }} ./HumanResourceManagement/HumanResourceManagement
-
           docker push $ACR_LOGIN_SERVER/backend:${{ github.sha }}
 
       - name: Build & Push Frontend
         run: |
           docker build -t $ACR_LOGIN_SERVER/frontend:${{ github.sha }} ./HumanResourceManagementFE/HRM_FE
           docker push $ACR_LOGIN_SERVER/frontend:${{ github.sha }}
-
-      - name: Get current backend image
-        id: old_backend
-        run: |
-          OLD=$(az webapp config container show \
-            --name $BACKEND_APP \
-            --resource-group $RESOURCE_GROUP \
-            --query "linuxFxVersion" -o tsv)
-          echo "old_image=$OLD" >> $GITHUB_OUTPUT
 
       - name: Deploy Backend
         run: |
@@ -73,18 +62,17 @@ jobs:
 
       - name: Health Check Backend
         run: |
-          echo "Waiting for backend..."
-          sleep 25
-          curl -f $BACKEND_URL/actuator/health
-
-      - name: Get current frontend image
-        id: old_frontend
-        run: |
-          OLD=$(az webapp config container show \
-            --name $FRONTEND_APP \
-            --resource-group $RESOURCE_GROUP \
-            --query "linuxFxVersion" -o tsv)
-          echo "old_image=$OLD" >> $GITHUB_OUTPUT
+          echo "Checking backend..."
+          for i in {1..12}; do
+            if curl -f $BACKEND_URL/actuator/health; then
+              echo "Backend OK"
+              exit 0
+            fi
+            echo "Retry $i..."
+            sleep 5
+          done
+          echo "Backend failed"
+          exit 1
 
       - name: Deploy Frontend
         run: |
@@ -102,30 +90,15 @@ jobs:
 
       - name: Health Check Frontend
         run: |
-          echo "Waiting for frontend..."
-          sleep 20
-          curl -f $FRONTEND_URL
-
-      - name: Rollback Backend
-        if: failure()
-        run: |
-          echo "Rolling back backend..."
-          az webapp config container set \
-            --name $BACKEND_APP \
-            --resource-group $RESOURCE_GROUP \
-            --container-image-name "${{ steps.old_backend.outputs.old_image }}"
-          az webapp restart \
-            --name $BACKEND_APP \
-            --resource-group $RESOURCE_GROUP
-
-      - name: Rollback Frontend
-        if: failure()
-        run: |
-          echo "Rolling back frontend..."
-          az webapp config container set \
-            --name $FRONTEND_APP \
-            --resource-group $RESOURCE_GROUP \
-            --container-image-name "${{ steps.old_frontend.outputs.old_image }}"
-          az webapp restart \
-            --name $FRONTEND_APP \
-            --resource-group $RESOURCE_GROUP
+          echo "Checking frontend..."
+          for i in {1..10}; do
+            STATUS=$(curl -o /dev/null -s -w "%{http_code}" $FRONTEND_URL)
+            if [ "$STATUS" = "200" ]; then
+              echo "Frontend OK"
+              exit 0
+            fi
+            echo "Retry $i - status: $STATUS"
+            sleep 5
+          done
+          echo "Frontend failed"
+          exit 1
