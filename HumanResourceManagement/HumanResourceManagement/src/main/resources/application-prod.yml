@@ -5,7 +5,13 @@ server:
     enabled: false
   port: 8080
 #  forward-headers-strategy: native
-
+management:
+  endpoint:
+    web:
+      exposure:
+        include: health
+    health:
+      show-details:  always
 app:
   frontend:
     url: ${FRONTEND_URL}
@@ -109,14 +115,6 @@ spring:
       max-file-size: 2MB
       max-request-size: 3MB
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: when-authorized
 
 springdoc:
   api-docs:

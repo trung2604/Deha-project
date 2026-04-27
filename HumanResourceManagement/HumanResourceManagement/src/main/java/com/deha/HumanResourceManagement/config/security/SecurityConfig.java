@@ -75,7 +75,8 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/oauth2/authorization/google",
                                 "/login/oauth2/code/google",
-                                "/ws/**"
+                                "/ws/**",
+                                "/actuator/health"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
