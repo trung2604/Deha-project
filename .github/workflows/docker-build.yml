@@ -39,12 +39,13 @@ jobs:
 
       - name: Build & Push Backend
         run: |
-          docker build -t $ACR_LOGIN_SERVER/backend:${{ github.sha }} ./backend
+          docker build -t $ACR_LOGIN_SERVER/backend:${{ github.sha }} ./HumanResourceManagement/HumanResourceManagement
+
           docker push $ACR_LOGIN_SERVER/backend:${{ github.sha }}
 
       - name: Build & Push Frontend
         run: |
-          docker build -t $ACR_LOGIN_SERVER/frontend:${{ github.sha }} ./frontend
+          docker build -t $ACR_LOGIN_SERVER/frontend:${{ github.sha }} ./HumanResourceManagementFE/HRM_FE
           docker push $ACR_LOGIN_SERVER/frontend:${{ github.sha }}
 
       - name: Get current backend image
