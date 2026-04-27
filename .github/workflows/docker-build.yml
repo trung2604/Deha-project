@@ -1,4 +1,4 @@
-name: Build and Deploy (OIDC)
+name: Build and Deploy (OIDC - Production Ready)
 
 on:
   push:
@@ -13,12 +13,14 @@ env:
   RESOURCE_GROUP: hrm-deha-resource
   BACKEND_APP: hrm-deha
   FRONTEND_APP: hrm-fe-deha
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -32,13 +34,22 @@ jobs:
 
       - name: Build & Push Backend
         run: |
-          docker build -t $ACR_LOGIN_SERVER/backend:${{ github.sha }} ./HumanResourceManagement/HumanResourceManagement
+          docker build -t $ACR_LOGIN_SERVER/backend:${{ github.sha }} ./backend
           docker push $ACR_LOGIN_SERVER/backend:${{ github.sha }}
 
       - name: Build & Push Frontend
         run: |
-          docker build -t $ACR_LOGIN_SERVER/frontend:${{ github.sha }} ./HumanResourceManagementFE/HRM_FE
+          docker build -t $ACR_LOGIN_SERVER/frontend:${{ github.sha }} ./frontend
           docker push $ACR_LOGIN_SERVER/frontend:${{ github.sha }}
+
+      - name: Get current backend image
+        id: old_backend
+        run: |
+          OLD=$(az webapp config container show \
+            --name $BACKEND_APP \
+            --resource-group $RESOURCE_GROUP \
+            --query "linuxFxVersion" -o tsv)
+          echo "old_image=$OLD" >> $GITHUB_OUTPUT
 
       - name: Deploy Backend
         run: |
@@ -48,10 +59,27 @@ jobs:
             --container-image-name $ACR_LOGIN_SERVER/backend:${{ github.sha }} \
             --container-registry-url https://$ACR_LOGIN_SERVER
 
-      - name: Deploy Frontend
+      - name: Restart Backend
         run: |
+          az webapp restart \
+            --name $BACKEND_APP \
+            --resource-group $RESOURCE_GROUP
+
+      - name: Health Check Backend
+        id: health_backend
+        run: |
+          echo "Waiting for app..."
+          sleep 25
+          curl -f https://$BACKEND_APP.azurewebsites.net/actuator/health
+
+      - name: Rollback Backend if failed
+        if: failure()
+        run: |
+          echo "Rolling back..."
           az webapp config container set \
-            --name $FRONTEND_APP \
+            --name $BACKEND_APP \
             --resource-group $RESOURCE_GROUP \
-            --container-image-name $ACR_LOGIN_SERVER/frontend:${{ github.sha }} \
-            --container-registry-url https://$ACR_LOGIN_SERVER
+            --container-image-name "${{ steps.old_backend.outputs.old_image }}"
+          az webapp restart \
+            --name $BACKEND_APP \
+            --resource-group $RESOURCE_GROUP
