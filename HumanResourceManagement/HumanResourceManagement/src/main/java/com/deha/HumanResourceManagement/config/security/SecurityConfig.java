@@ -59,6 +59,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
@@ -75,8 +76,7 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/oauth2/authorization/google",
                                 "/login/oauth2/code/google",
-                                "/ws/**",
-                                "/actuator/health"
+                                "/ws/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
