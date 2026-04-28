@@ -54,17 +54,11 @@ jobs:
             --container-image-name $ACR_LOGIN_SERVER/backend:${{ github.sha }} \
             --container-registry-url https://$ACR_LOGIN_SERVER
 
-      - name: Restart Backend
-        run: |
-          az webapp restart \
-            --name $BACKEND_APP \
-            --resource-group $RESOURCE_GROUP
-
       - name: Health Check Backend
         run: |
           echo "Checking backend..."
           for i in {1..12}; do
-            if curl -f $BACKEND_URL/actuator/health; then
+            if curl -fsS $BACKEND_URL/actuator/health | grep '"status":"UP"'; then
               echo "Backend OK"
               exit 0
             fi
@@ -81,12 +75,6 @@ jobs:
             --resource-group $RESOURCE_GROUP \
             --container-image-name $ACR_LOGIN_SERVER/frontend:${{ github.sha }} \
             --container-registry-url https://$ACR_LOGIN_SERVER
-
-      - name: Restart Frontend
-        run: |
-          az webapp restart \
-            --name $FRONTEND_APP \
-            --resource-group $RESOURCE_GROUP
 
       - name: Health Check Frontend
         run: |
